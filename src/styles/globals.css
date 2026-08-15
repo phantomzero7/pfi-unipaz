@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0A1526;
+    --bg-surface: #112240;
+    --unipaz-navy: #002855;
+    --unipaz-cobalt: #0056B3;
+    --unipaz-orange: #FF5500;
+    --unipaz-gold: #FFAA00;
+  }
+
+  body {
+    @apply bg-[#0A1526] text-slate-100 antialiased selection:bg-unipaz-orange selection:text-white min-h-screen;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Glassmorphism & Soft Neumorphism */
+.glass-panel {
+  @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl;
+}
+
+.glass-panel-subtle {
+  @apply bg-slate-800/40 backdrop-blur-lg border border-white/10 rounded-2xl;
+}
+
+.glass-card-interactive {
+  @apply bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-xl rounded-3xl transition-all duration-300 hover:border-unipaz-orange/40 hover:scale-[1.01];
+}
+
+.glass-pill {
+  @apply px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md border;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 21, 38, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 85, 0, 0.6);
+}
