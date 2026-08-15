@@ -26,22 +26,22 @@ export default function ConstanciasEstudiantePage() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 sm:p-8 rounded-3xl shadow-xl">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
             Documentación y Titulación UNIPAZ
           </span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-white mt-1">
+        <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
           Constancia Oficial y Certificados PFI
         </h1>
-        <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl">
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
           Descarga tu constancia oficial de acreditación del Programa de Formación Integral con Sello Digital Criptográfico y código QR de validación institucional.
         </p>
       </div>
 
       {/* Main Certificate Card Preview */}
-      <div className="rounded-3xl bg-gradient-to-br from-unipaz-navy-deep via-unipaz-navy to-slate-950 border border-white/15 p-6 sm:p-10 shadow-2xl space-y-6 relative overflow-hidden">
+      <div className="rounded-3xl bg-gradient-to-br from-[#001833] via-[#002855] to-[#001226] border border-slate-700/60 p-6 sm:p-10 shadow-2xl space-y-6 relative overflow-hidden text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
@@ -53,7 +53,7 @@ export default function ConstanciasEstudiantePage() {
               <h3 className="text-xl font-black text-white">
                 Constancia General de Formación Integral
               </h3>
-              <p className="text-xs text-amber-300">
+              <p className="text-xs text-amber-300 font-semibold">
                 Folio Único Institucional · Validez Oficial para Titulación
               </p>
             </div>
@@ -71,16 +71,16 @@ export default function ConstanciasEstudiantePage() {
         {/* Resumen del Certificado */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div className="bg-slate-950/70 p-4 rounded-2xl border border-white/10 space-y-1">
-            <span className="text-slate-400">Estudiante Titular:</span>
-            <div className="font-bold text-white text-sm truncate">
+            <span className="text-slate-400 font-medium">Estudiante Titular:</span>
+            <div className="font-black text-white text-sm truncate">
               {currentUser.nombre} {currentUser.apellidos}
             </div>
-            <div className="font-mono text-slate-300">{currentUser.matricula}</div>
+            <div className="font-mono text-slate-300 font-bold">{currentUser.matricula}</div>
           </div>
 
           <div className="bg-slate-950/70 p-4 rounded-2xl border border-white/10 space-y-1">
-            <span className="text-slate-400">Total Horas Acreditadas:</span>
-            <div className="font-extrabold text-emerald-400 text-base">
+            <span className="text-slate-400 font-medium">Total Horas Acreditadas:</span>
+            <div className="font-black text-emerald-400 text-base">
               {progress.horasTotales.toFixed(2)} hrs
             </div>
             <div className="text-slate-400 text-[11px]">
@@ -89,8 +89,8 @@ export default function ConstanciasEstudiantePage() {
           </div>
 
           <div className="bg-slate-950/70 p-4 rounded-2xl border border-white/10 space-y-1">
-            <span className="text-slate-400">Escala de Evaluación:</span>
-            <div className="font-bold text-amber-300 text-sm">
+            <span className="text-slate-400 font-medium">Escala de Evaluación:</span>
+            <div className="font-black text-amber-300 text-sm">
               {progress.escala}
             </div>
             <div className="text-slate-400 text-[11px] truncate">
@@ -99,7 +99,7 @@ export default function ConstanciasEstudiantePage() {
           </div>
 
           <div className="bg-slate-950/70 p-4 rounded-2xl border border-white/10 space-y-1">
-            <span className="text-slate-400">Autenticación Digital:</span>
+            <span className="text-slate-400 font-medium">Autenticación Digital:</span>
             <div className="font-bold text-blue-300 flex items-center gap-1">
               <ShieldCheck className="w-4 h-4 text-blue-400" />
               Sello Criptográfico
@@ -112,36 +112,36 @@ export default function ConstanciasEstudiantePage() {
       </div>
 
       {/* Lista de Actividades Acreditadas */}
-      <section className="rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-xl space-y-4">
-        <h3 className="text-lg font-black text-white">
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-lg shadow-blue-950/5 dark:shadow-xl space-y-4">
+        <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
           Desglose de Actividades Oficialmente Validadas
         </h3>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-white/10 text-slate-400">
+              <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
                 <th className="py-3 px-3">Actividad</th>
                 <th className="py-3 px-3">Categoría</th>
                 <th className="py-3 px-3">Fecha de Acreditación</th>
                 <th className="py-3 px-3 text-right">Horas Otorgadas</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {attendances.map((att) => (
-                <tr key={att.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3 px-3 font-bold text-white">
+                <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <td className="py-3 px-3 font-black text-unipaz-navy dark:text-white">
                     {att.event?.titulo || 'Actividad Formativa'}
                   </td>
                   <td className="py-3 px-3">
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10 text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
                       {att.event?.categoria || 'General'}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-slate-400">
+                  <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-medium">
                     {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : 'Acreditado'}
                   </td>
-                  <td className="py-3 px-3 text-right font-mono font-bold text-emerald-400">
+                  <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
                     +{att.horas_acreditadas.toFixed(2)} hrs
                   </td>
                 </tr>

@@ -131,15 +131,15 @@ export default function AdminEventosManagerPage() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Top Header */}
-      <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
+          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
             Administración de Actividades PFI
           </span>
-          <h1 className="text-2xl sm:text-4xl font-black text-white mt-1">
+          <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
             Gestión y Creación de Eventos
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
             Alta de talleres extracurriculares, sesiones de PVC, simposios y control de cupos.
           </p>
         </div>
@@ -161,15 +161,15 @@ export default function AdminEventosManagerPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Buscar evento por título o categoría..."
-          className="w-full bg-slate-900/70 border border-white/15 rounded-2xl pl-11 pr-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-unipaz-orange"
+          className="w-full bg-white dark:bg-slate-900/70 border border-slate-200/90 dark:border-white/15 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange shadow-sm"
         />
       </div>
 
       {/* Tabla de Eventos */}
-      <div className="rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 shadow-xl overflow-x-auto">
+      <div className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-lg shadow-blue-950/5 dark:shadow-xl overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-white/10 text-slate-400">
+            <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
               <th className="py-3 px-3">Título de la Actividad</th>
               <th className="py-3 px-3">Categoría</th>
               <th className="py-3 px-3">Modalidad</th>
@@ -179,52 +179,52 @@ export default function AdminEventosManagerPage() {
               <th className="py-3 px-3 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
             {filtered.map((evt) => (
-              <tr key={evt.id} className="hover:bg-slate-800/40 transition-colors">
+              <tr key={evt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                 <td className="py-3.5 px-3">
-                  <div className="font-bold text-white text-sm">{evt.titulo}</div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="w-3 h-3 text-slate-500" />
+                  <div className="font-black text-unipaz-navy dark:text-white text-sm">{evt.titulo}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
+                    <MapPin className="w-3 h-3 text-unipaz-cobalt" />
                     {evt.ubicacion || 'Campus UNIPAZ'}
                     {evt.otp_online_code && (
-                      <span className="font-mono text-amber-300 font-bold ml-2">
+                      <span className="font-mono text-unipaz-orange dark:text-amber-300 font-bold ml-2">
                         OTP: {evt.otp_online_code}
                       </span>
                     )}
                   </div>
                 </td>
                 <td className="py-3.5 px-3">
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10 text-[11px] font-semibold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
                     {evt.categoria}
                   </span>
                 </td>
-                <td className="py-3.5 px-3 capitalize text-slate-300">
+                <td className="py-3.5 px-3 capitalize text-slate-600 dark:text-slate-300 font-medium">
                   {evt.modalidad}
                 </td>
-                <td className="py-3.5 px-3 text-slate-300">
-                  <div>{evt.fecha_evento}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">
+                <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
+                  <div className="font-semibold">{evt.fecha_evento}</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     {evt.hora_inicio} - {evt.hora_fin}
                   </div>
                 </td>
-                <td className="py-3.5 px-3 text-slate-300">
+                <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
                   {evt.cupo_maximo > 0 ? (
-                    <span className="font-mono">
+                    <span className="font-mono font-bold">
                       {evt.cupo_ocupado || 0} / {evt.cupo_maximo}
                     </span>
                   ) : (
                     <span className="text-slate-400">Ilimitado</span>
                   )}
                 </td>
-                <td className="py-3.5 px-3 font-mono font-bold text-unipaz-orange">
+                <td className="py-3.5 px-3 font-mono font-black text-unipaz-orange">
                   +{evt.horas_pfi.toFixed(2)}h
                 </td>
                 <td className="py-3.5 px-3 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleOpenEdit(evt)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
                       title="Editar Evento"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -235,7 +235,7 @@ export default function AdminEventosManagerPage() {
                           deleteEvent(evt.id);
                         }
                       }}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-400 transition-colors"
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-700 dark:text-slate-300 hover:text-rose-600 transition-colors shadow-sm"
                       title="Eliminar Evento"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -250,49 +250,49 @@ export default function AdminEventosManagerPage() {
 
       {/* Modal Crear / Editar */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-slate-900 border border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-white my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white my-8">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-black text-white">
+            <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
               {editingEvent ? 'Editar Actividad PFI' : 'Crear Nueva Actividad PFI'}
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Configura los detalles formativos, horas asignadas y cupos.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Título del Evento:</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Título del Evento:</label>
                 <input
                   type="text"
                   required
                   value={formData.titulo}
                   onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                   placeholder="Ej. Taller de Oratoria y Debate Forense"
-                  className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Descripción:</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción:</label>
                 <textarea
                   rows={3}
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                   placeholder="Objetivos y contenido del taller..."
-                  className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Categoría PFI:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Categoría PFI:</label>
                   <select
                     value={formData.categoria}
                     onChange={(e) => {
@@ -309,7 +309,7 @@ export default function AdminEventosManagerPage() {
                       if (cat === 'Campaña') hrs = 1.0;
                       setFormData({ ...formData, categoria: cat, horas_pfi: hrs });
                     }}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   >
                     {categories.map((c) => (
                       <option key={c} value={c}>
@@ -320,11 +320,11 @@ export default function AdminEventosManagerPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Modalidad:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Modalidad:</label>
                   <select
                     value={formData.modalidad}
                     onChange={(e) => setFormData({ ...formData, modalidad: e.target.value as EventModality })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   >
                     <option value="presencial">Presencial</option>
                     <option value="online">En Línea (Virtual)</option>
@@ -335,83 +335,83 @@ export default function AdminEventosManagerPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Fecha del Evento:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Fecha del Evento:</label>
                   <input
                     type="date"
                     required
                     value={formData.fecha_evento}
                     onChange={(e) => setFormData({ ...formData, fecha_evento: e.target.value })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Hora Inicio:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hora Inicio:</label>
                   <input
                     type="time"
                     required
                     value={formData.hora_inicio}
                     onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Hora Fin:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hora Fin:</label>
                   <input
                     type="time"
                     required
                     value={formData.hora_fin}
                     onChange={(e) => setFormData({ ...formData, hora_fin: e.target.value })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Horas PFI:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Horas PFI:</label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={formData.horas_pfi}
                     onChange={(e) => setFormData({ ...formData, horas_pfi: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Cupo Máximo (0=Ilimitado):</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Cupo Máximo (0=Ilimitado):</label>
                   <input
                     type="number"
                     value={formData.cupo_maximo}
                     onChange={(e) => setFormData({ ...formData, cupo_maximo: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white font-mono focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-unipaz-orange"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Código OTP (Eventos Virtuales):</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Código OTP (Eventos Virtuales):</label>
                   <input
                     type="text"
                     maxLength={6}
                     value={formData.otp_online_code}
                     onChange={(e) => setFormData({ ...formData, otp_online_code: e.target.value.toUpperCase() })}
                     placeholder="Ej. PVC202"
-                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono uppercase font-bold focus:outline-none focus:border-unipaz-orange"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Ubicación / Aula:</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ubicación / Aula:</label>
                 <input
                   type="text"
                   value={formData.ubicacion}
                   onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
                   placeholder="Ej. Aula Magna UNIPAZ, Edificio A"
-                  className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-unipaz-orange"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
                 />
               </div>
 
@@ -419,13 +419,13 @@ export default function AdminEventosManagerPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700"
+                  className="flex-1 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-xl bg-unipaz-orange text-slate-950 font-black hover:bg-orange-600 shadow-md"
+                  className="flex-1 py-3 rounded-xl bg-unipaz-orange text-white dark:text-slate-950 font-black hover:bg-orange-600 shadow-md"
                 >
                   {editingEvent ? 'Guardar Cambios' : 'Publicar Actividad'}
                 </button>

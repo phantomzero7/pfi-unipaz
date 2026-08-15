@@ -44,7 +44,7 @@ export default function EventosCatalogPage() {
   ];
 
   const modalities = [
-    { label: 'Todas', value: 'todas' },
+    { label: 'Todas las Modalidades', value: 'todas' },
     { label: 'Presencial', value: 'presencial' },
     { label: 'En Línea (Virtual)', value: 'online' },
     { label: 'Híbrido', value: 'hibrido' },
@@ -89,23 +89,23 @@ export default function EventosCatalogPage() {
     <div className="space-y-8 animate-fadeIn">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-emerald-500 text-slate-950 font-extrabold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-emerald-500 text-slate-950 font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce">
           <CheckCircle2 className="w-5 h-5" />
           {toastMessage}
         </div>
       )}
 
       {/* Header */}
-      <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 sm:p-8 rounded-3xl shadow-xl">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
+          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
             Oferta Extracurricular UNIPAZ
           </span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-white mt-1">
+        <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
           Catálogo de Actividades y Talleres PFI
         </h1>
-        <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl">
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
           Explora e inscríbete a conferencias, talleres extracurriculares, Plan de Vida y Carrera, brigadas sociales y clubes universitarios para acumular horas de titulación.
         </p>
 
@@ -119,7 +119,7 @@ export default function EventosCatalogPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por título o tema..."
-              className="w-full bg-slate-950/80 border border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-unipaz-orange"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange"
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function EventosCatalogPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-slate-950/80 border border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-unipaz-orange"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-semibold"
             >
               {categories.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -145,7 +145,7 @@ export default function EventosCatalogPage() {
             <select
               value={selectedModality}
               onChange={(e) => setSelectedModality(e.target.value)}
-              className="w-full bg-slate-950/80 border border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-unipaz-orange"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-semibold"
             >
               {modalities.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -156,19 +156,19 @@ export default function EventosCatalogPage() {
           </div>
 
           {/* Toggle Mis Inscripciones */}
-          <div className="flex bg-slate-950/80 p-1 rounded-2xl border border-white/10 text-xs">
+          <div className="flex bg-slate-100 dark:bg-slate-950/80 p-1 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
             <button
               onClick={() => setFilterState('todos')}
-              className={`flex-1 py-1.5 rounded-xl font-bold transition-all ${
-                filterState === 'todos' ? 'bg-unipaz-orange text-slate-950 shadow' : 'text-slate-400'
+              className={`flex-1 py-1.5 rounded-xl font-black transition-all ${
+                filterState === 'todos' ? 'bg-unipaz-navy text-white shadow' : 'text-slate-600 dark:text-slate-400'
               }`}
             >
               Todos ({events.length})
             </button>
             <button
               onClick={() => setFilterState('inscritos')}
-              className={`flex-1 py-1.5 rounded-xl font-bold transition-all ${
-                filterState === 'inscritos' ? 'bg-unipaz-orange text-slate-950 shadow' : 'text-slate-400'
+              className={`flex-1 py-1.5 rounded-xl font-black transition-all ${
+                filterState === 'inscritos' ? 'bg-unipaz-orange text-white dark:text-slate-950 shadow' : 'text-slate-600 dark:text-slate-400'
               }`}
             >
               Mis Cupos
@@ -179,12 +179,12 @@ export default function EventosCatalogPage() {
 
       {/* Grid de Actividades */}
       {filteredEvents.length === 0 ? (
-        <div className="text-center py-16 rounded-3xl bg-slate-900/40 border border-white/10 space-y-3">
-          <Calendar className="w-12 h-12 mx-auto text-slate-600" />
-          <h4 className="text-base font-bold text-white">
+        <div className="text-center py-16 rounded-3xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 space-y-3">
+          <Calendar className="w-12 h-12 mx-auto text-slate-400 dark:text-slate-600" />
+          <h4 className="text-base font-black text-unipaz-navy dark:text-white">
             No se encontraron actividades con los filtros seleccionados
           </h4>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             Prueba ajustando el término de búsqueda o cambiando la categoría seleccionada.
           </p>
           <button
@@ -194,7 +194,7 @@ export default function EventosCatalogPage() {
               setSelectedModality('todas');
               setFilterState('todos');
             }}
-            className="py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200"
+            className="py-2 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"
           >
             Limpiar Filtros
           </button>

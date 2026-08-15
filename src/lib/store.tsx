@@ -50,6 +50,11 @@ interface PFIContextType {
   getStudentById: (studentId: string) => UserProfile | undefined;
   getStudentByQuery: (query: string) => UserProfile | undefined;
   
+  // Theme Toggle
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+  
   // Stats
   resetToDefaultData: () => void;
 }
@@ -68,6 +73,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [events, setEvents] = useState<PFIEvent[]>(MOCK_EVENTS);
   const [attendances, setAttendances] = useState<EventAttendance[]>(MOCK_ATTENDANCES);
   const [currentUserId, setCurrentUserId] = useState<string>('usr-student-01');
+  const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Cargar de LocalStorage al iniciar
@@ -77,17 +83,50 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
       const savedAttendances = localStorage.getItem(STORAGE_KEYS.ATTENDANCES);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
+      const savedTheme = localStorage.getItem('unipaz_pfi_theme') as 'light' | 'dark' | null;
 
       if (savedProfiles) setProfiles(JSON.parse(savedProfiles));
       if (savedEvents) setEvents(JSON.parse(savedEvents));
       if (savedAttendances) setAttendances(JSON.parse(savedAttendances));
       if (savedUserId) setCurrentUserId(savedUserId);
+      if (savedTheme) {
+        setThemeState(savedTheme);
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } else {
+        // Default a light institucional
+        document.documentElement.classList.remove('dark');
+      }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
     } finally {
       setIsLoaded(true);
     }
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setThemeState(nextTheme);
+    localStorage.setItem('unipaz_pfi_theme', nextTheme);
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+    localStorage.setItem('unipaz_pfi_theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   // Guardar en LocalStorage al haber cambios
   useEffect(() => {
@@ -467,6 +506,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getEventById,
         getStudentById,
         getStudentByQuery,
+        theme,
+        toggleTheme,
+        setTheme,
         resetToDefaultData,
       }}
     >
