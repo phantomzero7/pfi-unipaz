@@ -55,7 +55,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 dark:bg-slate-950/70 border-b border-slate-200/80 dark:border-white/10 shadow-sm dark:shadow-lg transition-colors duration-300">
+      <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/95 dark:bg-slate-950/80 border-b border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-lg transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo Oficial y Nombre Institucional */}
@@ -108,16 +108,22 @@ export const Navbar: React.FC = () => {
 
             {/* Acciones Rápidas, Toggle Claro/Oscuro y Perfil */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Botón Toggle Claro / Oscuro */}
+              {/* Botón Toggle Claro / Oscuro Destacado */}
               <button
                 onClick={toggleTheme}
-                title={theme === 'dark' ? 'Cambiar a Modo Claro Institucional' : 'Cambiar a Modo Oscuro'}
-                className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-amber-300 transition-all hover:scale-105 shadow-sm"
+                className="flex items-center gap-2 py-2 px-3 sm:px-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-white/15 text-slate-800 dark:text-amber-300 font-extrabold text-xs shadow-sm transition-all hover:scale-105"
+                title="Cambiar Modo Claro / Oscuro"
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 text-amber-400" />
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <span className="hidden sm:inline text-amber-300">Modo Claro</span>
+                  </>
                 ) : (
-                  <Moon className="w-4 h-4 text-unipaz-navy" />
+                  <>
+                    <Moon className="w-4 h-4 text-unipaz-navy" />
+                    <span className="hidden sm:inline text-unipaz-navy">Modo Oscuro</span>
+                  </>
                 )}
               </button>
 
@@ -254,6 +260,26 @@ export const Navbar: React.FC = () => {
           })}
         </div>
       </header>
+
+      {/* Floating Toggle Button (Visible in Bottom Corner for 100% Ease of Use) */}
+      <div className="fixed bottom-6 left-6 z-40">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white dark:bg-slate-900 border-2 border-unipaz-navy dark:border-amber-400/50 shadow-2xl text-unipaz-navy dark:text-amber-300 font-black text-xs transition-all hover:scale-110 active:scale-95 backdrop-blur-md"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" />
+              <span>☀️ Cambiar a Modo Claro</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-unipaz-navy" />
+              <span>🌙 Cambiar a Modo Oscuro</span>
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Modal Credencial QR del Estudiante */}
       {showQrCardModal && (
