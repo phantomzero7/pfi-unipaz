@@ -96,20 +96,20 @@ export default function EventosCatalogPage() {
       )}
 
       {/* Header */}
-      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-sm dark:shadow-xl">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
+          <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
             Oferta Extracurricular UNIPAZ
           </span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
+        <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
           Catálogo de Actividades y Talleres PFI
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
           Explora e inscríbete a conferencias, talleres extracurriculares, Plan de Vida y Carrera, brigadas sociales y clubes universitarios para acumular horas de titulación.
         </p>
 
-        {/* Barra de Filtros y Búsqueda */}
+        {/* Barra de Filtros y Búsqueda Refinada */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Input de Búsqueda */}
           <div className="relative">
@@ -119,7 +119,7 @@ export default function EventosCatalogPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por título o tema..."
-              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange"
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function EventosCatalogPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-semibold"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-medium"
             >
               {categories.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -145,7 +145,7 @@ export default function EventosCatalogPage() {
             <select
               value={selectedModality}
               onChange={(e) => setSelectedModality(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-semibold"
+              className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-unipaz-orange font-medium"
             >
               {modalities.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -155,20 +155,24 @@ export default function EventosCatalogPage() {
             </select>
           </div>
 
-          {/* Toggle Mis Inscripciones */}
-          <div className="flex bg-slate-100 dark:bg-slate-950/80 p-1 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
+          {/* Pestañas Segmented Control Elegante */}
+          <div className="flex bg-slate-100 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-white/10 text-xs">
             <button
               onClick={() => setFilterState('todos')}
-              className={`flex-1 py-1.5 rounded-xl font-black transition-all ${
-                filterState === 'todos' ? 'bg-unipaz-navy text-white shadow' : 'text-slate-600 dark:text-slate-400'
+              className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
+                filterState === 'todos'
+                  ? 'bg-white dark:bg-slate-800 text-unipaz-navy dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
               Todos ({events.length})
             </button>
             <button
               onClick={() => setFilterState('inscritos')}
-              className={`flex-1 py-1.5 rounded-xl font-black transition-all ${
-                filterState === 'inscritos' ? 'bg-unipaz-orange text-white dark:text-slate-950 shadow' : 'text-slate-600 dark:text-slate-400'
+              className={`flex-1 py-1.5 rounded-lg font-bold transition-all ${
+                filterState === 'inscritos'
+                  ? 'bg-unipaz-orange text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
               Mis Cupos
@@ -181,7 +185,7 @@ export default function EventosCatalogPage() {
       {filteredEvents.length === 0 ? (
         <div className="text-center py-16 rounded-3xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 space-y-3">
           <Calendar className="w-12 h-12 mx-auto text-slate-400 dark:text-slate-600" />
-          <h4 className="text-base font-black text-unipaz-navy dark:text-white">
+          <h4 className="text-base font-bold text-unipaz-navy dark:text-white">
             No se encontraron actividades con los filtros seleccionados
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
