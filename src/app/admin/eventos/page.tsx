@@ -11,6 +11,7 @@ import {
   CheckSquare,
   Clock,
   Compass,
+  Copy,
   Download,
   Edit2,
   Filter,
@@ -22,6 +23,7 @@ import {
   Mic,
   Plus,
   QrCode,
+  RotateCcw,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -35,6 +37,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { KioskProjectorModal } from '@/components/KioskProjectorModal';
+import { SpeakerCertificatePdfModal } from '@/components/SpeakerCertificatePdfModal';
 import { exportEventAttendanceToCsv } from '@/lib/export-utils';
 import { getRoleBadgeInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
@@ -60,6 +63,12 @@ export default function AdminEventosManagerPage() {
   const [editingEvent, setEditingEvent] = useState<PFIEvent | null>(null);
   const [selectedEventForStaffReview, setSelectedEventForStaffReview] = useState<PFIEvent | null>(null);
   const [selectedKioskEvent, setSelectedKioskEvent] = useState<PFIEvent | null>(null);
+  const [selectedSpeakerEvent, setSelectedSpeakerEvent] = useState<PFIEvent | null>(null);
+  const [selectedCloneEvent, setSelectedCloneEvent] = useState<PFIEvent | null>(null);
+  const [cloneMode, setCloneMode] = useState<'simple' | 'recurring'>('simple');
+  const [cloneNewDate, setCloneNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [recurringFrequency, setRecurringFrequency] = useState<'semanal' | 'quincenal' | 'mensual'>('semanal');
+  const [recurringSessionsCount, setRecurringSessionsCount] = useState<number>(4);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Estados de Asignación Obligatoria en el Modal
@@ -294,6 +303,76 @@ export default function AdminEventosManagerPage() {
     setIsModalOpen(false);
   };
 
+  const handleExecuteClone = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCloneEvent) return;
+
+    if (cloneMode === 'simple') {
+      createEvent({
+        titulo: `${selectedCloneEvent.titulo} (Copia)`,
+        descripcion: selectedCloneEvent.descripcion,
+        categoria: selectedCloneEvent.categoria,
+        subcategoria: selectedCloneEvent.subcategoria,
+        modalidad: selectedCloneEvent.modalidad,
+        fecha_evento: cloneNewDate,
+        hora_inicio: selectedCloneEvent.hora_inicio,
+        hora_fin: selectedCloneEvent.hora_fin,
+        horas_pfi: selectedCloneEvent.horas_pfi,
+        permite_staff: selectedCloneEvent.permite_staff,
+        cupo_staff: selectedCloneEvent.cupo_staff,
+        horas_staff: selectedCloneEvent.horas_staff,
+        horas_ponente: selectedCloneEvent.horas_ponente,
+        cupo_maximo: selectedCloneEvent.cupo_maximo,
+        enlace_virtual: selectedCloneEvent.enlace_virtual,
+        otp_online_code: selectedCloneEvent.otp_online_code,
+        ubicacion: selectedCloneEvent.ubicacion,
+        instructor_titular: selectedCloneEvent.instructor_titular,
+        instructor_cargo: selectedCloneEvent.instructor_cargo,
+        activo: true,
+        creado_por: currentUser.id,
+      });
+
+      showToast(`✓ Actividad clonada con éxito para la fecha ${cloneNewDate}.`);
+    } else {
+      const baseDate = new Date(`${cloneNewDate}T12:00:00`);
+      const daysToAdd = recurringFrequency === 'semanal' ? 7 : recurringFrequency === 'quincenal' ? 14 : 30;
+
+      for (let i = 1; i <= recurringSessionsCount; i++) {
+        const sessionDate = new Date(baseDate);
+        sessionDate.setDate(baseDate.getDate() + (i - 1) * daysToAdd);
+        const dateStr = sessionDate.toISOString().split('T')[0];
+
+        createEvent({
+          titulo: `${selectedCloneEvent.titulo} - Sesión ${i}/${recurringSessionsCount}`,
+          descripcion: selectedCloneEvent.descripcion,
+          categoria: selectedCloneEvent.categoria,
+          subcategoria: selectedCloneEvent.subcategoria,
+          modalidad: selectedCloneEvent.modalidad,
+          fecha_evento: dateStr,
+          hora_inicio: selectedCloneEvent.hora_inicio,
+          hora_fin: selectedCloneEvent.hora_fin,
+          horas_pfi: selectedCloneEvent.horas_pfi,
+          permite_staff: selectedCloneEvent.permite_staff,
+          cupo_staff: selectedCloneEvent.cupo_staff,
+          horas_staff: selectedCloneEvent.horas_staff,
+          horas_ponente: selectedCloneEvent.horas_ponente,
+          cupo_maximo: selectedCloneEvent.cupo_maximo,
+          enlace_virtual: selectedCloneEvent.enlace_virtual,
+          otp_online_code: selectedCloneEvent.otp_online_code,
+          ubicacion: selectedCloneEvent.ubicacion,
+          instructor_titular: selectedCloneEvent.instructor_titular,
+          instructor_cargo: selectedCloneEvent.instructor_cargo,
+          activo: true,
+          creado_por: currentUser.id,
+        });
+      }
+
+      showToast(`✓ Serie recurrente de ${recurringSessionsCount} sesiones generada exitosamente.`);
+    }
+
+    setSelectedCloneEvent(null);
+  };
+
   const filtered = events.filter(
     (e) =>
       e.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -414,6 +493,23 @@ export default function AdminEventosManagerPage() {
                   </td>
                   <td className="py-3.5 px-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setSelectedSpeakerEvent(evt)}
+                        className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/20 hover:bg-amber-100 text-amber-700 dark:text-amber-300 transition-colors shadow-sm"
+                        title="Emitir Reconocimiento Oficial a Ponente / Instructor"
+                      >
+                        <Mic className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCloneEvent(evt);
+                          setCloneNewDate(evt.fecha_evento);
+                        }}
+                        className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/20 hover:bg-blue-100 text-blue-700 dark:text-blue-300 transition-colors shadow-sm"
+                        title="Clonar Actividad o Crear Serie Recurrente"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => setSelectedKioskEvent(evt)}
                         className="p-1.5 rounded-lg bg-orange-50 dark:bg-unipaz-orange/20 hover:bg-orange-100 text-unipaz-orange transition-colors shadow-sm"
@@ -1024,6 +1120,131 @@ export default function AdminEventosManagerPage() {
           onClose={() => setSelectedKioskEvent(null)}
           event={selectedKioskEvent}
         />
+      )}
+
+      {/* MODAL RECONOCIMIENTO OFICIAL PARA PONENTE / INSTRUCTOR */}
+      {selectedSpeakerEvent && (
+        <SpeakerCertificatePdfModal
+          isOpen={Boolean(selectedSpeakerEvent)}
+          onClose={() => setSelectedSpeakerEvent(null)}
+          event={selectedSpeakerEvent}
+        />
+      )}
+
+      {/* MODAL CLONADOR Y GENERADOR DE SERIES RECURRENTES */}
+      {selectedCloneEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 shadow-2xl text-slate-900 dark:text-white space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Copy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-black text-sm text-unipaz-navy dark:text-white">
+                  Clonación & Serie Recurrente
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedCloneEvent(null)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Duplica <strong className="text-unipaz-navy dark:text-white">"{selectedCloneEvent.titulo}"</strong> conservando todas las horas, roles y configuraciones.
+            </p>
+
+            <form onSubmit={handleExecuteClone} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold mb-1.5">Modalidad de Clonación:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCloneMode('simple')}
+                    className={`py-2 px-3 rounded-xl border text-center font-bold text-xs transition-all ${
+                      cloneMode === 'simple'
+                        ? 'bg-blue-500 text-white border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    Clon Simple (1 Fecha)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCloneMode('recurring')}
+                    className={`py-2 px-3 rounded-xl border text-center font-bold text-xs transition-all ${
+                      cloneMode === 'recurring'
+                        ? 'bg-blue-500 text-white border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    Serie Recurrente
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold mb-1">
+                  {cloneMode === 'simple' ? 'Nueva Fecha del Evento:' : 'Fecha de Inicio de la Serie:'}
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={cloneNewDate}
+                  onChange={(e) => setCloneNewDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs text-slate-900 dark:text-white"
+                />
+              </div>
+
+              {cloneMode === 'recurring' && (
+                <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-500/30">
+                  <div>
+                    <label className="block font-bold mb-1 text-[11px]">Frecuencia:</label>
+                    <select
+                      value={recurringFrequency}
+                      onChange={(e) => setRecurringFrequency(e.target.value as any)}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-semibold text-xs"
+                    >
+                      <option value="semanal">Semanal (+7 días)</option>
+                      <option value="quincenal">Quincenal (+14 días)</option>
+                      <option value="mensual">Mensual (+30 días)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1 text-[11px]">N° Sesiones:</label>
+                    <select
+                      value={recurringSessionsCount}
+                      onChange={(e) => setRecurringSessionsCount(parseInt(e.target.value))}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-semibold text-xs"
+                    >
+                      <option value={2}>2 sesiones</option>
+                      <option value={4}>4 sesiones (1 mes)</option>
+                      <option value={6}>6 sesiones</option>
+                      <option value={8}>8 sesiones (2 meses)</option>
+                      <option value={12}>12 sesiones (3 meses)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCloneEvent(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
+                >
+                  {cloneMode === 'simple' ? 'Duplicar Actividad' : `Generar ${recurringSessionsCount} Sesiones`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
