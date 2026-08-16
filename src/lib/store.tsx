@@ -185,6 +185,17 @@ interface PFIContextType {
     hoursCredited?: number;
   };
   validateAttendanceManually: (attendanceId: string, status: AttendanceStatus, customHours?: number, role?: ParticipantRole) => void;
+  bulkAccreditFromMeet: (
+    eventId: string,
+    records: Array<{
+      studentId: string;
+      durationMinutes: number;
+      attendancePercent: number;
+      accredit: boolean;
+      meetEmail: string;
+      meetName: string;
+    }>
+  ) => { success: boolean; message: string; accreditedCount: number; rejectedCount: number };
   
   // Student Progress
   getStudentProgress: (studentId?: string) => PFIProgressSummary;
@@ -1196,6 +1207,99 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const bulkAccreditFromMeet = (
+    eventId: string,
+    records: Array<{
+      studentId: string;
+      durationMinutes: number;
+      attendancePercent: number;
+      accredit: boolean;
+      meetEmail: string;
+      meetName: string;
+    }>
+  ) => {
+    const event = events.find((e) => e.id === eventId);
+    if (!event) return { success: false, message: 'Evento no encontrado.', accreditedCount: 0, rejectedCount: 0 };
+
+    let accreditedCount = 0;
+    let rejectedCount = 0;
+
+    setAttendances((prev) => {
+      let updatedList = [...prev];
+
+      records.forEach((rec) => {
+        const student = profiles.find((p) => p.id === rec.studentId);
+        if (!student) return;
+
+        const existing = updatedList.find((a) => a.event_id === eventId && a.student_id === rec.studentId);
+
+        if (rec.accredit) {
+          accreditedCount++;
+          if (existing) {
+            updatedList = updatedList.map((a) =>
+              a.id === existing.id
+                ? {
+                    ...a,
+                    status: 'asistio' as AttendanceStatus,
+                    horas_acreditadas: event.horas_pfi,
+                    check_in_timestamp: `${event.fecha_evento}T${event.hora_inicio}:00`,
+                    check_out_timestamp: `${event.fecha_evento}T${event.hora_fin}:00`,
+                    validado_por: currentUser.id,
+                    notes: `Acreditado vía reporte Google Meet (${rec.durationMinutes} min / ${rec.attendancePercent}% permanencia).`,
+                  }
+                : a
+            );
+          } else {
+            const newAtt: EventAttendance = {
+              id: `att-meet-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              event_id: eventId,
+              student_id: rec.studentId,
+              status: 'asistio' as AttendanceStatus,
+              rol_participacion: 'asistente',
+              horas_acreditadas: event.horas_pfi,
+              check_in_timestamp: `${event.fecha_evento}T${event.hora_inicio}:00`,
+              check_out_timestamp: `${event.fecha_evento}T${event.hora_fin}:00`,
+              validado_por: currentUser.id,
+              notes: `Acreditado vía reporte Google Meet (${rec.durationMinutes} min / ${rec.attendancePercent}% permanencia).`,
+              created_at: new Date().toISOString(),
+            };
+            updatedList.push(newAtt);
+          }
+
+          addNotification({
+            user_id: rec.studentId,
+            titulo: '🎉 Horas PFI Acreditadas (Google Meet)',
+            mensaje: `Se han acreditado +${event.horas_pfi} hrs de "${event.titulo}" tras validar tu permanencia en la sesión virtual de Meet.`,
+            tipo: 'success',
+          });
+        } else {
+          rejectedCount++;
+          if (existing) {
+            updatedList = updatedList.map((a) =>
+              a.id === existing.id
+                ? {
+                    ...a,
+                    status: 'incompleto' as AttendanceStatus,
+                    horas_acreditadas: 0,
+                    notes: `Rechazado: permanencia insuficiente en Meet (${rec.durationMinutes} min / ${rec.attendancePercent}%).`,
+                  }
+                : a
+            );
+          }
+        }
+      });
+
+      return updatedList;
+    });
+
+    return {
+      success: true,
+      message: `Procesamiento completado: ${accreditedCount} alumnos acreditados (+${event.horas_pfi}h) y ${rejectedCount} no acreditados por permanencia insuficiente.`,
+      accreditedCount,
+      rejectedCount,
+    };
+  };
+
   const resetToDefaultData = () => {
     setProfiles(MOCK_PROFILES);
     setEvents(MOCK_EVENTS);
@@ -1249,6 +1353,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         checkOutStudent,
         validateOnlineOTP,
         validateAttendanceManually,
+        bulkAccreditFromMeet,
         getStudentProgress,
         getStudentAttendances,
         getEventById,

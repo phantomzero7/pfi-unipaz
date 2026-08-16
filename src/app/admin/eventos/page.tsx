@@ -33,9 +33,11 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  Video,
   X,
   XCircle,
 } from 'lucide-react';
+import { GoogleMeetAttendanceModal } from '@/components/GoogleMeetAttendanceModal';
 import { KioskProjectorModal } from '@/components/KioskProjectorModal';
 import { SpeakerCertificatePdfModal } from '@/components/SpeakerCertificatePdfModal';
 import { exportEventAttendanceToCsv } from '@/lib/export-utils';
@@ -65,6 +67,7 @@ export default function AdminEventosManagerPage() {
   const [selectedKioskEvent, setSelectedKioskEvent] = useState<PFIEvent | null>(null);
   const [selectedSpeakerEvent, setSelectedSpeakerEvent] = useState<PFIEvent | null>(null);
   const [selectedCloneEvent, setSelectedCloneEvent] = useState<PFIEvent | null>(null);
+  const [selectedMeetEvent, setSelectedMeetEvent] = useState<PFIEvent | null>(null);
   const [cloneMode, setCloneMode] = useState<'simple' | 'recurring'>('simple');
   const [cloneNewDate, setCloneNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [recurringFrequency, setRecurringFrequency] = useState<'semanal' | 'quincenal' | 'mensual'>('semanal');
@@ -509,6 +512,13 @@ export default function AdminEventosManagerPage() {
                         title="Clonar Actividad o Crear Serie Recurrente"
                       >
                         <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setSelectedMeetEvent(evt)}
+                        className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-500/20 hover:bg-teal-100 text-teal-700 dark:text-teal-300 transition-colors shadow-sm"
+                        title="Importar y Acreditar Asistencia de Google Meet (CSV)"
+                      >
+                        <Video className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setSelectedKioskEvent(evt)}
@@ -1245,6 +1255,15 @@ export default function AdminEventosManagerPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL AUDITORÍA Y ACREDITACIÓN MASIVA DE GOOGLE MEET */}
+      {selectedMeetEvent && (
+        <GoogleMeetAttendanceModal
+          isOpen={Boolean(selectedMeetEvent)}
+          onClose={() => setSelectedMeetEvent(null)}
+          event={selectedMeetEvent}
+        />
       )}
     </div>
   );
