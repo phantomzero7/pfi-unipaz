@@ -34,7 +34,7 @@ export const Navbar: React.FC = () => {
   const studentLinks = [
     { href: '/estudiante', label: 'Mi Dashboard', icon: LayoutDashboard },
     { href: '/estudiante/eventos', label: 'Catálogo de Actividades', icon: Calendar },
-    { href: '/estudiante/pvc', label: 'Plan de Vida y Carrera', icon: Compass },
+    { href: '/estudiante/pvc', label: 'PVC y Talleres', icon: Compass },
     { href: '/estudiante/constancias', label: 'Mis Constancias', icon: FileCheck },
   ];
 

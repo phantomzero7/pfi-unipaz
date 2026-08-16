@@ -20,16 +20,23 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { CertificatePdfModal } from '@/components/CertificatePdfModal';
+import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
 import { usePFI } from '@/lib/store';
+import { EventAttendance, PFIEvent } from '@/lib/types';
 
 export default function ConstanciasEstudiantePage() {
-  const { currentUser, getStudentProgress, getStudentAttendances } = usePFI();
-  const [showCertModal, setShowCertModal] = useState(false);
+  const { currentUser, getStudentProgress, getStudentAttendances, events } = usePFI();
+  const [showGeneralCertModal, setShowGeneralCertModal] = useState(false);
+  const [selectedWorkshopCert, setSelectedWorkshopCert] = useState<{
+    event: PFIEvent;
+    attendance: EventAttendance;
+  } | null>(null);
 
   const progress = getStudentProgress();
   const attendances = getStudentAttendances().filter((a) => a.status === 'asistio');
   const canGenerateCertificate = progress.horasTotales >= 400;
   const missingHours = Math.max(0, 400 - progress.horasTotales);
+  const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -44,11 +51,11 @@ export default function ConstanciasEstudiantePage() {
           Constancia Oficial y Certificados PFI
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Descarga tu constancia oficial de acreditación del Programa de Formación Integral con Sello Digital Criptográfico y código QR de validación institucional.
+          Descarga tu constancia general de acreditación de titulación (a partir de 400h) y las constancias individuales en PDF de cada taller y actividad que hayas acreditado.
         </p>
       </div>
 
-      {/* Alerta si NO cumple las 400 horas mínimas */}
+      {/* Alerta si NO cumple las 400 horas mínimas para la constancia general */}
       {!canGenerateCertificate && (
         <div className="rounded-3xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-500/30 p-6 shadow-sm space-y-4 text-slate-800 dark:text-amber-200">
           <div className="flex items-start gap-3">
@@ -57,10 +64,10 @@ export default function ConstanciasEstudiantePage() {
             </div>
             <div className="space-y-1">
               <h4 className="text-base font-black text-amber-950 dark:text-amber-200">
-                Constancia de Acreditación Bloqueada
+                Constancia General de Titulación Bloqueada (&lt; 400 hrs)
               </h4>
               <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-300/90">
-                De acuerdo con el Reglamento de Titulación de UNIPAZ, se requiere acumular un mínimo de <strong>400.00 horas acreditadas</strong> para la emisión de la Constancia Oficial. Actualmente cuentas con <strong>{progress.horasTotales.toFixed(2)} horas</strong> (te faltan <strong>{missingHours.toFixed(2)} horas</strong>).
+                De acuerdo con el Reglamento de Titulación de UNIPAZ, se requiere acumular un mínimo de <strong>400.00 horas acreditadas</strong> para la emisión de la Constancia General. Actualmente cuentas con <strong>{progress.horasTotales.toFixed(2)} horas</strong> (te faltan <strong>{missingHours.toFixed(2)} horas</strong>).
               </p>
             </div>
           </div>
@@ -68,7 +75,7 @@ export default function ConstanciasEstudiantePage() {
           {/* Barra de Progreso hacia 400 hrs */}
           <div className="space-y-1.5 pt-2">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-amber-900 dark:text-amber-300">Avance para Constancia:</span>
+              <span className="text-amber-900 dark:text-amber-300">Avance para Constancia General:</span>
               <span className="font-mono text-amber-950 dark:text-amber-200">
                 {progress.horasTotales.toFixed(1)} / 400.0 hrs ({Math.min(100, Math.round((progress.horasTotales / 400) * 100))}%)
               </span>
@@ -103,7 +110,7 @@ export default function ConstanciasEstudiantePage() {
             </div>
             <div>
               <h3 className="text-xl font-black text-white">
-                Constancia General de Formación Integral
+                Constancia General de Formación Integral (Titulación)
               </h3>
               <p className="text-xs text-amber-300 font-semibold">
                 Folio Único Institucional · Validez Oficial para Titulación
@@ -113,7 +120,7 @@ export default function ConstanciasEstudiantePage() {
 
           {canGenerateCertificate ? (
             <button
-              onClick={() => setShowCertModal(true)}
+              onClick={() => setShowGeneralCertModal(true)}
               className="py-3.5 px-6 rounded-full bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
             >
               <Download className="w-4 h-4" />
@@ -170,11 +177,16 @@ export default function ConstanciasEstudiantePage() {
         </div>
       </div>
 
-      {/* Lista de Actividades Acreditadas */}
+      {/* Lista de Talleres y Actividades Acreditadas con Descarga Individual */}
       <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-4">
-        <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
-          Desglose de Actividades Oficialmente Validadas
-        </h3>
+        <div>
+          <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
+            Constancias Individuales por Taller y Actividad Acreditada
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Descarga la constancia individual con valor curricular y sello digital de cada taller completado:
+          </p>
+        </div>
 
         {attendances.length === 0 ? (
           <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
@@ -185,44 +197,70 @@ export default function ConstanciasEstudiantePage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
-                  <th className="py-3 px-3">Actividad</th>
+                  <th className="py-3 px-3">Actividad / Taller</th>
                   <th className="py-3 px-3">Categoría</th>
-                  <th className="py-3 px-3">Fecha de Acreditación</th>
-                  <th className="py-3 px-3 text-right">Horas Otorgadas</th>
+                  <th className="py-3 px-3">Fecha</th>
+                  <th className="py-3 px-3 text-right">Horas</th>
+                  <th className="py-3 px-3 text-right">Constancia Individual</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {attendances.map((att) => (
-                  <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-3 font-black text-unipaz-navy dark:text-white">
-                      {att.event?.titulo || 'Actividad Formativa'}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
-                        {att.event?.categoria || 'General'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-medium">
-                      {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : 'Acreditado'}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
-                      +{att.horas_acreditadas.toFixed(2)} hrs
-                    </td>
-                  </tr>
-                ))}
+                {attendances.map((att) => {
+                  const ev = att.event || eventsMap.get(att.event_id);
+                  if (!ev) return null;
+
+                  return (
+                    <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 px-3 font-black text-unipaz-navy dark:text-white">
+                        {ev.titulo}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
+                          {ev.categoria}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 font-medium">
+                        {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : ev.fecha_evento}
+                      </td>
+                      <td className="py-3.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
+                        +{att.horas_acreditadas.toFixed(2)} hrs
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <button
+                          onClick={() => setSelectedWorkshopCert({ event: ev, attendance: att })}
+                          className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-unipaz-orange hover:text-white dark:hover:bg-unipaz-orange text-unipaz-navy dark:text-white text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-white/10 shadow-sm"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Descargar PDF
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
 
-      {/* Modal del Certificado */}
-      {showCertModal && canGenerateCertificate && (
+      {/* Modal del Certificado General */}
+      {showGeneralCertModal && canGenerateCertificate && (
         <CertificatePdfModal
           student={currentUser}
           progress={progress}
-          isOpen={showCertModal}
-          onClose={() => setShowCertModal(false)}
+          isOpen={showGeneralCertModal}
+          onClose={() => setShowGeneralCertModal(false)}
+        />
+      )}
+
+      {/* Modal del Certificado Individual de Taller */}
+      {selectedWorkshopCert && (
+        <WorkshopCertificatePdfModal
+          student={currentUser}
+          event={selectedWorkshopCert.event}
+          attendance={selectedWorkshopCert.attendance}
+          isOpen={Boolean(selectedWorkshopCert)}
+          onClose={() => setSelectedWorkshopCert(null)}
         />
       )}
     </div>

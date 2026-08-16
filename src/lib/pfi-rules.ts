@@ -8,21 +8,21 @@ export const PFI_RULES = {
   // Requisitos obligatorios
   TALLERES_EXTRACURRICULARES_CANTIDAD: 3,
   TALLERES_EXTRACURRICULARES_HORAS_UNITARIAS: 16.67,
-  TALLERES_EXTRACURRICULARES_TOTAL_HORAS: 50.0,
+  TALLERES_EXTRACURRICULARES_TOTAL_HORAS: 50.0, // Tope máximo acreditable
   
   TALLER_LIDERAZGO_CANTIDAD: 1,
-  TALLER_LIDERAZGO_TOTAL_HORAS: 10.0,
+  TALLER_LIDERAZGO_TOTAL_HORAS: 10.0, // Tope máximo acreditable
   
   PVC_HORAS_UNITARIAS: 25.0,
-  PVC_TOTAL_HORAS: 75.0,
+  PVC_TOTAL_HORAS: 75.0, // Tope máximo (PVC I, II, III)
   
   // Catálogo de Actividades Formativas (horas por actividad)
   CATALOGO_HORAS: {
     'Investigación': 100.00,       // Artículos, Ponencias, Proyectos
     'Club Anual': 33.34,           // Lectura, debate, altruistas
     'PVC': 25.00,                  // PVC I, II, III
-    'Taller Extracurricular': 16.67,// Culturales, Deportivos, Sociales
-    'Taller Liderazgo': 10.00,     // Inclusión, Equidad, Liderazgo
+    'Taller Extracurricular': 16.67,// Culturales, Deportivos, Sociales (Máx 3)
+    'Taller Liderazgo': 10.00,     // Inclusión, Equidad, Liderazgo (Máx 1)
     'Simposio': 5.56,              // Simposios y Congresos
     'Jornada Social': 5.00,        // Jornadas y Ferias
     'Cine Club': 2.50,             // Cine club, café literario, donación libros
@@ -73,6 +73,10 @@ export function calculateEvaluationScale(horasTotales: number): {
 
 /**
  * Procesa el resumen de avance PFI de un estudiante a partir de sus asistencias
+ * Aplicando la regla de tope:
+ * - Talleres extracurriculares: máx 3 generan horas (hasta 50h).
+ * - Taller de liderazgo: máx 1 genera horas (hasta 10h).
+ * - PVC: máx 3 módulos (hasta 75h).
  */
 export function calculateStudentPFIProgress(
   attendances: EventAttendance[],
@@ -81,15 +85,15 @@ export function calculateStudentPFIProgress(
   let totalHoras = 0;
   
   let extraTalleresCount = 0;
-  let extraTalleresHoras = 0;
+  let extraTalleresHorasAcreditables = 0;
   
   let liderazgoCount = 0;
-  let liderazgoHoras = 0;
+  let liderazgoHorasAcreditables = 0;
   
   let pvc1 = false;
   let pvc2 = false;
   let pvc3 = false;
-  let pvcHoras = 0;
+  let pvcHorasAcreditables = 0;
   
   const desglose: Record<string, { horas: number; cantidad: number }> = {};
   
@@ -98,50 +102,68 @@ export function calculateStudentPFIProgress(
     if (att.status !== 'asistio' && att.horas_acreditadas <= 0) continue;
     
     const event = att.event || eventsMap.get(att.event_id);
-    const horas = att.horas_acreditadas > 0 ? Number(att.horas_acreditadas) : (event?.horas_pfi || 0);
-    
-    totalHoras += horas;
-    
+    const horasNominales = att.horas_acreditadas > 0 ? Number(att.horas_acreditadas) : (event?.horas_pfi || 0);
     const cat = event?.categoria || 'General';
+    
+    let horasEfectivas = horasNominales;
+
+    // Regla de tope para Talleres Extracurriculares (Máx 3 talleres / 50 hrs)
+    if (cat === 'Taller Extracurricular') {
+      extraTalleresCount++;
+      if (extraTalleresCount <= PFI_RULES.TALLERES_EXTRACURRICULARES_CANTIDAD && extraTalleresHorasAcreditables < PFI_RULES.TALLERES_EXTRACURRICULARES_TOTAL_HORAS) {
+        const resto = PFI_RULES.TALLERES_EXTRACURRICULARES_TOTAL_HORAS - extraTalleresHorasAcreditables;
+        horasEfectivas = Math.min(horasNominales, resto);
+        extraTalleresHorasAcreditables += horasEfectivas;
+      } else {
+        horasEfectivas = 0; // Excede los 3 talleres obligatorios
+      }
+    }
+    
+    // Regla de tope para Taller de Liderazgo (Máx 1 taller / 10 hrs)
+    else if (cat === 'Taller Liderazgo') {
+      liderazgoCount++;
+      if (liderazgoCount <= PFI_RULES.TALLER_LIDERAZGO_CANTIDAD && liderazgoHorasAcreditables < PFI_RULES.TALLER_LIDERAZGO_TOTAL_HORAS) {
+        horasEfectivas = Math.min(horasNominales, PFI_RULES.TALLER_LIDERAZGO_TOTAL_HORAS - liderazgoHorasAcreditables);
+        liderazgoHorasAcreditables += horasEfectivas;
+      } else {
+        horasEfectivas = 0; // Excede el taller de liderazgo obligatorio
+      }
+    }
+    
+    // Regla de PVC (PVC I, II, III · 25h c/u = 75h máx)
+    else if (cat === 'PVC' || event?.titulo.includes('PVC') || event?.subcategoria?.includes('PVC')) {
+      const titleUpper = (event?.titulo || '').toUpperCase();
+      if ((titleUpper.includes('PVC I') || titleUpper.includes('INICIANDO MIS SUEÑOS') || titleUpper.includes('PVC 1')) && !pvc1) {
+        pvc1 = true;
+        horasEfectivas = Math.min(horasNominales, 25.0);
+        pvcHorasAcreditables += horasEfectivas;
+      } else if ((titleUpper.includes('PVC II') || titleUpper.includes('AHÍ LA LLEVO') || titleUpper.includes('PVC 2')) && !pvc2) {
+        pvc2 = true;
+        horasEfectivas = Math.min(horasNominales, 25.0);
+        pvcHorasAcreditables += horasEfectivas;
+      } else if ((titleUpper.includes('PVC III') || titleUpper.includes('YA CASI') || titleUpper.includes('PVC 3')) && !pvc3) {
+        pvc3 = true;
+        horasEfectivas = Math.min(horasNominales, 25.0);
+        pvcHorasAcreditables += horasEfectivas;
+      } else {
+        horasEfectivas = 0; // PVC duplicado
+      }
+    }
+    
+    totalHoras += horasEfectivas;
+    
     if (!desglose[cat]) {
       desglose[cat] = { horas: 0, cantidad: 0 };
     }
-    desglose[cat].horas += horas;
+    desglose[cat].horas += horasEfectivas;
     desglose[cat].cantidad += 1;
-    
-    // Validar talleres extracurriculares
-    if (cat === 'Taller Extracurricular') {
-      extraTalleresCount++;
-      extraTalleresHoras += horas;
-    }
-    
-    // Validar taller de liderazgo
-    if (cat === 'Taller Liderazgo') {
-      liderazgoCount++;
-      liderazgoHoras += horas;
-    }
-    
-    // Validar PVC
-    if (cat === 'PVC' || event?.titulo.includes('PVC') || event?.subcategoria?.includes('PVC')) {
-      const titleUpper = (event?.titulo || '').toUpperCase();
-      if (titleUpper.includes('PVC I') || titleUpper.includes('INICIANDO MIS SUEÑOS') || titleUpper.includes('PVC 1')) {
-        pvc1 = true;
-      }
-      if (titleUpper.includes('PVC II') || titleUpper.includes('AHÍ LA LLEVO') || titleUpper.includes('PVC 2')) {
-        pvc2 = true;
-      }
-      if (titleUpper.includes('PVC III') || titleUpper.includes('YA CASI') || titleUpper.includes('PVC 3')) {
-        pvc3 = true;
-      }
-      pvcHoras += horas;
-    }
   }
   
   const scaleInfo = calculateEvaluationScale(totalHoras);
   
-  const cumpleTalleres = extraTalleresCount >= PFI_RULES.TALLERES_EXTRACURRICULARES_CANTIDAD || extraTalleresHoras >= PFI_RULES.TALLERES_EXTRACURRICULARES_TOTAL_HORAS;
-  const cumpleLiderazgo = liderazgoCount >= PFI_RULES.TALLER_LIDERAZGO_CANTIDAD || liderazgoHoras >= PFI_RULES.TALLER_LIDERAZGO_TOTAL_HORAS;
-  const cumplePVC = (pvc1 && pvc2 && pvc3) || pvcHoras >= PFI_RULES.PVC_TOTAL_HORAS;
+  const cumpleTalleres = extraTalleresCount >= PFI_RULES.TALLERES_EXTRACURRICULARES_CANTIDAD || extraTalleresHorasAcreditables >= PFI_RULES.TALLERES_EXTRACURRICULARES_TOTAL_HORAS;
+  const cumpleLiderazgo = liderazgoCount >= PFI_RULES.TALLER_LIDERAZGO_CANTIDAD || liderazgoHorasAcreditables >= PFI_RULES.TALLER_LIDERAZGO_TOTAL_HORAS;
+  const cumplePVC = (pvc1 && pvc2 && pvc3) || pvcHorasAcreditables >= PFI_RULES.PVC_TOTAL_HORAS;
   
   const isAcreditado = totalHoras >= PFI_RULES.HORAS_MINIMAS_ACREDITACION && cumpleTalleres && cumpleLiderazgo && cumplePVC;
   
@@ -153,14 +175,14 @@ export function calculateStudentPFIProgress(
     porcentajeSobresaliente: Math.min(100, Math.round((totalHoras / PFI_RULES.HORAS_SOBRESALIENTE) * 100)),
     isAcreditado,
     talleresExtracurriculares: {
-      horas: Math.round(extraTalleresHoras * 100) / 100,
+      horas: Math.round(extraTalleresHorasAcreditables * 100) / 100,
       completados: extraTalleresCount,
       requeridos: PFI_RULES.TALLERES_EXTRACURRICULARES_CANTIDAD,
       metaHoras: PFI_RULES.TALLERES_EXTRACURRICULARES_TOTAL_HORAS,
       cumplido: cumpleTalleres,
     },
     tallerLiderazgo: {
-      horas: Math.round(liderazgoHoras * 100) / 100,
+      horas: Math.round(liderazgoHorasAcreditables * 100) / 100,
       completados: liderazgoCount,
       requeridos: PFI_RULES.TALLER_LIDERAZGO_CANTIDAD,
       metaHoras: PFI_RULES.TALLER_LIDERAZGO_TOTAL_HORAS,
@@ -170,7 +192,7 @@ export function calculateStudentPFIProgress(
       pvc1,
       pvc2,
       pvc3,
-      horas: Math.round(pvcHoras * 100) / 100,
+      horas: Math.round(pvcHorasAcreditables * 100) / 100,
       metaHoras: PFI_RULES.PVC_TOTAL_HORAS,
       cumplido: cumplePVC,
     },
