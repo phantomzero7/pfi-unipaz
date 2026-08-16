@@ -4,9 +4,12 @@ import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import {
   AlertCircle,
+  AlertTriangle,
+  Award,
   Calendar,
   CheckCircle2,
   CheckSquare,
+  Clock,
   Compass,
   Edit2,
   Filter,
@@ -15,17 +18,24 @@ import {
   KeyRound,
   Layers,
   MapPin,
+  Mic,
   Plus,
+  QrCode,
   Search,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Square,
   Trash2,
   UserCheck,
+  UserPlus,
   Users,
   X,
+  XCircle,
 } from 'lucide-react';
+import { getRoleBadgeInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { EventCategory, EventModality, PFIEvent, UserProfile } from '@/lib/types';
+import { EventCategory, EventModality, ParticipantRole, PFIEvent, UserProfile } from '@/lib/types';
 
 export default function AdminEventosManagerPage() {
   const {
@@ -35,17 +45,22 @@ export default function AdminEventosManagerPage() {
     deleteEvent,
     currentUser,
     profiles,
-    assignEventToStudent,
+    assignEventToStudentWithRole,
+    manageStaffApplication,
+    applyStaffPenalty,
+    attendances,
     getStandardHoursForCategory,
   } = usePFI();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PFIEvent | null>(null);
+  const [selectedEventForStaffReview, setSelectedEventForStaffReview] = useState<PFIEvent | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Estados de Asignación Obligatoria en el Modal
   const [isObligatoryAssign, setIsObligatoryAssign] = useState(false);
+  const [assignedRoleToStudents, setAssignedRoleToStudents] = useState<ParticipantRole>('asistente');
   const [selectedDegreeFilter, setSelectedDegreeFilter] = useState<string>('todas');
   const [selectedCuatrimestreFilter, setSelectedCuatrimestreFilter] = useState<string>('todos');
   const [studentSearchFilter, setStudentSearchFilter] = useState<string>('');
@@ -62,6 +77,10 @@ export default function AdminEventosManagerPage() {
     hora_inicio: string;
     hora_fin: string;
     horas_pfi: number;
+    permite_staff: boolean;
+    cupo_staff: number;
+    horas_staff: number;
+    horas_ponente: number;
     cupo_maximo: number;
     enlace_virtual: string;
     otp_online_code: string;
@@ -78,6 +97,10 @@ export default function AdminEventosManagerPage() {
     hora_inicio: '10:00',
     hora_fin: '14:00',
     horas_pfi: 16.67,
+    permite_staff: true,
+    cupo_staff: 5,
+    horas_staff: 10.00,
+    horas_ponente: 15.00,
     cupo_maximo: 40,
     enlace_virtual: '',
     otp_online_code: '',
@@ -144,10 +167,12 @@ export default function AdminEventosManagerPage() {
     setEditingEvent(null);
     setSelectedStudentIds([]);
     setIsObligatoryAssign(false);
+    setAssignedRoleToStudents('asistente');
     setSelectedDegreeFilter('todas');
     setSelectedCuatrimestreFilter('todos');
     setStudentSearchFilter('');
 
+    const defaultHrs = getStandardHoursForCategory(defaultCat);
     setFormData({
       titulo: '',
       descripcion: '',
@@ -157,7 +182,11 @@ export default function AdminEventosManagerPage() {
       fecha_evento: new Date().toISOString().split('T')[0],
       hora_inicio: '10:00',
       hora_fin: '14:00',
-      horas_pfi: getStandardHoursForCategory(defaultCat),
+      horas_pfi: defaultHrs,
+      permite_staff: true,
+      cupo_staff: 5,
+      horas_staff: Math.round(defaultHrs * 1.5 * 100) / 100,
+      horas_ponente: 15.00,
       cupo_maximo: 40,
       enlace_virtual: '',
       otp_online_code: '',
@@ -172,6 +201,7 @@ export default function AdminEventosManagerPage() {
     setEditingEvent(evt);
     setSelectedStudentIds([]);
     setIsObligatoryAssign(false);
+    setAssignedRoleToStudents('asistente');
     setSelectedDegreeFilter('todas');
     setSelectedCuatrimestreFilter('todos');
     setStudentSearchFilter('');
@@ -186,6 +216,10 @@ export default function AdminEventosManagerPage() {
       hora_inicio: evt.hora_inicio,
       hora_fin: evt.hora_fin,
       horas_pfi: evt.horas_pfi,
+      permite_staff: evt.permite_staff ?? true,
+      cupo_staff: evt.cupo_staff ?? 5,
+      horas_staff: evt.horas_staff || (evt.horas_pfi * 1.5),
+      horas_ponente: evt.horas_ponente || 15.00,
       cupo_maximo: evt.cupo_maximo,
       enlace_virtual: evt.enlace_virtual || '',
       otp_online_code: evt.otp_online_code || '',
@@ -230,16 +264,20 @@ export default function AdminEventosManagerPage() {
       targetEventId = res.event.id;
     }
 
-    // Si se seleccionaron estudiantes para asignación obligatoria
+    // Si se seleccionaron estudiantes para asignación
     if (isObligatoryAssign && selectedStudentIds.length > 0) {
       let assignedCount = 0;
       selectedStudentIds.forEach((sId) => {
-        const assignRes = assignEventToStudent(targetEventId, sId, false);
+        const assignRes = assignEventToStudentWithRole(
+          targetEventId,
+          sId,
+          assignedRoleToStudents
+        );
         if (assignRes.success) assignedCount++;
       });
 
       showToast(
-        `✓ Actividad guardada y asignada obligatoriamente a ${assignedCount} estudiantes.`
+        `✓ Actividad guardada y asignada a ${assignedCount} estudiantes con rol de [${assignedRoleToStudents}].`
       );
     } else {
       showToast(
@@ -275,10 +313,10 @@ export default function AdminEventosManagerPage() {
             Administración de Actividades PFI
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
-            Gestión y Creación de Eventos
+            Gestión de Eventos & Roles de Participación
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-            Alta de actividades, configuración de horas y asignación obligatoria a grupos por carrera y cuatrimestre.
+            Configuración de actividades con roles diferenciados (Oyentes, Staff Logístico y Ponentes), convocatorias y asignación por cohorte.
           </p>
         </div>
 
@@ -303,7 +341,7 @@ export default function AdminEventosManagerPage() {
         />
       </div>
 
-      {/* Tabla de Eventos */}
+      {/* Tabla de Eventos con Roles y Staff */}
       <div className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-sm dark:shadow-xl overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
@@ -312,81 +350,240 @@ export default function AdminEventosManagerPage() {
               <th className="py-3 px-3">Categoría</th>
               <th className="py-3 px-3">Modalidad</th>
               <th className="py-3 px-3">Fecha & Horario</th>
-              <th className="py-3 px-3">Cupo</th>
-              <th className="py-3 px-3">Horas PFI</th>
+              <th className="py-3 px-3">Horas (Oyente / Staff / Ponente)</th>
+              <th className="py-3 px-3">Staff Logístico</th>
               <th className="py-3 px-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-            {filtered.map((evt) => (
-              <tr key={evt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                <td className="py-3.5 px-3">
-                  <div className="font-black text-unipaz-navy dark:text-white text-sm">{evt.titulo}</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
-                    <MapPin className="w-3 h-3 text-unipaz-cobalt" />
-                    {evt.ubicacion || 'Campus UNIPAZ'}
-                    {evt.otp_online_code && (
-                      <span className="font-mono text-unipaz-orange dark:text-amber-300 font-bold ml-2">
-                        OTP: {evt.otp_online_code}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="py-3.5 px-3">
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
-                    {evt.categoria}
-                  </span>
-                </td>
-                <td className="py-3.5 px-3 capitalize text-slate-600 dark:text-slate-300 font-medium">
-                  {evt.modalidad}
-                </td>
-                <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
-                  <div className="font-semibold">{evt.fecha_evento}</div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                    {evt.hora_inicio} - {evt.hora_fin}
-                  </div>
-                </td>
-                <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
-                  {evt.cupo_maximo > 0 ? (
-                    <span className="font-mono font-bold">
-                      {evt.cupo_ocupado || 0} / {evt.cupo_maximo}
+            {filtered.map((evt) => {
+              const pendingStaff = (evt.solicitudes_staff || []).filter((s) => s.status === 'pendiente').length;
+
+              return (
+                <tr key={evt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <td className="py-3.5 px-3">
+                    <div className="font-black text-unipaz-navy dark:text-white text-sm">{evt.titulo}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 font-medium">
+                      <MapPin className="w-3 h-3 text-unipaz-cobalt" />
+                      {evt.ubicacion || 'Campus UNIPAZ'}
+                      {evt.otp_online_code && (
+                        <span className="font-mono text-unipaz-orange dark:text-amber-300 font-bold ml-2">
+                          OTP: {evt.otp_online_code}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-3">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
+                      {evt.categoria}
                     </span>
-                  ) : (
-                    <span className="text-slate-400">Ilimitado</span>
-                  )}
-                </td>
-                <td className="py-3.5 px-3 font-mono font-black text-unipaz-orange">
-                  +{evt.horas_pfi.toFixed(2)}h
-                </td>
-                <td className="py-3.5 px-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleOpenEdit(evt)}
-                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
-                      title="Editar Evento"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`¿Estás seguro de eliminar el evento "${evt.titulo}"?`)) {
-                          deleteEvent(evt.id);
-                        }
-                      }}
-                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-700 dark:text-slate-300 hover:text-rose-600 transition-colors shadow-sm"
-                      title="Eliminar Evento"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="py-3.5 px-3 capitalize text-slate-600 dark:text-slate-300 font-medium">
+                    {evt.modalidad}
+                  </td>
+                  <td className="py-3.5 px-3 text-slate-700 dark:text-slate-300">
+                    <div className="font-semibold">{evt.fecha_evento}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                      {evt.hora_inicio} - {evt.hora_fin}
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-3 font-mono text-[11px]">
+                    <div className="text-unipaz-orange font-bold">+{evt.horas_pfi.toFixed(1)}h (Oyente)</div>
+                    <div className="text-purple-600 dark:text-purple-400 font-bold">+{evt.horas_staff || (evt.horas_pfi * 1.5).toFixed(1)}h (Staff)</div>
+                    <div className="text-amber-600 dark:text-amber-400 font-medium">+{evt.horas_ponente || 15}h (Ponente)</div>
+                  </td>
+                  <td className="py-3.5 px-3">
+                    {evt.permite_staff ? (
+                      <button
+                        onClick={() => setSelectedEventForStaffReview(evt)}
+                        className="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 border border-purple-200 dark:border-purple-500/30 text-purple-800 dark:text-purple-300 font-bold text-[10px] flex items-center gap-1.5 transition-all"
+                      >
+                        <Users className="w-3 h-3" />
+                        {evt.cupo_staff_ocupado || 0}/{evt.cupo_staff || 5} Staff
+                        {pendingStaff > 0 && (
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" title={`${pendingStaff} solicitudes pendientes`} />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 text-[10px]">Sin Staff</span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleOpenEdit(evt)}
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
+                        title="Editar Evento"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`¿Estás seguro de eliminar el evento "${evt.titulo}"?`)) {
+                            deleteEvent(evt.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-700 dark:text-slate-300 hover:text-rose-600 transition-colors shadow-sm"
+                        title="Eliminar Evento"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL CREAR / EDITAR CON ASIGNACIÓN OBLIGATORIA POR CARRERA Y CUATRIMESTRE */}
+      {/* MODAL PARA REVISIÓN DE SOLICITUDES DE STAFF LOGÍSTICO Y PENALIZACIONES */}
+      {selectedEventForStaffReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white space-y-5 my-8">
+            <button
+              onClick={() => setSelectedEventForStaffReview(null)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="border-b border-slate-200 dark:border-white/10 pb-4">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300">
+                Staff Logístico & Convocatorias
+              </span>
+              <h3 className="text-lg font-black text-unipaz-navy dark:text-white mt-1">
+                {selectedEventForStaffReview.titulo}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Revisa postulaciones de estudiantes, confirma su rol de Staff (+{selectedEventForStaffReview.horas_staff || 10}h) o aplica penalizaciones por falta injustificada.
+              </p>
+            </div>
+
+            {/* Solicitudes de Staff */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
+                Postulaciones de Estudiantes a Staff:
+              </h4>
+
+              {(!selectedEventForStaffReview.solicitudes_staff || selectedEventForStaffReview.solicitudes_staff.length === 0) ? (
+                <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-white/10">
+                  No hay solicitudes registradas para este evento aún. Los estudiantes pueden postularse desde su catálogo o puedes invitarlos directamente al editar el evento.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {selectedEventForStaffReview.solicitudes_staff.map((sol) => {
+                    const student = profiles.find((p) => p.id === sol.student_id);
+                    return (
+                      <div
+                        key={sol.student_id}
+                        className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-unipaz-navy dark:text-white">
+                            {student?.nombre} {student?.apellidos} ({student?.matricula})
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            {student?.carrera} · {sol.motivo}
+                          </div>
+                          <span className={`text-[10px] font-black mt-1 inline-block px-2 py-0.5 rounded-full ${
+                            sol.status === 'aceptado'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                              : sol.status === 'rechazado'
+                              ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                          }`}>
+                            Estatus: {sol.status.toUpperCase()}
+                          </span>
+                        </div>
+
+                        {sol.status === 'pendiente' && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                const res = manageStaffApplication(selectedEventForStaffReview.id, sol.student_id, 'aceptado');
+                                showToast(res.message);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-[11px] shadow-sm"
+                            >
+                              Aceptar Staff
+                            </button>
+                            <button
+                              onClick={() => {
+                                const res = manageStaffApplication(selectedEventForStaffReview.id, sol.student_id, 'rechazado');
+                                showToast(res.message);
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 hover:text-rose-600 text-slate-600 dark:text-slate-300 font-bold text-[11px]"
+                            >
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Participantes confirmados como Staff & Opción de Penalización */}
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
+              <h4 className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
+                Staff Confirmado para este Evento:
+              </h4>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {attendances
+                  .filter((a) => a.event_id === selectedEventForStaffReview.id && a.rol_participacion === 'staff_logistica')
+                  .map((att) => {
+                    const st = profiles.find((p) => p.id === att.student_id);
+                    return (
+                      <div
+                        key={att.id}
+                        className="p-3 rounded-xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-500/30 flex items-center justify-between text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-unipaz-navy dark:text-white">
+                            {st?.nombre} {st?.apellidos} ({st?.matricula})
+                          </div>
+                          <div className="text-[10px] text-purple-700 dark:text-purple-300">
+                            Rol: Staff Logístico Oficial · Estatus: {att.status}
+                          </div>
+                        </div>
+
+                        {att.status !== 'asistio' && !att.penalizacion_horas && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`¿Aplicar penalización de -5.00 hrs a ${st?.nombre} por falta injustificada al rol de staff?`)) {
+                                applyStaffPenalty(att.id, 5.0, 'No asistió a su responsabilidad confirmada como Staff Logístico');
+                                showToast(`Penalización de -5.00 hrs aplicada a ${st?.nombre}`);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/50 hover:bg-rose-200 text-rose-700 dark:text-rose-200 font-bold text-[10px] flex items-center gap-1"
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                            Penalizar No-Show (-5h)
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSelectedEventForStaffReview(null)}
+                className="py-2.5 px-5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs"
+              >
+                Cerrar Panel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR / EDITAR CON ROLES DIFERENCIADOS Y SELECCIÓN OBLIGATORIA */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
           <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white my-8 max-h-[90vh] overflow-y-auto">
@@ -401,7 +598,7 @@ export default function AdminEventosManagerPage() {
               {editingEvent ? 'Editar Actividad PFI' : 'Crear Nueva Actividad PFI'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Configura los detalles formativos, horas y selecciona estudiantes obligatorios por licenciatura y cuatrimestre.
+              Configura los detalles formativos, horas por rol (Oyente / Staff / Ponente) y asigna estudiantes obligatorios.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-5 text-xs">
@@ -438,7 +635,12 @@ export default function AdminEventosManagerPage() {
                       onChange={(e) => {
                         const cat = e.target.value as EventCategory;
                         const standardHrs = getStandardHoursForCategory(cat);
-                        setFormData({ ...formData, categoria: cat, horas_pfi: standardHrs });
+                        setFormData({
+                          ...formData,
+                          categoria: cat,
+                          horas_pfi: standardHrs,
+                          horas_staff: Math.round(standardHrs * 1.5 * 100) / 100,
+                        });
                       }}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                     >
@@ -499,26 +701,69 @@ export default function AdminEventosManagerPage() {
                   </div>
                 </div>
 
+                {/* Horas Diferenciadas por Rol */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
+                  <span className="font-black text-unipaz-navy dark:text-white text-xs block">
+                    Horas Acreditables según Rol de Participación:
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-unipaz-orange mb-1">Horas como Oyente:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={formData.horas_pfi}
+                        onChange={(e) => setFormData({ ...formData, horas_pfi: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-purple-600 dark:text-purple-400 mb-1">Horas Staff Logístico:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={formData.horas_staff}
+                        onChange={(e) => setFormData({ ...formData, horas_staff: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-amber-600 dark:text-amber-400 mb-1">Horas Ponente / Expositor:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={formData.horas_ponente}
+                        onChange={(e) => setFormData({ ...formData, horas_ponente: parseFloat(e.target.value) || 0 })}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Horas PFI Oficiales:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={formData.horas_pfi}
-                      onChange={(e) => setFormData({ ...formData, horas_pfi: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Cupo Máximo (0=Ilimitado):</label>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Cupo Máximo Oyentes:</label>
                     <input
                       type="number"
                       value={formData.cupo_maximo}
                       onChange={(e) => setFormData({ ...formData, cupo_maximo: parseInt(e.target.value) || 0 })}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-unipaz-orange"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-purple-700 dark:text-purple-300 mb-1">Cupo de Staff:</label>
+                    <input
+                      type="number"
+                      value={formData.cupo_staff}
+                      onChange={(e) => setFormData({ ...formData, cupo_staff: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-purple-500"
                     />
                   </div>
 
@@ -547,7 +792,7 @@ export default function AdminEventosManagerPage() {
                 </div>
               </div>
 
-              {/* SECCIÓN NOVEDOSA: ASIGNACIÓN OBLIGATORIA A ESTUDIANTES POR LICENCIATURA Y CUATRIMESTRE */}
+              {/* SECCIÓN DE ASIGNACIÓN DIRECTA CON SELECCIÓN DE ROL */}
               <div className="pt-4 border-t border-slate-200 dark:border-white/10 space-y-4">
                 <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/30 space-y-3">
                   <div className="flex items-center justify-between">
@@ -560,7 +805,7 @@ export default function AdminEventosManagerPage() {
                       />
                       <span className="text-xs font-black text-unipaz-navy dark:text-white flex items-center gap-1.5">
                         <GraduationCap className="w-4 h-4 text-unipaz-orange" />
-                        ¿Asignar como actividad obligatoria a estudiantes?
+                        ¿Asignar directamente a estudiantes con un rol específico?
                       </span>
                     </label>
 
@@ -570,16 +815,54 @@ export default function AdminEventosManagerPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
-                    Filtra la lista de estudiantes por Licenciatura y por Cuatrimestre para inscribirlos directamente al momento de guardar.
-                  </p>
                 </div>
 
                 {isObligatoryAssign && (
                   <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 animate-fadeIn">
+                    {/* Selector de Rol a Asignar */}
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Rol con el que se matricularán los estudiantes seleccionados:
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAssignedRoleToStudents('asistente')}
+                          className={`py-2 px-3 rounded-xl font-bold text-xs transition-all border ${
+                            assignedRoleToStudents === 'asistente'
+                              ? 'bg-unipaz-orange text-white border-unipaz-orange shadow-sm'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          Oyente (+{formData.horas_pfi}h)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAssignedRoleToStudents('staff_logistica')}
+                          className={`py-2 px-3 rounded-xl font-bold text-xs transition-all border ${
+                            assignedRoleToStudents === 'staff_logistica'
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          Staff Logística (+{formData.horas_staff}h)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAssignedRoleToStudents('ponente')}
+                          className={`py-2 px-3 rounded-xl font-bold text-xs transition-all border ${
+                            assignedRoleToStudents === 'ponente'
+                              ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          Ponente (+{formData.horas_ponente}h)
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Filtros de Estudiantes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                      {/* Filtro Licenciatura */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-2">
                       <div>
                         <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
                           Filtrar por Licenciatura:
@@ -598,7 +881,6 @@ export default function AdminEventosManagerPage() {
                         </select>
                       </div>
 
-                      {/* Filtro Cuatrimestre */}
                       <div>
                         <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
                           Filtrar por Cuatrimestre:
@@ -617,7 +899,6 @@ export default function AdminEventosManagerPage() {
                         </select>
                       </div>
 
-                      {/* Búsqueda por Nombre */}
                       <div>
                         <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
                           Buscar Estudiante:
@@ -657,7 +938,7 @@ export default function AdminEventosManagerPage() {
                     </div>
 
                     {/* Lista con Checkboxes */}
-                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                    <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
                       {filteredStudentsForAssign.map((std) => {
                         const isSelected = selectedStudentIds.includes(std.id);
                         return (
@@ -674,7 +955,7 @@ export default function AdminEventosManagerPage() {
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                onChange={() => {}} // Manejado por onClick del contenedor
+                                onChange={() => {}}
                                 className="w-4 h-4 rounded text-unipaz-orange focus:ring-unipaz-orange"
                               />
                               <div>

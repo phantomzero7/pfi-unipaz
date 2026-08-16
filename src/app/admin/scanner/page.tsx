@@ -169,13 +169,14 @@ export default function AdminScannerPage() {
           type: 'success',
           title: '¡Check-In Registrado!',
           message: res.message,
-          details: `Estudiante: ${res.student?.nombre} ${res.student?.apellidos} (${res.student?.matricula})`,
+          details: `Estudiante: ${res.student?.nombre} ${res.student?.apellidos} (${res.student?.matricula}) · Rol: ${res.attendance?.rol_participacion === 'staff_logistica' ? 'Staff Logístico' : 'Oyente'}`,
         });
       } else {
         setScanResult({
-          type: 'error',
-          title: 'Fallo de Check-In',
+          type: res.fraudWarning ? 'warning' : 'error',
+          title: res.fraudWarning ? 'Alerta de Seguridad QR' : 'Fallo de Check-In',
           message: res.message,
+          details: res.fraudWarning,
         });
       }
     } else {

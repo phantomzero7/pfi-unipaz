@@ -1,6 +1,17 @@
 export type UserRole = 'estudiante' | 'staff' | 'admin';
 export type EventModality = 'presencial' | 'online' | 'hibrido';
 export type AttendanceStatus = 'registrado' | 'asistio' | 'incompleto' | 'cancelado' | 'lista_espera';
+export type ParticipantRole = 'asistente' | 'staff_logistica' | 'ponente' | 'moderador' | 'organizador';
+export type StaffApplicationStatus = 'pendiente' | 'aceptado' | 'rechazado';
+
+export interface StaffApplication {
+  student_id: string;
+  fecha_solicitud: string;
+  status: StaffApplicationStatus;
+  motivo?: string;
+  revisado_por?: string;
+  fecha_resolucion?: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -12,8 +23,10 @@ export interface UserProfile {
   cuatrimestre?: number; // 1 to 9
   email: string;
   role: UserRole;
+  es_docente_colaborador?: boolean;
   avatar_url?: string;
   qr_secret: string;
+  penalizaciones_acumuladas?: number;
   created_at?: string;
 }
 
@@ -58,6 +71,7 @@ export interface PFIGlobalConfig {
   horasSobresaliente: number; // 730
   maxTalleresExtracurriculares: number; // 3
   maxTalleresLiderazgo: number; // 1
+  penalizacionNoShowStaff: number; // Horas descontadas si falta staff (ej. -5.0h)
   categoriaHoras: Record<EventCategory, number>;
   reglasCohortePVC: {
     pvc1Cuatrimestres: number[]; // [1, 2, 3]
@@ -77,7 +91,16 @@ export interface PFIEvent {
   fecha_evento: string; // YYYY-MM-DD
   hora_inicio: string;  // HH:MM
   hora_fin: string;     // HH:MM
-  horas_pfi: number;
+  horas_pfi: number;     // Horas como oyente/asistente
+  
+  // Roles diferenciados y Staff Logístico
+  permite_staff?: boolean;
+  cupo_staff?: number;
+  cupo_staff_ocupado?: number;
+  horas_staff?: number;       // Horas acreditadas para Staff Logístico (ej. 8.00h)
+  horas_ponente?: number;     // Horas acreditadas para Ponente/Conferencista (ej. 15.00h)
+  solicitudes_staff?: StaffApplication[];
+  
   cupo_maximo: number;  // 0 = ilimitado
   cupo_ocupado?: number;
   enlace_virtual?: string;
@@ -85,10 +108,10 @@ export interface PFIEvent {
   tolerancia_minutos?: number;
   ubicacion?: string;
   creado_por?: string;
-  instructor_titular?: string; // Nombre del instructor para firma de constancia
+  instructor_titular?: string;
   instructor_cargo?: string;
   activo: boolean;
-  cuatrimestre_objetivo?: number; // p. ej. 1 para 1er año
+  cuatrimestre_objetivo?: number;
   created_at?: string;
 }
 
@@ -97,11 +120,15 @@ export interface EventAttendance {
   event_id: string;
   student_id: string;
   status: AttendanceStatus;
+  rol_participacion?: ParticipantRole; // 'asistente' | 'staff_logistica' | 'ponente' | etc.
   check_in_timestamp?: string | null;
   check_out_timestamp?: string | null;
   horas_acreditadas: number;
-  validado_por?: string | null;
+  penalizacion_horas?: number;
+  motivo_penalizacion?: string;
+  validado_por?: string | null; // ID del admin, docente o estudiante staff que escaneó
   qr_scanned_code?: string;
+  qr_token_hash?: string;
   notes?: string;
   es_asignacion_directa?: boolean;
   es_caso_especial?: boolean;
@@ -115,6 +142,8 @@ export type EvaluationScale = 'No Satisfactorio' | 'Satisfactorio' | 'Sobresalie
 
 export interface PFIProgressSummary {
   horasTotales: number;
+  horasBrutas: number;
+  horasPenalizaciones: number;
   escala: EvaluationScale;
   escalaTexto: string;
   porcentajeMeta: number; // vs 400h
@@ -143,6 +172,14 @@ export interface PFIProgressSummary {
     horas: number;
     metaHoras: number; // 75.00h
     cumplido: boolean;
+  };
+  
+  // Desglose por roles
+  desglosePorRoles: {
+    asistenteHoras: number;
+    staffHoras: number;
+    ponenteHoras: number;
+    participacionesStaff: number;
   };
   
   // Desglose por categorías

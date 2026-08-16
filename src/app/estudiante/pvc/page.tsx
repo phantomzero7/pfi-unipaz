@@ -220,6 +220,7 @@ export default function PvcAndTalleresPage() {
                             student_id: currentUser.id,
                             event_id: m.event!.id,
                             status: 'asistio',
+                            rol_participacion: 'asistente',
                             horas_acreditadas: 25.0,
                           },
                         });

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import QRCode from 'qrcode';
 import { motion } from 'framer-motion';
-import { Award, CheckCircle, Copy, QrCode, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { Award, CheckCircle, Copy, Lock, QrCode, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 
 interface StudentQrCardProps {
@@ -20,15 +20,34 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [liveSeconds, setLiveSeconds] = useState<string>('');
+
+  // Reloj de seguridad en vivo (Anti-Foto / Anti-Screenshot)
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setLiveSeconds(
+        now.toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    // Generamos un QR con los datos del estudiante
+    // Generamos un QR con los datos del estudiante y el secreto criptográfico
     const payload = JSON.stringify({
       id: student.id,
       matricula: student.matricula,
       nombre: `${student.nombre} ${student.apellidos}`,
       secret: student.qr_secret,
       unipaz: 'PFI-2026',
+      ts: Date.now(),
     });
 
     QRCode.toDataURL(payload, {
@@ -122,8 +141,10 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Generación:</span>
-              <span className="font-semibold text-slate-200">{student.periodo_ingreso}</span>
+              <span className="text-slate-400">Generación / Grado:</span>
+              <span className="font-semibold text-slate-200">
+                {student.cuatrimestre ? `${student.cuatrimestre}° Cuatrimestre` : student.periodo_ingreso}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Horas PFI:</span>
@@ -132,8 +153,8 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
           </div>
         </div>
 
-        {/* QR Code Interactivo */}
-        <div className="sm:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-white text-slate-900 shadow-inner">
+        {/* QR Code Interactivo con Sello Dinámico Anti-Foto */}
+        <div className="sm:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-white text-slate-900 shadow-inner relative">
           {qrDataUrl ? (
             <div className="relative w-32 h-32">
               <Image
@@ -148,15 +169,24 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               <QrCode className="w-8 h-8" />
             </div>
           )}
-          <span className="text-[10px] font-bold text-slate-700 tracking-wider uppercase mt-1">
-            Escanear para Asistencia
+
+          {/* Sello de Seguridad Dinámico Anti-Screenshot */}
+          <div className="mt-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-mono font-bold text-slate-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>EN VIVO: {liveSeconds}</span>
+          </div>
+          <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
+            Sello Dinámico UNIPAZ
           </span>
         </div>
       </div>
 
       {/* Footer Info */}
       <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-        <span>ID: <code className="font-mono text-slate-300">{student.id}</code></span>
+        <span className="flex items-center gap-1">
+          <Lock className="w-3 h-3 text-amber-400" />
+          Token: <code className="font-mono text-slate-300">{student.qr_secret.substring(0, 12)}...</code>
+        </span>
         <span className="text-amber-400 font-bold">Válido Ciclo 2026</span>
       </div>
     </motion.div>
