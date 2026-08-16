@@ -11,6 +11,7 @@ import {
   CheckSquare,
   Clock,
   Compass,
+  Download,
   Edit2,
   Filter,
   Globe,
@@ -33,6 +34,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { KioskProjectorModal } from '@/components/KioskProjectorModal';
+import { exportEventAttendanceToCsv } from '@/lib/export-utils';
 import { getRoleBadgeInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { EventCategory, EventModality, ParticipantRole, PFIEvent, UserProfile } from '@/lib/types';
@@ -56,6 +59,7 @@ export default function AdminEventosManagerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PFIEvent | null>(null);
   const [selectedEventForStaffReview, setSelectedEventForStaffReview] = useState<PFIEvent | null>(null);
+  const [selectedKioskEvent, setSelectedKioskEvent] = useState<PFIEvent | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Estados de Asignación Obligatoria en el Modal
@@ -409,7 +413,21 @@ export default function AdminEventosManagerPage() {
                     )}
                   </td>
                   <td className="py-3.5 px-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setSelectedKioskEvent(evt)}
+                        className="p-1.5 rounded-lg bg-orange-50 dark:bg-unipaz-orange/20 hover:bg-orange-100 text-unipaz-orange transition-colors shadow-sm"
+                        title="Modo Kiosco / Proyectar QR en Pantalla"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => exportEventAttendanceToCsv(evt, attendances, profiles)}
+                        className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/20 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 transition-colors shadow-sm"
+                        title="Descargar Lista de Asistencia (CSV)"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleOpenEdit(evt)}
                         className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
@@ -997,6 +1015,15 @@ export default function AdminEventosManagerPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL MODO KIOSCO PROYECTOR */}
+      {selectedKioskEvent && (
+        <KioskProjectorModal
+          isOpen={Boolean(selectedKioskEvent)}
+          onClose={() => setSelectedKioskEvent(null)}
+          event={selectedKioskEvent}
+        />
       )}
     </div>
   );

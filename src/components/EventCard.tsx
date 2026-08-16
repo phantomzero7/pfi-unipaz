@@ -20,6 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { QrScannerModal } from './QrScannerModal';
+import { downloadIcsFile, getGoogleCalendarUrl } from '@/lib/calendar-utils';
 import { getAttendanceStatusInfo, getRoleBadgeInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { EventAttendance, PFIEvent } from '@/lib/types';
@@ -273,6 +274,26 @@ export const EventCard: React.FC<EventCardProps> = ({
                     Cancelar cupo
                   </button>
                 )}
+              </div>
+
+              {/* Botón Calendario */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => downloadIcsFile(event)}
+                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-all border border-slate-200 dark:border-white/10"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-unipaz-orange" />
+                  Descargar .ics
+                </button>
+                <a
+                  href={getGoogleCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-all border border-slate-200 dark:border-white/10"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  Google Cal
+                </a>
               </div>
 
               {event.otp_online_code && (

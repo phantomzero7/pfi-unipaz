@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Clock,
   Compass,
+  CreditCard,
   Download,
   FileCheck,
   FileText,
@@ -22,15 +23,23 @@ import {
   QrCode,
   ShieldCheck,
   Sparkles,
+  Star,
+  Trophy,
   UserCheck,
   XCircle,
 } from 'lucide-react';
+import { AttendanceJustificationModal } from '@/components/AttendanceJustificationModal';
 import { CertificatePdfModal } from '@/components/CertificatePdfModal';
+import { EventFeedbackModal } from '@/components/EventFeedbackModal';
+import { GraduationSimulatorWidget } from '@/components/GraduationSimulatorWidget';
+import { OfficialClearanceDictamenModal } from '@/components/OfficialClearanceDictamenModal';
+import { PrintableIdCardModal } from '@/components/PrintableIdCardModal';
+import { StudentBadgesShowcase } from '@/components/StudentBadgesShowcase';
 import { StudentQrCard } from '@/components/StudentQrCard';
 import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
 import { getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { EventAttendance } from '@/lib/types';
+import { EventAttendance, PFIEvent } from '@/lib/types';
 
 export default function EstudianteDashboard() {
   const { currentUser, getStudentProgress, getStudentAttendances, events } = usePFI();
@@ -38,7 +47,11 @@ export default function EstudianteDashboard() {
   const attendances = getStudentAttendances();
 
   const [showCertModal, setShowCertModal] = useState(false);
+  const [showDictamenModal, setShowDictamenModal] = useState(false);
+  const [showPrintableCardModal, setShowPrintableCardModal] = useState(false);
   const [selectedWorkshopAtt, setSelectedWorkshopAtt] = useState<EventAttendance | null>(null);
+  const [selectedJustificationAtt, setSelectedJustificationAtt] = useState<EventAttendance | null>(null);
+  const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<PFIEvent | null>(null);
   const [activeTab, setActiveTab] = useState<'realizados' | 'no_realizados' | 'programados'>('realizados');
 
   // Clasificar asistencias
@@ -81,172 +94,178 @@ export default function EstudianteDashboard() {
                 {currentUser.nombre} {currentUser.apellidos}
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                {currentUser.carrera} · Generación {currentUser.periodo_ingreso}
+                {currentUser.carrera} · {currentUser.cuatrimestre ? `${currentUser.cuatrimestre}° Cuatrimestre` : currentUser.periodo_ingreso}
               </p>
             </div>
           </div>
 
-          {/* Botón de Constancia Oficial */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Botones de Acción Documental y Titulación */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {canDownloadGeneralCert && (
+              <button
+                onClick={() => setShowDictamenModal(true)}
+                className="py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-105"
+                title="Dictamen Oficial de Liberación para Titulación"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Dictamen de Titulación
+              </button>
+            )}
+
             {canDownloadGeneralCert ? (
               <button
                 onClick={() => setShowCertModal(true)}
-                className="py-3 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
+                className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-105"
               >
                 <Download className="w-4 h-4" />
-                Descargar Constancia Oficial PFI
+                Constancia PFI
               </button>
             ) : (
-              <button
-                onClick={() => setShowCertModal(true)}
-                className="py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-white/10 transition-all"
-              >
-                <Lock className="w-4 h-4 text-amber-500" />
-                Constancia PFI ({progress.horasTotales.toFixed(0)}/400 hrs)
-              </button>
+              <div className="py-2 px-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-500 text-xs font-semibold flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" />
+                {progress.horasTotales.toFixed(0)}/400 hrs (En Proceso)
+              </div>
             )}
+
+            <button
+              onClick={() => setShowPrintableCardModal(true)}
+              className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
+              title="Imprimir Carnet Físico PVC CR-80"
+            >
+              <CreditCard className="w-4 h-4 text-unipaz-orange" />
+              Carnet PVC
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Grid de Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Horas Totales */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Total Horas Acreditadas:</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-black text-unipaz-navy dark:text-white font-mono">
-              {progress.horasTotales.toFixed(2)}
-            </span>
-            <span className="text-xs text-slate-500 font-bold">/ 400.00 hrs</span>
-          </div>
-          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                progress.horasTotales >= 730
-                  ? 'bg-amber-500'
-                  : progress.horasTotales >= 400
-                  ? 'bg-emerald-500'
-                  : 'bg-unipaz-orange'
-              }`}
-              style={{ width: `${progress.porcentajeMeta}%` }}
-            />
-          </div>
-          <p className="text-[11px] font-bold text-unipaz-orange dark:text-amber-300">
-            {progress.escalaTexto}
-          </p>
+      {/* Grid: Credencial QR + Avance Global */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="lg:col-span-6 xl:col-span-5">
+          <StudentQrCard
+            student={currentUser}
+            horasTotales={progress.horasTotales}
+            escala={progress.escala}
+          />
         </div>
 
-        {/* 3 Talleres Extracurriculares */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">3 Talleres Extracurriculares:</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
-              {progress.talleresExtracurriculares.completados}/3
-            </span>
-            <span className="text-xs text-slate-500 font-bold">({progress.talleresExtracurriculares.horas.toFixed(1)}/50h)</span>
-          </div>
-          <div className={`text-xs font-black flex items-center gap-1 ${progress.talleresExtracurriculares.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-            {progress.talleresExtracurriculares.cumplido ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" /> Requisito Cumplido
-              </>
-            ) : (
-              <>
-                <Clock className="w-3.5 h-3.5" /> {3 - progress.talleresExtracurriculares.completados} restantes
-              </>
-            )}
-          </div>
-        </div>
+        {/* Resumen Cuantitativo de Horas */}
+        <div className="lg:col-span-6 xl:col-span-7 space-y-4">
+          <div className="p-6 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold uppercase text-slate-400">Avance Total Acreditado</span>
+                <div className="text-3xl font-black text-unipaz-navy dark:text-white font-mono mt-0.5">
+                  +{progress.horasTotales.toFixed(2)}{' '}
+                  <span className="text-base font-sans font-bold text-slate-400">/ 400.00 hrs</span>
+                </div>
+              </div>
 
-        {/* 1 Taller Liderazgo */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Taller Liderazgo Social:</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
-              {progress.tallerLiderazgo.completados}/1
-            </span>
-            <span className="text-xs text-slate-500 font-bold">({progress.tallerLiderazgo.horas.toFixed(1)}/10h)</span>
-          </div>
-          <div className={`text-xs font-black flex items-center gap-1 ${progress.tallerLiderazgo.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-            {progress.tallerLiderazgo.cumplido ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" /> Requisito Cumplido
-              </>
-            ) : (
-              <>
-                <Clock className="w-3.5 h-3.5" /> 1 pendiente
-              </>
-            )}
-          </div>
-        </div>
+              <div className="text-right">
+                <span className={`px-3 py-1 rounded-full text-xs font-black border ${
+                  progress.isAcreditado
+                    ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300'
+                    : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-300'
+                }`}>
+                  {progress.escala}
+                </span>
+                <span className="block text-[10px] text-slate-400 mt-1 font-mono">
+                  Sobresaliente: {progress.porcentajeSobresaliente}% (Meta 730h)
+                </span>
+              </div>
+            </div>
 
-        {/* Plan de Vida y Carrera */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
-          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Plan de Vida y Carrera (PVC):</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
-              {progress.pvc.horas.toFixed(1)}
-            </span>
-            <span className="text-xs text-slate-500 font-bold">/ 75.00 hrs</span>
-          </div>
-          <div className={`text-xs font-black flex items-center gap-1 ${progress.pvc.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
-            {progress.pvc.cumplido ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5" /> PVC I, II, III Acreditados
-              </>
-            ) : (
-              <>
-                <Compass className="w-3.5 h-3.5" /> En Progreso Anual
-              </>
-            )}
+            {/* Barra de Progreso */}
+            <div className="space-y-1.5">
+              <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-slate-200 dark:border-white/5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-unipaz-cobalt via-unipaz-orange to-amber-400 transition-all duration-700"
+                  style={{ width: `${progress.porcentajeMeta}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+                <span>0.00 hrs</span>
+                <span>{progress.porcentajeMeta}% para Titulación</span>
+                <span>400.00 hrs</span>
+              </div>
+            </div>
+
+            {/* Requisitos Obligatorios */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200 dark:border-white/10 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
+                <div className="text-slate-400 text-[10px] font-bold uppercase">Plan de Vida y Carrera</div>
+                <div className="font-bold text-slate-800 dark:text-white mt-0.5">
+                  {progress.pvc.cumplido ? 'PVC I, II, III ✓' : `${progress.pvc.horas.toFixed(0)}/75 hrs`}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
+                <div className="text-slate-400 text-[10px] font-bold uppercase">Talleres Extracurriculares</div>
+                <div className="font-bold text-slate-800 dark:text-white mt-0.5">
+                  {progress.talleresExtracurriculares.completados}/3 Talleres ({progress.talleresExtracurriculares.horas.toFixed(0)}h)
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
+                <div className="text-slate-400 text-[10px] font-bold uppercase">Taller de Liderazgo</div>
+                <div className="font-bold text-slate-800 dark:text-white mt-0.5">
+                  {progress.tallerLiderazgo.cumplido ? 'Acreditado (10h) ✓' : 'Pendiente (0/10h)'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* SECCIÓN CENTRAL: PESTAÑAS DE EVENTOS REALIZADOS vs NO REALIZADOS vs PROGRAMADOS */}
+      {/* MEDALLAS E INSIGNIAS FORMATIVAS */}
+      <StudentBadgesShowcase progress={progress} />
+
+      {/* SIMULADOR INTERACTIVO DE GRADUACIÓN */}
+      <GraduationSimulatorWidget progress={progress} />
+
+      {/* HISTORIAL DE ACTIVIDADES (3 PESTAÑAS: REALIZADOS, NO REALIZADOS Y PROGRAMADOS) */}
       <div className="rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
-            <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight">
-              Historial de Actividades y Talleres
+            <h2 className="text-lg font-black text-unipaz-navy dark:text-white">
+              Historial de Actividades & Participación PFI
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Consulta tus horas generadas, actividades completadas y eventos donde no se registró salida (Check-Out).
+              Supervisión de eventos acreditados, justificaciones y convocatorias programadas.
             </p>
           </div>
 
-          {/* Segmented Tabs */}
-          <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 self-start sm:self-auto">
+          {/* Selector de Pestañas */}
+          <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-xs font-bold">
             <button
               onClick={() => setActiveTab('realizados')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all ${
                 activeTab === 'realizados'
-                  ? 'bg-white dark:bg-emerald-500 text-emerald-800 dark:text-slate-950 shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               Realizados ({realizados.length})
             </button>
 
             <button
               onClick={() => setActiveTab('no_realizados')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all ${
                 activeTab === 'no_realizados'
-                  ? 'bg-rose-500 text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="w-3.5 h-3.5 text-rose-500" />
               No Realizados ({noRealizados.length})
             </button>
 
             <button
               onClick={() => setActiveTab('programados')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-all ${
                 activeTab === 'programados'
-                  ? 'bg-unipaz-navy dark:bg-unipaz-cobalt text-white shadow-sm'
+                  ? 'bg-white dark:bg-slate-800 text-unipaz-orange shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
@@ -289,15 +308,21 @@ export default function EstudianteDashboard() {
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Acreditada
-                      </span>
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
+                      {att.event && (
+                        <button
+                          onClick={() => setSelectedFeedbackEvent(att.event!)}
+                          className="py-1.5 px-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 text-[10px] font-bold flex items-center gap-1 transition-colors border border-amber-200 dark:border-amber-500/30"
+                        >
+                          <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                          Evaluar ⭐
+                        </button>
+                      )}
 
                       {att.event && (
                         <button
                           onClick={() => setSelectedWorkshopAtt(att)}
-                          className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 transition-colors shadow-sm"
+                          className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 transition-colors shadow-sm ml-auto"
                         >
                           <Download className="w-3 h-3" />
                           Constancia PDF
@@ -319,7 +344,7 @@ export default function EstudianteDashboard() {
               <div>
                 <p className="font-bold">¿Por qué aparecen como No Realizadas estas actividades?</p>
                 <p className="mt-0.5 opacity-90 leading-relaxed">
-                  Para acreditar horas oficiales, el reglamento PFI de UNIPAZ exige realizar tanto el <strong>Check-In</strong> como el <strong>Check-Out</strong> (mínimo 80% de permanencia). Si no realizaste tu Check-Out o tuviste un inconveniente justificado, acude a la Coordinación PFI para su validación manual.
+                  Para acreditar horas oficiales, el reglamento PFI de UNIPAZ exige realizar tanto el <strong>Check-In</strong> como el <strong>Check-Out</strong> (mínimo 80% de permanencia). Si tuviste un inconveniente médico, laboral o de escáner, puedes <strong>solicitar justificación con comprobante</strong> directamente aquí.
                 </p>
               </div>
             </div>
@@ -357,6 +382,16 @@ export default function EstudianteDashboard() {
                       <p className="font-bold text-rose-700 dark:text-rose-300">Motivo de no acreditación:</p>
                       <p className="mt-0.5 leading-tight">{att.info.description}</p>
                     </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => setSelectedJustificationAtt(att)}
+                        className="py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Solicitar Justificación con Evidencia
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -380,24 +415,33 @@ export default function EstudianteDashboard() {
                 {programados.map((att) => (
                   <div
                     key={att.id}
-                    className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-3"
+                    className="p-5 rounded-2xl bg-blue-50/40 dark:bg-slate-950/70 border border-blue-200 dark:border-blue-500/30 space-y-3 flex flex-col justify-between"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-400/30">
-                        Inscrito / Por Asistir
-                      </span>
-                      <span className="text-xs font-mono font-bold text-unipaz-orange">
-                        +{att.event?.horas_pfi.toFixed(2)}h al acreditar
-                      </span>
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-400/30">
+                          {att.info.statusLabel}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-slate-500">
+                          +{att.event?.horas_pfi || 0} hrs al asistir
+                        </span>
+                      </div>
+
+                      <h3 className="font-black text-unipaz-navy dark:text-white text-sm mt-2">
+                        {att.event?.titulo || 'Actividad Formativa'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-unipaz-orange" />
+                        {att.event?.fecha_evento} ({att.event?.hora_inicio} - {att.event?.hora_fin} hrs)
+                      </p>
                     </div>
 
-                    <h3 className="font-black text-unipaz-navy dark:text-white text-sm">
-                      {att.event?.titulo}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-unipaz-cobalt" />
-                      {att.event?.fecha_evento} · {att.event?.hora_inicio} a {att.event?.hora_fin}
-                    </p>
+                    <div className="pt-3 border-t border-blue-100 dark:border-white/10 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-unipaz-cobalt" />
+                        {att.event?.ubicacion || 'Campus UNIPAZ'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -406,24 +450,62 @@ export default function EstudianteDashboard() {
         )}
       </div>
 
-      {/* Modal Constancia General */}
-      {showCertModal && (
-        <CertificatePdfModal
+      {/* MODAL DICTAMEN OFICIAL DE TITULACIÓN */}
+      {showDictamenModal && (
+        <OfficialClearanceDictamenModal
+          isOpen={showDictamenModal}
+          onClose={() => setShowDictamenModal(false)}
           student={currentUser}
           progress={progress}
-          isOpen={showCertModal}
-          onClose={() => setShowCertModal(false)}
         />
       )}
 
-      {/* Modal Constancia Individual de Taller */}
+      {/* MODAL CARNET PVC IMPRIMIBLE */}
+      {showPrintableCardModal && (
+        <PrintableIdCardModal
+          isOpen={showPrintableCardModal}
+          onClose={() => setShowPrintableCardModal(false)}
+          student={currentUser}
+        />
+      )}
+
+      {/* MODAL CONSTANCIA GENERAL PFI */}
+      {showCertModal && (
+        <CertificatePdfModal
+          isOpen={showCertModal}
+          onClose={() => setShowCertModal(false)}
+          student={currentUser}
+          progress={progress}
+        />
+      )}
+
+      {/* MODAL CONSTANCIA DE TALLER / EVENTO INDIVIDUAL */}
       {selectedWorkshopAtt && selectedWorkshopAtt.event && (
         <WorkshopCertificatePdfModal
-          student={currentUser}
-          attendance={selectedWorkshopAtt}
-          event={selectedWorkshopAtt.event}
-          isOpen={!!selectedWorkshopAtt}
+          isOpen={Boolean(selectedWorkshopAtt)}
           onClose={() => setSelectedWorkshopAtt(null)}
+          event={selectedWorkshopAtt.event}
+          attendance={selectedWorkshopAtt}
+          student={currentUser}
+        />
+      )}
+
+      {/* MODAL DE JUSTIFICACIÓN DE ASISTENCIA */}
+      {selectedJustificationAtt && (
+        <AttendanceJustificationModal
+          isOpen={Boolean(selectedJustificationAtt)}
+          onClose={() => setSelectedJustificationAtt(null)}
+          attendance={selectedJustificationAtt}
+          event={selectedJustificationAtt.event}
+        />
+      )}
+
+      {/* MODAL DE EVALUACIÓN / FEEDBACK */}
+      {selectedFeedbackEvent && (
+        <EventFeedbackModal
+          isOpen={Boolean(selectedFeedbackEvent)}
+          onClose={() => setSelectedFeedbackEvent(null)}
+          event={selectedFeedbackEvent}
         />
       )}
     </div>

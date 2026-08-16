@@ -4,9 +4,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { MOCK_ATTENDANCES, MOCK_EVENTS, MOCK_PROFILES } from './mock-data';
 import { calculateStudentPFIProgress, PFI_RULES, validateStayDuration } from './pfi-rules';
 import {
+  AppNotification,
+  AttendanceJustification,
   AttendanceStatus,
   EventAttendance,
   EventCategory,
+  EventFeedback,
+  JustificationStatus,
   ParticipantRole,
   PFIEvent,
   PFIGlobalConfig,
@@ -22,7 +26,7 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   horasSobresaliente: 730.0,
   maxTalleresExtracurriculares: 3,
   maxTalleresLiderazgo: 1,
-  penalizacionNoShowStaff: 5.0, // -5.0h por no asistir como staff
+  penalizacionNoShowStaff: 5.0,
   categoriaHoras: {
     'Investigación': 100.00,
     'Club Anual': 33.34,
@@ -84,18 +88,42 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   },
 };
 
+const INITIAL_NOTIFICATIONS: AppNotification[] = [
+  {
+    id: 'notif-01',
+    user_id: 'usr-student-01',
+    titulo: '¡Bienvenido al Ciclo PFI 2026!',
+    mensaje: 'Consulta el nuevo catálogo de talleres extracurriculares y simposios disponibles.',
+    tipo: 'info',
+    leido: false,
+    fecha: new Date().toISOString(),
+  },
+  {
+    id: 'notif-02',
+    user_id: 'all',
+    titulo: 'Convocatorias de Staff Logístico Abiertas',
+    mensaje: 'Ya puedes postularte como Staff en actividades para obtener +10.0 hrs de acreditación.',
+    tipo: 'success',
+    leido: false,
+    fecha: new Date().toISOString(),
+  },
+];
+
 interface PFIContextType {
   currentUser: UserProfile;
   profiles: UserProfile[];
   events: PFIEvent[];
   attendances: EventAttendance[];
+  justifications: AttendanceJustification[];
+  notifications: AppNotification[];
+  feedbacks: EventFeedback[];
   pfiConfig: PFIGlobalConfig;
   switchUser: (userId: string) => void;
   setUserRole: (role: UserRole) => void;
   toggleDocenteStaffRole: (userId: string) => void;
   
-  // Event Actions
-  registerToEvent: (eventId: string, studentId?: string, role?: ParticipantRole) => { success: boolean; message: string };
+  // Event Actions & Waitlist
+  registerToEvent: (eventId: string, studentId?: string, role?: ParticipantRole) => { success: boolean; message: string; waitlist?: boolean };
   cancelRegistration: (eventId: string, studentId?: string) => { success: boolean; message: string };
   createEvent: (eventData: Omit<PFIEvent, 'id'>) => { success: boolean; event: PFIEvent };
   updateEvent: (eventId: string, data: Partial<PFIEvent>) => void;
@@ -106,6 +134,18 @@ interface PFIContextType {
   manageStaffApplication: (eventId: string, studentId: string, decision: 'aceptado' | 'rechazado') => { success: boolean; message: string };
   applyStaffPenalty: (attendanceId: string, penalizacionHoras: number, motivo: string) => void;
   assignEventToStudentWithRole: (eventId: string, studentId: string, role: ParticipantRole, customHours?: number) => { success: boolean; message: string };
+  
+  // Justificaciones Médicas & Laborales
+  submitJustification: (data: Omit<AttendanceJustification, 'id' | 'status' | 'fecha_solicitud'>) => { success: boolean; message: string };
+  reviewJustification: (justificationId: string, decision: JustificationStatus, observaciones?: string) => { success: boolean; message: string };
+  
+  // Encuestas de Satisfacción
+  submitEventFeedback: (feedback: Omit<EventFeedback, 'id' | 'fecha'>) => void;
+  
+  // Notificaciones
+  addNotification: (notif: Omit<AppNotification, 'id' | 'fecha' | 'leido'>) => void;
+  markNotificationAsRead: (id: string) => void;
+  clearAllNotifications: () => void;
   
   // Global Config & Direct Assignment
   updateGlobalConfig: (newConfig: Partial<PFIGlobalConfig>) => void;
@@ -121,7 +161,7 @@ interface PFIContextType {
     targetEvent: PFIEvent | null;
   };
 
-  // Attendance & QR Scanner Actions (con Anti-Fraude)
+  // Attendance & QR Scanner Actions (con Anti-Fraude y Soporte Offline)
   checkInStudent: (eventId: string, studentQuery: string, customTime?: string, scannerUserId?: string) => {
     success: boolean;
     message: string;
@@ -168,23 +208,28 @@ interface PFIContextType {
 const PFIContext = createContext<PFIContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  PROFILES: 'unipaz_pfi_profiles_v2',
-  EVENTS: 'unipaz_pfi_events_v2',
-  ATTENDANCES: 'unipaz_pfi_attendances_v2',
-  CURRENT_USER_ID: 'unipaz_pfi_active_user_id_v2',
-  CONFIG: 'unipaz_pfi_config_v2',
+  PROFILES: 'unipaz_pfi_profiles_v3',
+  EVENTS: 'unipaz_pfi_events_v3',
+  ATTENDANCES: 'unipaz_pfi_attendances_v3',
+  JUSTIFICATIONS: 'unipaz_pfi_justifications_v3',
+  NOTIFICATIONS: 'unipaz_pfi_notifications_v3',
+  FEEDBACKS: 'unipaz_pfi_feedbacks_v3',
+  CURRENT_USER_ID: 'unipaz_pfi_active_user_id_v3',
+  CONFIG: 'unipaz_pfi_config_v3',
 };
 
 export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profiles, setProfiles] = useState<UserProfile[]>(MOCK_PROFILES);
   const [events, setEvents] = useState<PFIEvent[]>(MOCK_EVENTS);
   const [attendances, setAttendances] = useState<EventAttendance[]>(MOCK_ATTENDANCES);
+  const [justifications, setJustifications] = useState<AttendanceJustification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [feedbacks, setFeedbacks] = useState<EventFeedback[]>([]);
   const [pfiConfig, setPfiConfig] = useState<PFIGlobalConfig>(DEFAULT_PFI_CONFIG);
   const [currentUserId, setCurrentUserId] = useState<string>('usr-student-01');
   const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Registro de códigos QR escaneados recientemente para prevención de duplicidad / foto fija
   const [scannedTokensCache, setScannedTokensCache] = useState<Map<string, number>>(new Map());
 
   // Cargar de LocalStorage al iniciar
@@ -193,6 +238,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedProfiles = localStorage.getItem(STORAGE_KEYS.PROFILES);
       const savedEvents = localStorage.getItem(STORAGE_KEYS.EVENTS);
       const savedAttendances = localStorage.getItem(STORAGE_KEYS.ATTENDANCES);
+      const savedJustifications = localStorage.getItem(STORAGE_KEYS.JUSTIFICATIONS);
+      const savedNotifications = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+      const savedFeedbacks = localStorage.getItem(STORAGE_KEYS.FEEDBACKS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
       const savedTheme = localStorage.getItem('unipaz_pfi_theme') as 'light' | 'dark' | null;
@@ -200,6 +248,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedProfiles) setProfiles(JSON.parse(savedProfiles));
       if (savedEvents) setEvents(JSON.parse(savedEvents));
       if (savedAttendances) setAttendances(JSON.parse(savedAttendances));
+      if (savedJustifications) setJustifications(JSON.parse(savedJustifications));
+      if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+      if (savedFeedbacks) setFeedbacks(JSON.parse(savedFeedbacks));
       if (savedUserId) setCurrentUserId(savedUserId);
       if (savedConfig) {
         const parsedConfig = JSON.parse(savedConfig);
@@ -256,12 +307,15 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
       localStorage.setItem(STORAGE_KEYS.ATTENDANCES, JSON.stringify(attendances));
+      localStorage.setItem(STORAGE_KEYS.JUSTIFICATIONS, JSON.stringify(justifications));
+      localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+      localStorage.setItem(STORAGE_KEYS.FEEDBACKS, JSON.stringify(feedbacks));
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, currentUserId);
       localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(pfiConfig));
     } catch (e) {
       console.warn('Error saving to localStorage:', e);
     }
-  }, [profiles, events, attendances, currentUserId, pfiConfig, isLoaded]);
+  }, [profiles, events, attendances, justifications, notifications, feedbacks, currentUserId, pfiConfig, isLoaded]);
 
   const currentUser = profiles.find((p) => p.id === currentUserId) || profiles[0] || MOCK_PROFILES[0];
 
@@ -283,6 +337,117 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProfiles((prev) =>
       prev.map((p) => (p.id === userId ? { ...p, es_docente_colaborador: !p.es_docente_colaborador } : p))
     );
+  };
+
+  const addNotification = (notif: Omit<AppNotification, 'id' | 'fecha' | 'leido'>) => {
+    const newNotif: AppNotification = {
+      ...notif,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 3)}`,
+      fecha: new Date().toISOString(),
+      leido: false,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+  };
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, leido: true } : n)));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+  };
+
+  const submitEventFeedback = (fb: Omit<EventFeedback, 'id' | 'fecha'>) => {
+    const newFb: EventFeedback = {
+      ...fb,
+      id: `fb-${Date.now()}`,
+      fecha: new Date().toISOString(),
+    };
+    setFeedbacks((prev) => [newFb, ...prev]);
+  };
+
+  // MÓDULO DE JUSTIFICACIONES MÉDICAS / LABORALES
+  const submitJustification = (data: Omit<AttendanceJustification, 'id' | 'status' | 'fecha_solicitud'>) => {
+    const newJust: AttendanceJustification = {
+      ...data,
+      id: `just-${Date.now()}`,
+      status: 'pendiente',
+      fecha_solicitud: new Date().toISOString(),
+    };
+
+    setJustifications((prev) => [newJust, ...prev]);
+
+    addNotification({
+      user_id: 'usr-staff-01',
+      titulo: 'Nueva Solicitud de Justificación PFI',
+      mensaje: `Un estudiante ha subido evidencia para justificar su inasistencia o falta de check-out.`,
+      tipo: 'warning',
+    });
+
+    return {
+      success: true,
+      message: 'Solicitud y comprobante enviados a Coordinación PFI para su revisión.',
+    };
+  };
+
+  const reviewJustification = (
+    justificationId: string,
+    decision: JustificationStatus,
+    observaciones?: string
+  ) => {
+    const just = justifications.find((j) => j.id === justificationId);
+    if (!just) return { success: false, message: 'Justificación no encontrada.' };
+
+    const event = events.find((e) => e.id === just.event_id);
+    const nominalHours = event?.horas_pfi || 10.0;
+
+    setJustifications((prev) =>
+      prev.map((j) =>
+        j.id === justificationId
+          ? {
+              ...j,
+              status: decision,
+              observaciones_admin: observaciones,
+              revisado_por: currentUser.id,
+              fecha_resolucion: new Date().toISOString(),
+            }
+          : j
+      )
+    );
+
+    if (decision === 'aprobada') {
+      setAttendances((prev) =>
+        prev.map((a) =>
+          a.id === just.attendance_id
+            ? {
+                ...a,
+                status: 'asistio',
+                horas_acreditadas: nominalHours,
+                notes: `Acreditado por Justificación Médica/Laboral Aprobada: ${just.motivo}`,
+                validado_por: currentUser.id,
+              }
+            : a
+        )
+      );
+
+      addNotification({
+        user_id: just.student_id,
+        titulo: '✓ Justificación Aprobada por Coordinación',
+        mensaje: `Se acreditaron +${nominalHours.toFixed(2)} hrs PFI correspondientes a "${event?.titulo}".`,
+        tipo: 'success',
+      });
+
+      return { success: true, message: `Justificación aprobada y +${nominalHours} hrs acreditadas al alumno.` };
+    } else {
+      addNotification({
+        user_id: just.student_id,
+        titulo: '❌ Justificación Rechazada',
+        mensaje: `Tu solicitud para "${event?.titulo}" no fue aprobada: ${observaciones || 'Evidencia no concluyente'}.`,
+        tipo: 'error',
+      });
+
+      return { success: true, message: 'Justificación marcada como rechazada.' };
+    }
   };
 
   const updateGlobalConfig = (newConfig: Partial<PFIGlobalConfig>) => {
@@ -344,19 +509,16 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return calculateStudentPFIProgress(studentAtts, eventsMap);
   };
 
-  // Verificar si un usuario tiene permisos de escanear asistencias para un evento
   const canUserScanEvent = (eventId: string, userId?: string): boolean => {
     const uid = userId || currentUser.id;
     const user = profiles.find((p) => p.id === uid);
     if (!user) return false;
     if (user.role === 'admin' || user.role === 'staff' || user.es_docente_colaborador) return true;
 
-    // Estudiante con rol staff aceptado para este evento
     const att = attendances.find((a) => a.event_id === eventId && a.student_id === uid);
     return att?.rol_participacion === 'staff_logistica' && att.status !== 'cancelado';
   };
 
-  // POSTULACIÓN DE ESTUDIANTE A STAFF LOGÍSTICO
   const applyForStaffRole = (eventId: string, studentId?: string, motivo?: string) => {
     const sId = studentId || currentUser.id;
     const event = events.find((e) => e.id === eventId);
@@ -395,13 +557,19 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((e) => (e.id === eventId ? { ...e, solicitudes_staff: updatedSolicitudes } : e))
     );
 
+    addNotification({
+      user_id: 'usr-staff-01',
+      titulo: 'Nueva Postulación a Staff Logístico',
+      mensaje: `${student.nombre} ${student.apellidos} se ha postulado para Staff en "${event.titulo}".`,
+      tipo: 'info',
+    });
+
     return {
       success: true,
       message: `¡Postulación enviada! La Coordinación PFI revisará tu solicitud de Staff para "${event.titulo}".`,
     };
   };
 
-  // GESTIÓN DE SOLICITUDES DE STAFF POR ADMINISTRADOR
   const manageStaffApplication = (eventId: string, studentId: string, decision: 'aceptado' | 'rechazado') => {
     const event = events.find((e) => e.id === eventId);
     const student = profiles.find((p) => p.id === studentId);
@@ -420,7 +588,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const staffHours = event.horas_staff || (event.horas_pfi * 1.5) || 8.0;
 
-    // Si es aceptado, matricularlo directamente como Staff Logístico
     if (decision === 'aceptado') {
       const existingAtt = attendances.find((a) => a.event_id === eventId && a.student_id === studentId);
       if (existingAtt) {
@@ -462,6 +629,13 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
       );
 
+      addNotification({
+        user_id: studentId,
+        titulo: '🎉 ¡Aceptado como Staff Logístico Oficial!',
+        mensaje: `Has sido confirmado como Staff para "${event.titulo}". Acreditarás +${staffHours} hrs al concluir el evento.`,
+        tipo: 'success',
+      });
+
       return {
         success: true,
         message: `Estudiante ${student.nombre} ${student.apellidos} aceptado como Staff Logístico (+${staffHours}h).`,
@@ -477,8 +651,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // APLICAR PENALIZACIÓN A STAFF NO ASISTENTE (NO-SHOW)
   const applyStaffPenalty = (attendanceId: string, penalizacionHoras: number, motivo: string) => {
+    const att = attendances.find((a) => a.id === attendanceId);
+
     setAttendances((prev) =>
       prev.map((a) =>
         a.id === attendanceId
@@ -493,9 +668,17 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : a
       )
     );
+
+    if (att) {
+      addNotification({
+        user_id: att.student_id,
+        titulo: '⚠️ Sanción por Falta a Rol de Staff',
+        mensaje: `Se aplicó una penalización de -${penalizacionHoras} hrs en tu expediente por: ${motivo}.`,
+        tipo: 'error',
+      });
+    }
   };
 
-  // ASIGNAR ACTIVIDAD CON ROL ESPECÍFICO (ASISTENTE, STAFF, PONENTE)
   const assignEventToStudentWithRole = (
     eventId: string,
     studentId: string,
@@ -505,14 +688,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetEvent = events.find((e) => e.id === eventId);
     const targetStudent = profiles.find((p) => p.id === studentId);
     if (!targetEvent || !targetStudent) return { success: false, message: 'No encontrado.' };
-
-    const hours = customHours !== undefined
-      ? customHours
-      : role === 'staff_logistica'
-      ? (targetEvent.horas_staff || targetEvent.horas_pfi * 1.5)
-      : role === 'ponente'
-      ? (targetEvent.horas_ponente || 15.0)
-      : targetEvent.horas_pfi;
 
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === studentId);
     if (existing) {
@@ -543,18 +718,23 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAttendances((prev) => [...prev, newAtt]);
     }
 
+    addNotification({
+      user_id: studentId,
+      titulo: '🎓 Asignación de Actividad Formativa',
+      mensaje: `Coordinación te ha inscrito a "${targetEvent.titulo}" con rol de [${role}].`,
+      tipo: 'info',
+    });
+
     return {
       success: true,
       message: `Asignado como ${role} a ${targetStudent.nombre} ${targetStudent.apellidos}.`,
     };
   };
 
-  // ASIGNACIÓN DIRECTA ESTÁNDAR
   const assignEventToStudent = (eventId: string, studentId: string, isSpecialCase = false) => {
     return assignEventToStudentWithRole(eventId, studentId, 'asistente');
   };
 
-  // ASIGNACIÓN MASIVA POR COHORTE
   const batchAssignPVCByCohort = (pvcLevel: 1 | 2 | 3) => {
     const targetEvent = events.find((e) => {
       const t = e.titulo.toUpperCase();
@@ -612,25 +792,43 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { assignedCount, skippedAlreadyPassed, targetEvent };
   };
 
+  // REGISTRO A EVENTO CON SOPORTE DE LISTA DE ESPERA (WAITLIST)
   const registerToEvent = (eventId: string, studentId?: string, role: ParticipantRole = 'asistente') => {
     const sId = studentId || currentUser.id;
     const event = events.find((e) => e.id === eventId);
     if (!event) return { success: false, message: 'Evento no encontrado.' };
 
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === sId);
-    if (existing && existing.status !== 'cancelado') {
+    if (existing && existing.status === 'registrado') {
       return { success: false, message: 'Ya te encuentras inscrito en este evento.' };
     }
 
     const currentOccupied = attendances.filter(
-      (a) => a.event_id === eventId && a.status !== 'cancelado'
+      (a) => a.event_id === eventId && a.status === 'registrado'
     ).length;
 
-    if (event.cupo_maximo > 0 && currentOccupied >= event.cupo_maximo) {
-      return { success: false, message: 'El cupo para este evento está agotado.' };
+    const isFull = event.cupo_maximo > 0 && currentOccupied >= event.cupo_maximo;
+
+    if (isFull) {
+      const waitlistAtt: EventAttendance = {
+        id: `att-wait-${Date.now()}`,
+        event_id: eventId,
+        student_id: sId,
+        status: 'lista_espera',
+        rol_participacion: role,
+        horas_acreditadas: 0,
+        notes: 'En lista de espera por cupo lleno',
+        created_at: new Date().toISOString(),
+      };
+      setAttendances((prev) => [...prev, waitlistAtt]);
+      return {
+        success: true,
+        waitlist: true,
+        message: `El cupo principal está lleno. Te has registrado en la Lista de Espera de "${event.titulo}". Si un lugar se libera, serás promovido automáticamente.`,
+      };
     }
 
-    if (existing && existing.status === 'cancelado') {
+    if (existing && (existing.status === 'cancelado' || existing.status === 'lista_espera')) {
       setAttendances((prev) =>
         prev.map((a) =>
           a.id === existing.id
@@ -660,6 +858,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: `Inscripción exitosa a "${event.titulo}".` };
   };
 
+  // CANCELACIÓN DE REGISTRO CON PROMOCIÓN AUTOMÁTICA DE LISTA DE ESPERA
   const cancelRegistration = (eventId: string, studentId?: string) => {
     const sId = studentId || currentUser.id;
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === sId);
@@ -672,19 +871,49 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'No puedes cancelar una actividad ya acreditada.' };
     }
 
-    setAttendances((prev) =>
-      prev.map((a) => (a.id === existing.id ? { ...a, status: 'cancelado' } : a))
+    // Buscar si hay alguien en lista de espera para promoverlo
+    const nextInWaitlist = attendances.find(
+      (a) => a.event_id === eventId && a.status === 'lista_espera' && a.student_id !== sId
     );
 
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === eventId
-          ? { ...e, cupo_ocupado: Math.max(0, (e.cupo_ocupado || 1) - 1) }
-          : e
-      )
-    );
+    if (nextInWaitlist) {
+      setAttendances((prev) =>
+        prev.map((a) => {
+          if (a.id === existing.id) return { ...a, status: 'cancelado' };
+          if (a.id === nextInWaitlist.id) return { ...a, status: 'registrado', notes: 'Promovido de Lista de Espera a Inscrito Oficial' };
+          return a;
+        })
+      );
 
-    return { success: true, message: 'Inscripción cancelada.' };
+      const promotedStudent = profiles.find((p) => p.id === nextInWaitlist.student_id);
+      const ev = events.find((e) => e.id === eventId);
+
+      addNotification({
+        user_id: nextInWaitlist.student_id,
+        titulo: '🎉 ¡Lugar Liberado en Evento!',
+        mensaje: `Has subido de la Lista de Espera a Inscrito Oficial en "${ev?.titulo}".`,
+        tipo: 'success',
+      });
+
+      return {
+        success: true,
+        message: `Inscripción cancelada. Se promovió automáticamente a ${promotedStudent?.nombre || 'el siguiente alumno'} de la lista de espera.`,
+      };
+    } else {
+      setAttendances((prev) =>
+        prev.map((a) => (a.id === existing.id ? { ...a, status: 'cancelado' } : a))
+      );
+
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === eventId
+            ? { ...e, cupo_ocupado: Math.max(0, (e.cupo_ocupado || 1) - 1) }
+            : e
+        )
+      );
+
+      return { success: true, message: 'Inscripción cancelada.' };
+    }
   };
 
   const createEvent = (eventData: Omit<PFIEvent, 'id'>) => {
@@ -716,7 +945,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAttendances((prev) => prev.filter((a) => a.event_id !== eventId));
   };
 
-  // CHECK-IN CON PROTECCIÓN ANTI-FRAUDE Y TRAZABILIDAD
   const checkInStudent = (
     eventId: string,
     studentQuery: string,
@@ -735,8 +963,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const scannerId = scannerUserId || currentUser.id;
-
-    // Validación Anti-Fraude: Comprobar si el token QR ya se procesó en los últimos 30 segundos
     const tokenHash = `${eventId}-${student.id}-checkin`;
     const lastScan = scannedTokensCache.get(tokenHash);
     if (lastScan && Date.now() - lastScan < 25000) {
@@ -812,7 +1038,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
-  // CHECK-OUT CON CÓMPUTO DE HORAS POR ROL Y REGLA DEL 80%
   const checkOutStudent = (
     eventId: string,
     studentQuery: string,
@@ -851,8 +1076,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const checkOutTime = customTime || new Date().toISOString();
-    
-    // Determinar horas base según el rol de participación
     const nominalHours = att.rol_participacion === 'staff_logistica'
       ? (event.horas_staff || event.horas_pfi * 1.5 || 8.0)
       : att.rol_participacion === 'ponente'
@@ -982,6 +1205,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.PROFILES);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
     localStorage.removeItem(STORAGE_KEYS.ATTENDANCES);
+    localStorage.removeItem(STORAGE_KEYS.JUSTIFICATIONS);
+    localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+    localStorage.removeItem(STORAGE_KEYS.FEEDBACKS);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
   };
@@ -993,6 +1219,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profiles,
         events,
         attendances,
+        justifications,
+        notifications,
+        feedbacks,
         pfiConfig,
         switchUser,
         setUserRole,
@@ -1006,6 +1235,12 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         manageStaffApplication,
         applyStaffPenalty,
         assignEventToStudentWithRole,
+        submitJustification,
+        reviewJustification,
+        submitEventFeedback,
+        addNotification,
+        markNotificationAsRead,
+        clearAllNotifications,
         updateGlobalConfig,
         getStandardHoursForCategory,
         assignEventToStudent,

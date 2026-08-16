@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
+import { NotificationBell } from './NotificationBell';
 import { QrScannerModal } from './QrScannerModal';
 import { StudentQrCard } from './StudentQrCard';
 
@@ -102,8 +103,11 @@ export const Navbar: React.FC = () => {
               })}
             </nav>
 
-            {/* Botón Sol/Luna + Credencial/Escáner + Perfil */}
+            {/* Botón Sol/Luna + Credencial/Escáner + Notificaciones + Perfil */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Campana de Notificaciones */}
+              <NotificationBell />
+
               {/* Botón Sol y Luna */}
               <button
                 onClick={toggleTheme}

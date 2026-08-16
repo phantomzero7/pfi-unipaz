@@ -3,6 +3,7 @@ export type EventModality = 'presencial' | 'online' | 'hibrido';
 export type AttendanceStatus = 'registrado' | 'asistio' | 'incompleto' | 'cancelado' | 'lista_espera';
 export type ParticipantRole = 'asistente' | 'staff_logistica' | 'ponente' | 'moderador' | 'organizador';
 export type StaffApplicationStatus = 'pendiente' | 'aceptado' | 'rechazado';
+export type JustificationStatus = 'pendiente' | 'aprobada' | 'rechazada';
 
 export interface StaffApplication {
   student_id: string;
@@ -11,6 +12,50 @@ export interface StaffApplication {
   motivo?: string;
   revisado_por?: string;
   fecha_resolucion?: string;
+}
+
+export interface AttendanceJustification {
+  id: string;
+  attendance_id: string;
+  student_id: string;
+  event_id: string;
+  motivo: string;
+  archivo_nombre?: string;
+  archivo_url?: string;
+  fecha_solicitud: string;
+  status: JustificationStatus;
+  observaciones_admin?: string;
+  revisado_por?: string;
+  fecha_resolucion?: string;
+}
+
+export interface EventFeedback {
+  id: string;
+  event_id: string;
+  student_id: string;
+  calificacion: number; // 1 to 5
+  comentarios?: string;
+  fecha: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string; // ID del estudiante o 'all'
+  titulo: string;
+  mensaje: string;
+  tipo: 'info' | 'success' | 'warning' | 'error';
+  leido: boolean;
+  fecha: string;
+  enlace?: string;
+}
+
+export interface Badge {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  icono: string;
+  obtenida: boolean;
+  fecha_obtenida?: string;
 }
 
 export interface UserProfile {
