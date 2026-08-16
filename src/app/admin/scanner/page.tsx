@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import {
   AlertCircle,
   Camera,
   CheckCircle2,
   Clock,
+  FlipHorizontal,
   History,
   LogIn,
   LogOut,
@@ -25,8 +26,15 @@ export default function AdminScannerPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id || '');
   const [mode, setMode] = useState<'check_in' | 'check_out'>('check_in');
   const [manualQuery, setManualQuery] = useState('');
-  const [useCamera, setUseCamera] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  // Estados de Cámara Smartphone
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraDevices, setCameraDevices] = useState<{ id: string; label: string }[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerId = 'qr-admin-scanner-view';
 
   const [scanResult, setScanResult] = useState<{
     type: 'success' | 'error' | 'warning';
@@ -45,36 +53,101 @@ export default function AdminScannerPage() {
       student: profiles.find((p) => p.id === att.student_id),
     }));
 
+  // Detectar cámaras de smartphone
   useEffect(() => {
-    if (useCamera) {
-      const scanner = new Html5QrcodeScanner(
-        'qr-scanner-fullscreen',
+    Html5Qrcode.getCameras()
+      .then((devices) => {
+        if (devices && devices.length > 0) {
+          setCameraDevices(devices);
+          const backCam = devices.find(
+            (d) =>
+              d.label.toLowerCase().includes('back') ||
+              d.label.toLowerCase().includes('rear') ||
+              d.label.toLowerCase().includes('trasera') ||
+              d.label.toLowerCase().includes('environment')
+          );
+          setSelectedCameraId(backCam ? backCam.id : devices[0].id);
+        }
+      })
+      .catch((err) => console.warn('Could not enumerate cameras:', err));
+
+    return () => {
+      if (html5QrCodeRef.current) {
+        try {
+          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current?.clear());
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const startCamera = async (cameraIdToUse?: string) => {
+    setCameraError(null);
+    try {
+      if (html5QrCodeRef.current) {
+        try {
+          await html5QrCodeRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const qrScanner = new Html5Qrcode(scannerContainerId);
+      html5QrCodeRef.current = qrScanner;
+
+      const cameraConfig = cameraIdToUse
+        ? { deviceId: { exact: cameraIdToUse } }
+        : { facingMode: 'environment' };
+
+      await qrScanner.start(
+        cameraConfig,
         {
-          fps: 10,
-          qrbox: { width: 260, height: 260 },
+          fps: 15,
+          qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         },
-        false
-      );
-
-      scannerRef.current = scanner;
-
-      scanner.render(
         (decodedText) => {
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([80, 40, 80]);
+          }
           handleProcessCode(decodedText);
-          scanner.clear();
-          setUseCamera(false);
         },
         () => {}
       );
 
-      return () => {
-        if (scannerRef.current) {
-          scannerRef.current.clear().catch(console.error);
-        }
-      };
+      setIsCameraActive(true);
+    } catch (err: any) {
+      console.error('Error starting camera in smartphone:', err);
+      setCameraError(
+        'No se pudo acceder a la cámara. Por favor autoriza el permiso de cámara en tu smartphone o selecciona otra lente.'
+      );
+      setIsCameraActive(false);
     }
-  }, [useCamera]);
+  };
+
+  const stopCamera = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current.clear();
+      } catch (e) {
+        console.warn('Error stopping camera:', e);
+      }
+    }
+    setIsCameraActive(false);
+  };
+
+  const handleSwitchCamera = () => {
+    if (cameraDevices.length <= 1) return;
+    const currentIndex = cameraDevices.findIndex((d) => d.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameraDevices.length;
+    const nextCamera = cameraDevices[nextIndex];
+    setSelectedCameraId(nextCamera.id);
+    if (isCameraActive) {
+      startCamera(nextCamera.id);
+    }
+  };
 
   const handleProcessCode = (code: string) => {
     if (!currentEvent) return;
@@ -141,10 +214,10 @@ export default function AdminScannerPage() {
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
-          Escáner QR de Check-In y Check-Out
+          Escáner QR Móvil de Check-In y Check-Out
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Valida la presencia de los estudiantes mediante su código QR institucional. El sistema aplica automáticamente la <strong>Regla del 80% de permanencia mínima</strong> para acreditar las horas oficiales.
+          Valida la presencia de los estudiantes escaneando su credencial con smartphones iOS o Android. Aplica automáticamente la <strong>Regla del 80% de permanencia mínima</strong>.
         </p>
       </div>
 
@@ -169,7 +242,7 @@ export default function AdminScannerPage() {
             </select>
           </div>
 
-          {/* Pestañas Segmented Switch Refinadas: Entrada vs Salida */}
+          {/* Pestañas Segmented Switch: Entrada vs Salida */}
           <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
             <button
               onClick={() => setMode('check_in')}
@@ -224,29 +297,52 @@ export default function AdminScannerPage() {
             </div>
           )}
 
-          {/* Cámara Scanner */}
-          {useCamera ? (
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-white/10 flex flex-col items-center">
-              <div id="qr-scanner-fullscreen" className="w-full max-w-xs text-slate-900 rounded-xl overflow-hidden" />
-              <button
-                onClick={() => {
-                  if (scannerRef.current) scannerRef.current.clear();
-                  setUseCamera(false);
-                }}
-                className="mt-3 text-xs text-slate-500 dark:text-slate-400 hover:text-unipaz-navy dark:hover:text-white font-bold"
-              >
-                Desactivar Cámara
-              </button>
+          {/* Cámara Scanner Smartphone */}
+          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
+            <div
+              id={scannerContainerId}
+              className={`w-full max-w-xs mx-auto rounded-2xl overflow-hidden shadow-inner ${
+                isCameraActive ? 'block min-h-[260px]' : 'hidden'
+              }`}
+            />
+
+            {cameraError && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs">
+                {cameraError}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              {!isCameraActive ? (
+                <button
+                  onClick={() => startCamera(selectedCameraId)}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-unipaz-navy dark:bg-unipaz-cobalt hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                >
+                  <Camera className="w-4 h-4" />
+                  Abrir Cámara en Smartphone
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={stopCamera}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors"
+                  >
+                    Detener Cámara
+                  </button>
+
+                  {cameraDevices.length > 1 && (
+                    <button
+                      onClick={handleSwitchCamera}
+                      className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    >
+                      <FlipHorizontal className="w-4 h-4" />
+                      Alternar Lente
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => setUseCamera(true)}
-              className="w-full py-3.5 px-6 rounded-2xl bg-unipaz-navy dark:bg-unipaz-cobalt hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-            >
-              <Camera className="w-4 h-4" />
-              Abrir Cámara para Escaneo en Vivo
-            </button>
-          )}
+          </div>
 
           {/* Entrada Manual */}
           <form onSubmit={handleManualSubmit} className="space-y-2 pt-2 border-t border-slate-200 dark:border-white/10">
