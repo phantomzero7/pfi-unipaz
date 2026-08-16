@@ -9,6 +9,7 @@ export interface UserProfile {
   apellidos: string;
   carrera: string;
   periodo_ingreso: string;
+  cuatrimestre?: number; // 1 to 9
   email: string;
   role: UserRole;
   avatar_url?: string;
@@ -27,6 +28,19 @@ export type EventCategory =
   | 'Cine Club'             // Cine club, café literario, donación (2.50h)
   | 'Foro'                  // Foros, conferencias, salud (2.00h)
   | 'Campaña';              // Campañas de vacunación, colectas (1.00h)
+
+export interface PFIGlobalConfig {
+  horasMinimasTitulacion: number; // 400
+  horasSobresaliente: number; // 730
+  maxTalleresExtracurriculares: number; // 3
+  maxTalleresLiderazgo: number; // 1
+  categoriaHoras: Record<EventCategory, number>;
+  reglasCohortePVC: {
+    pvc1Cuatrimestres: number[]; // [1, 2, 3]
+    pvc2Cuatrimestres: number[]; // [4, 5, 6]
+    pvc3Cuatrimestres: number[]; // [7, 8, 9]
+  };
+}
 
 export interface PFIEvent {
   id: string;
@@ -47,6 +61,7 @@ export interface PFIEvent {
   ubicacion?: string;
   creado_por?: string;
   activo: boolean;
+  cuatrimestre_objetivo?: number; // p. ej. 1 para 1er año
   created_at?: string;
 }
 
@@ -61,6 +76,8 @@ export interface EventAttendance {
   validado_por?: string | null;
   qr_scanned_code?: string;
   notes?: string;
+  es_asignacion_directa?: boolean;
+  es_caso_especial?: boolean;
   created_at?: string;
   // Joins
   event?: PFIEvent;

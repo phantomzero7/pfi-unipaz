@@ -14,6 +14,7 @@ import {
   QrCode,
   RotateCcw,
   ScanLine,
+  Settings,
   Sun,
   Users,
 } from 'lucide-react';
@@ -40,8 +41,9 @@ export const Navbar: React.FC = () => {
 
   const adminLinks = [
     { href: '/admin', label: 'Panel General', icon: LayoutDashboard },
-    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
+    { href: '/admin/configuracion', label: 'Configurador PFI', icon: Settings },
     { href: '/admin/eventos', label: 'Gestión de Eventos', icon: Calendar },
+    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
     { href: '/admin/estudiantes', label: 'Directorio Estudiantil', icon: Users },
   ];
 
@@ -87,7 +89,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                       isActive
                         ? 'bg-white dark:bg-unipaz-cobalt text-unipaz-navy dark:text-white shadow-sm font-bold'
                         : 'text-slate-600 dark:text-slate-300 hover:text-unipaz-navy dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
@@ -102,7 +104,7 @@ export const Navbar: React.FC = () => {
 
             {/* Botón Sol/Luna + Credencial/Escáner + Perfil */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Botón Sol y Luna Elegante */}
+              {/* Botón Sol y Luna */}
               <button
                 onClick={toggleTheme}
                 aria-label="Cambiar tema"

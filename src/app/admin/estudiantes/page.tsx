@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import {
+  AlertCircle,
   Award,
+  Calendar,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -11,9 +13,11 @@ import {
   FileCheck,
   Plus,
   Search,
+  Send,
   ShieldCheck,
   Sparkles,
   User,
+  UserCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -22,9 +26,15 @@ import { calculateStudentPFIProgress } from '@/lib/pfi-rules';
 import { PFIEvent, UserProfile } from '@/lib/types';
 
 export default function AdminEstudiantesDirectoryPage() {
-  const { profiles, events, attendances, validateAttendanceManually, currentUser } = usePFI();
+  const { profiles, events, attendances, validateAttendanceManually, assignEventToStudent, currentUser } = usePFI();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
+
+  // Modal para asignación directa a este estudiante
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignEventId, setAssignEventId] = useState<string>(events[0]?.id || '');
+  const [isSpecialCase, setIsSpecialCase] = useState(false);
+  const [assignFeedback, setAssignFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const students = profiles.filter((p) => p.role === 'estudiante');
   const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
@@ -53,20 +63,32 @@ export default function AdminEstudiantesDirectoryPage() {
         }))
     : [];
 
+  const handleExecuteDirectAssign = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+
+    const res = assignEventToStudent(assignEventId, selectedStudent.id, isSpecialCase);
+    setAssignFeedback(res);
+    setTimeout(() => setAssignFeedback(null), 4000);
+    if (res.success) {
+      setTimeout(() => setShowAssignModal(false), 1200);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-sm dark:shadow-xl">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
+          <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
             Control Escolar y Titulación PFI
           </span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
+        <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
           Directorio Estudiantil & Auditoría de Créditos
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Consulta el historial de horas, expedientes de titulación y valida créditos de actividades especiales.
+          Consulta el historial de horas, expedientes de titulación, asigna actividades directas por cohorte y valida créditos de actividades especiales.
         </p>
 
         {/* Buscador */}
@@ -77,7 +99,7 @@ export default function AdminEstudiantesDirectoryPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por nombre, matrícula (UP...) o carrera..."
-            className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange font-semibold"
+            className="w-full bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-white/15 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange font-medium"
           />
         </div>
       </div>
@@ -91,7 +113,7 @@ export default function AdminEstudiantesDirectoryPage() {
           return (
             <div
               key={std.id}
-              className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-lg shadow-blue-950/5 dark:shadow-xl space-y-4 hover:border-unipaz-orange/40 transition-all flex flex-col justify-between"
+              className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-sm dark:shadow-xl space-y-4 hover:border-unipaz-orange/40 transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center gap-3">
@@ -155,7 +177,7 @@ export default function AdminEstudiantesDirectoryPage() {
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-unipaz-navy dark:hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
               >
                 <FileCheck className="w-4 h-4 text-unipaz-orange" />
-                Auditar Expediente Completo
+                Auditar Expediente & Asignar
               </button>
             </div>
           );
@@ -174,26 +196,37 @@ export default function AdminEstudiantesDirectoryPage() {
             </button>
 
             {/* Header del Expediente */}
-            <div className="flex items-center gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
-              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-unipaz-orange shadow-lg flex-shrink-0">
-                <Image
-                  src={selectedStudent.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                  alt={selectedStudent.nombre}
-                  fill
-                  className="object-cover"
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-unipaz-orange shadow-lg flex-shrink-0">
+                  <Image
+                    src={selectedStudent.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                    alt={selectedStudent.nombre}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
+                    {selectedStudent.nombre} {selectedStudent.apellidos}
+                  </h3>
+                  <p className="text-xs text-unipaz-orange dark:text-amber-300 font-bold">
+                    {selectedStudent.carrera} · Matrícula: {selectedStudent.matricula}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                    Generación {selectedStudent.periodo_ingreso} · {selectedStudent.email}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
-                  {selectedStudent.nombre} {selectedStudent.apellidos}
-                </h3>
-                <p className="text-xs text-unipaz-orange dark:text-amber-300 font-bold">
-                  {selectedStudent.carrera} · Matrícula: {selectedStudent.matricula}
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                  Generación {selectedStudent.periodo_ingreso} · Correo: {selectedStudent.email}
-                </p>
-              </div>
+
+              {/* Botón Asignar Actividad Directa */}
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="py-2.5 px-4 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                Asignar Actividad / PVC
+              </button>
             </div>
 
             {/* Resumen de Requisitos */}
@@ -214,7 +247,7 @@ export default function AdminEstudiantesDirectoryPage() {
                   {selectedStudentProgress.talleresExtracurriculares.completados}/3 ({selectedStudentProgress.talleresExtracurriculares.horas.toFixed(1)}h)
                 </div>
                 <div className={`text-[10px] font-black ${selectedStudentProgress.talleresExtracurriculares.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {selectedStudentProgress.talleresExtracurriculares.cumplido ? '✓ Cumplido' : 'Pendiente'}
+                  {selectedStudentProgress.talleresExtracurriculares.cumplido ? '✓ Cumplido (50h máx)' : 'Pendiente'}
                 </div>
               </div>
 
@@ -254,6 +287,9 @@ export default function AdminEstudiantesDirectoryPage() {
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400">
                             {att.event?.categoria} · {att.event?.fecha_evento}
+                            {att.es_caso_especial && (
+                              <span className="text-amber-600 font-bold ml-2">(Caso Especial)</span>
+                            )}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 capitalize font-bold">
@@ -293,6 +329,92 @@ export default function AdminEstudiantesDirectoryPage() {
                 Cerrar Expediente
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Asignar Actividad Directa al Estudiante */}
+      {showAssignModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white space-y-4">
+            <button
+              onClick={() => setShowAssignModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-black text-unipaz-navy dark:text-white flex items-center gap-2">
+              <Plus className="w-5 h-5 text-unipaz-orange" />
+              Asignación Directa de Actividad
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Asignar actividad para <strong>{selectedStudent.nombre} {selectedStudent.apellidos}</strong> ({selectedStudent.matricula})
+            </p>
+
+            {assignFeedback && (
+              <div
+                className={`p-3.5 rounded-2xl border text-xs font-semibold flex items-center gap-2 ${
+                  assignFeedback.success
+                    ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
+                    : 'bg-amber-50 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
+                }`}
+              >
+                {assignFeedback.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                )}
+                <span>{assignFeedback.message}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleExecuteDirectAssign} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Seleccionar Taller / Evento / Módulo PVC:
+                </label>
+                <select
+                  value={assignEventId}
+                  onChange={(e) => setAssignEventId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-unipaz-orange"
+                >
+                  {events.map((ev) => (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.titulo} ({ev.categoria} · {ev.horas_pfi} hrs)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={isSpecialCase}
+                    onChange={(e) => setIsSpecialCase(e.target.checked)}
+                    className="w-4 h-4 rounded text-unipaz-orange focus:ring-unipaz-orange"
+                  />
+                  <span>Autorizar Caso Especial / Recursamiento (Ignorar si ya lo cursó)</span>
+                </label>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-300 text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-unipaz-orange text-white font-bold hover:bg-orange-600 shadow-sm text-xs"
+                >
+                  Asignar a Estudiante
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

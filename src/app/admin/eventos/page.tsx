@@ -19,7 +19,7 @@ import { usePFI } from '@/lib/store';
 import { EventCategory, EventModality, PFIEvent } from '@/lib/types';
 
 export default function AdminEventosManagerPage() {
-  const { events, createEvent, updateEvent, deleteEvent, currentUser } = usePFI();
+  const { events, createEvent, updateEvent, deleteEvent, currentUser, getStandardHoursForCategory } = usePFI();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PFIEvent | null>(null);
@@ -69,17 +69,18 @@ export default function AdminEventosManagerPage() {
   ];
 
   const handleOpenCreate = () => {
+    const defaultCat: EventCategory = 'Taller Extracurricular';
     setEditingEvent(null);
     setFormData({
       titulo: '',
       descripcion: '',
-      categoria: 'Taller Extracurricular',
+      categoria: defaultCat,
       subcategoria: 'Desarrollo Integral',
       modalidad: 'presencial',
       fecha_evento: new Date().toISOString().split('T')[0],
       hora_inicio: '10:00',
       hora_fin: '14:00',
-      horas_pfi: 16.67,
+      horas_pfi: getStandardHoursForCategory(defaultCat),
       cupo_maximo: 40,
       enlace_virtual: '',
       otp_online_code: '',
@@ -131,22 +132,22 @@ export default function AdminEventosManagerPage() {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Top Header */}
-      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 rounded-3xl shadow-sm dark:shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
+          <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
             Administración de Actividades PFI
           </span>
-          <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
             Gestión y Creación de Eventos
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-            Alta de talleres extracurriculares, sesiones de PVC, simposios y control de cupos.
+            Alta de talleres extracurriculares, sesiones de PVC, simposios y control de cupos con horas preestablecidas por categoría.
           </p>
         </div>
 
         <button
           onClick={handleOpenCreate}
-          className="py-3 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105 self-start sm:self-auto"
+          className="py-3 px-5 rounded-full bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           Crear Nueva Actividad
@@ -166,7 +167,7 @@ export default function AdminEventosManagerPage() {
       </div>
 
       {/* Tabla de Eventos */}
-      <div className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-lg shadow-blue-950/5 dark:shadow-xl overflow-x-auto">
+      <div className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 shadow-sm dark:shadow-xl overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
@@ -297,23 +298,14 @@ export default function AdminEventosManagerPage() {
                     value={formData.categoria}
                     onChange={(e) => {
                       const cat = e.target.value as EventCategory;
-                      let hrs = 16.67;
-                      if (cat === 'PVC') hrs = 25.0;
-                      if (cat === 'Taller Liderazgo') hrs = 10.0;
-                      if (cat === 'Investigación') hrs = 100.0;
-                      if (cat === 'Club Anual') hrs = 33.34;
-                      if (cat === 'Simposio') hrs = 5.56;
-                      if (cat === 'Jornada Social') hrs = 5.0;
-                      if (cat === 'Cine Club') hrs = 2.5;
-                      if (cat === 'Foro') hrs = 2.0;
-                      if (cat === 'Campaña') hrs = 1.0;
-                      setFormData({ ...formData, categoria: cat, horas_pfi: hrs });
+                      const standardHrs = getStandardHoursForCategory(cat);
+                      setFormData({ ...formData, categoria: cat, horas_pfi: standardHrs });
                     }}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
                   >
                     {categories.map((c) => (
                       <option key={c} value={c}>
-                        {c}
+                        {c} ({getStandardHoursForCategory(c)} hrs)
                       </option>
                     ))}
                   </select>
@@ -370,7 +362,7 @@ export default function AdminEventosManagerPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Horas PFI:</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Horas PFI Oficiales:</label>
                   <input
                     type="number"
                     step="0.01"
@@ -392,7 +384,7 @@ export default function AdminEventosManagerPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Código OTP (Eventos Virtuales):</label>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Código OTP (Virtuales):</label>
                   <input
                     type="text"
                     maxLength={6}
@@ -425,7 +417,7 @@ export default function AdminEventosManagerPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-xl bg-unipaz-orange text-white dark:text-slate-950 font-black hover:bg-orange-600 shadow-md"
+                  className="flex-1 py-3 rounded-xl bg-unipaz-orange text-white font-bold hover:bg-orange-600 shadow-sm"
                 >
                   {editingEvent ? 'Guardar Cambios' : 'Publicar Actividad'}
                 </button>
