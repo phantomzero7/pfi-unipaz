@@ -5,9 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Award,
   Calendar,
-  CheckCircle2,
   ChevronDown,
   Compass,
   FileCheck,
@@ -53,10 +51,10 @@ export const Navbar: React.FC = () => {
     <>
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 dark:bg-[#0A1526]/85 border-b border-slate-200/80 dark:border-white/10 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-18 py-3">
+          <div className="flex items-center justify-between h-20">
             {/* Logo Oficial y Nombre Institucional */}
-            <Link href={isStaffOrAdmin ? '/admin' : '/estudiante'} className="flex items-center gap-3.5 group">
-              <div className="relative w-11 h-11 flex-shrink-0 transition-transform group-hover:scale-105">
+            <Link href={isStaffOrAdmin ? '/admin' : '/estudiante'} className="flex items-center gap-3 group">
+              <div className="relative w-12 h-12 flex-shrink-0 transition-transform group-hover:scale-105">
                 <Image
                   src="/logo-unipaz.png"
                   alt="UNIPAZ Logo"
@@ -67,10 +65,10 @@ export const Navbar: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-base tracking-tight text-unipaz-navy dark:text-white">
+                  <span className="font-black text-lg tracking-tight text-unipaz-navy dark:text-white">
                     UNIPAZ
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-unipaz-orange/10 text-unipaz-orange border border-unipaz-orange/20 tracking-wider">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-unipaz-orange/10 text-unipaz-orange border border-unipaz-orange/20 tracking-wider">
                     PFI
                   </span>
                 </div>
@@ -80,8 +78,8 @@ export const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* Pestañas de Navegación Refinadas (Estilo Segmented Pill) */}
-            <nav className="hidden md:flex items-center p-1 rounded-full bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-white/10 shadow-inner">
+            {/* Pestañas de Navegación Refinadas */}
+            <nav className="hidden md:flex items-center p-1.5 rounded-full bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200/70 dark:border-white/10 shadow-inner">
               {currentLinks.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -102,24 +100,19 @@ export const Navbar: React.FC = () => {
               })}
             </nav>
 
-            {/* Acciones del Header: Toggle Único Elegante y Perfil */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              {/* Toggle Único de Tema (Elegante Switch Pill) */}
+            {/* Botón Sol/Luna + Credencial/Escáner + Perfil */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Botón Sol y Luna Elegante */}
               <button
                 onClick={toggleTheme}
-                className="relative flex items-center gap-1.5 p-1.5 px-3 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-white/20 transition-all text-xs font-medium"
-                title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                aria-label="Cambiar tema"
+                className="relative p-2.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all hover:scale-105 shadow-sm"
+                title={theme === 'dark' ? 'Activar Modo Claro' : 'Activar Modo Oscuro'}
               >
                 {theme === 'dark' ? (
-                  <>
-                    <Sun className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[11px] font-semibold text-slate-200">Claro</span>
-                  </>
+                  <Sun className="w-4 h-4 text-amber-400 animate-fadeIn" />
                 ) : (
-                  <>
-                    <Moon className="w-3.5 h-3.5 text-unipaz-navy" />
-                    <span className="text-[11px] font-semibold text-unipaz-navy">Oscuro</span>
-                  </>
+                  <Moon className="w-4 h-4 text-unipaz-navy animate-fadeIn" />
                 )}
               </button>
 

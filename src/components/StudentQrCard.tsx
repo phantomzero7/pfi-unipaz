@@ -22,7 +22,7 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Generamos un QR con el código secreto o matrícula del estudiante
+    // Generamos un QR con los datos del estudiante
     const payload = JSON.stringify({
       id: student.id,
       matricula: student.matricula,
@@ -53,23 +53,28 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-br from-unipaz-navy-deep via-unipaz-navy to-slate-950 p-6 shadow-2xl text-white backdrop-blur-xl"
+      className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-[#001833] via-[#002855] to-[#0A1526] p-6 shadow-2xl text-white backdrop-blur-xl"
     >
       {/* Decorative Glows */}
       <div className="absolute -top-16 -right-16 w-44 h-44 bg-unipaz-orange/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-unipaz-cobalt/30 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header Institucional de la Credencial */}
+      {/* Header Oficial con el Logo Institucional UNIPAZ */}
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-unipaz-orange to-amber-400 flex items-center justify-center font-black text-slate-950 shadow-md">
-            U
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white p-1 shadow-md flex-shrink-0 flex items-center justify-center">
+            <Image
+              src="/logo-unipaz.png"
+              alt="Logo UNIPAZ"
+              fill
+              className="object-contain p-0.5"
+            />
           </div>
           <div>
-            <h3 className="font-extrabold tracking-wider text-xs uppercase text-slate-200">
+            <h3 className="font-black tracking-wider text-xs uppercase text-white">
               UNIPAZ
             </h3>
-            <p className="text-[10px] text-amber-300 font-semibold tracking-widest uppercase">
+            <p className="text-[10px] text-amber-300 font-bold tracking-wider uppercase">
               Credencial Digital PFI
             </p>
           </div>
@@ -95,10 +100,10 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               />
             </div>
             <div>
-              <h4 className="text-base font-bold leading-tight text-white">
+              <h4 className="text-base font-black leading-tight text-white">
                 {student.nombre} {student.apellidos}
               </h4>
-              <p className="text-xs text-amber-200/90 font-medium">
+              <p className="text-xs text-amber-200/90 font-medium mt-0.5">
                 {student.carrera}
               </p>
             </div>
@@ -122,7 +127,7 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Horas PFI:</span>
-              <span className="font-bold text-unipaz-orange">{horasTotales.toFixed(1)} hrs</span>
+              <span className="font-black text-unipaz-orange">+{horasTotales.toFixed(1)} hrs</span>
             </div>
           </div>
         </div>
@@ -143,8 +148,8 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               <QrCode className="w-8 h-8" />
             </div>
           )}
-          <span className="text-[10px] font-bold text-slate-600 tracking-wider uppercase mt-1">
-            Escanear para Check-In
+          <span className="text-[10px] font-bold text-slate-700 tracking-wider uppercase mt-1">
+            Escanear para Asistencia
           </span>
         </div>
       </div>
@@ -152,7 +157,7 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
       {/* Footer Info */}
       <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
         <span>ID: <code className="font-mono text-slate-300">{student.id}</code></span>
-        <span className="text-amber-400/90 font-medium">Válido Ciclo 2026-2</span>
+        <span className="text-amber-400 font-bold">Válido Ciclo 2026</span>
       </div>
     </motion.div>
   );
