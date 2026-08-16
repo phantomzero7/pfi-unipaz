@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -13,370 +14,416 @@ import {
   Compass,
   Download,
   FileCheck,
-  Flame,
-  HelpCircle,
+  FileText,
+  Info,
+  Layers,
   Lock,
+  MapPin,
   QrCode,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
+  UserCheck,
+  XCircle,
 } from 'lucide-react';
 import { CertificatePdfModal } from '@/components/CertificatePdfModal';
-import { RadialProgress } from '@/components/RadialProgress';
 import { StudentQrCard } from '@/components/StudentQrCard';
+import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
+import { getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
+import { EventAttendance } from '@/lib/types';
 
-export default function EstudianteDashboardPage() {
-  const { currentUser, getStudentProgress, getStudentAttendances } = usePFI();
-  const [showCertModal, setShowCertModal] = useState(false);
-
+export default function EstudianteDashboard() {
+  const { currentUser, getStudentProgress, getStudentAttendances, events } = usePFI();
   const progress = getStudentProgress();
   const attendances = getStudentAttendances();
-  const canGenerateCertificate = progress.horasTotales >= 400;
+
+  const [showCertModal, setShowCertModal] = useState(false);
+  const [selectedWorkshopAtt, setSelectedWorkshopAtt] = useState<EventAttendance | null>(null);
+  const [activeTab, setActiveTab] = useState<'realizados' | 'no_realizados' | 'programados'>('realizados');
+
+  // Clasificar asistencias
+  const classifiedAttendances = attendances.map((att) => ({
+    ...att,
+    info: getAttendanceStatusInfo(att, att.event),
+  }));
+
+  const realizados = classifiedAttendances.filter((a) => a.info.isRealizado);
+  const noRealizados = classifiedAttendances.filter((a) => a.info.isNoRealizado);
+  const programados = classifiedAttendances.filter((a) => a.info.isProgramado);
+
+  const canDownloadGeneralCert = progress.horasTotales >= 400;
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      {/* Top Banner / Saludo y Estado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 rounded-3xl shadow-sm dark:shadow-xl">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
-              Expediente PFI Estudiantil
-            </span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-mono font-bold">
-              {currentUser.matricula}
-            </span>
+      {/* Header Institucional */}
+      <div className="relative overflow-hidden rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-unipaz-orange/80 shadow-md flex-shrink-0">
+              <Image
+                src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                alt={currentUser.nombre}
+                fill
+                priority
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-unipaz-orange">
+                  Expediente Estudiantil PFI
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold">
+                  {currentUser.matricula}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
+                {currentUser.nombre} {currentUser.apellidos}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                {currentUser.carrera} · Generación {currentUser.periodo_ingreso}
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
-            ¡Hola, {currentUser.nombre}!
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-            {currentUser.carrera} · Generación {currentUser.periodo_ingreso}
+
+          {/* Botón de Constancia Oficial */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {canDownloadGeneralCert ? (
+              <button
+                onClick={() => setShowCertModal(true)}
+                className="py-3 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
+              >
+                <Download className="w-4 h-4" />
+                Descargar Constancia Oficial PFI
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowCertModal(true)}
+                className="py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 dark:border-white/10 transition-all"
+              >
+                <Lock className="w-4 h-4 text-amber-500" />
+                Constancia PFI ({progress.horasTotales.toFixed(0)}/400 hrs)
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de Métricas Principales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Horas Totales */}
+        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Total Horas Acreditadas:</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-3xl font-black text-unipaz-navy dark:text-white font-mono">
+              {progress.horasTotales.toFixed(2)}
+            </span>
+            <span className="text-xs text-slate-500 font-bold">/ 400.00 hrs</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                progress.horasTotales >= 730
+                  ? 'bg-amber-500'
+                  : progress.horasTotales >= 400
+                  ? 'bg-emerald-500'
+                  : 'bg-unipaz-orange'
+              }`}
+              style={{ width: `${progress.porcentajeMeta}%` }}
+            />
+          </div>
+          <p className="text-[11px] font-bold text-unipaz-orange dark:text-amber-300">
+            {progress.escalaTexto}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Botón de Constancia Oficial con Validación de 400 Horas */}
-          {canGenerateCertificate ? (
+        {/* 3 Talleres Extracurriculares */}
+        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">3 Talleres Extracurriculares:</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
+              {progress.talleresExtracurriculares.completados}/3
+            </span>
+            <span className="text-xs text-slate-500 font-bold">({progress.talleresExtracurriculares.horas.toFixed(1)}/50h)</span>
+          </div>
+          <div className={`text-xs font-black flex items-center gap-1 ${progress.talleresExtracurriculares.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            {progress.talleresExtracurriculares.cumplido ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" /> Requisito Cumplido
+              </>
+            ) : (
+              <>
+                <Clock className="w-3.5 h-3.5" /> {3 - progress.talleresExtracurriculares.completados} restantes
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 1 Taller Liderazgo */}
+        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Taller Liderazgo Social:</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
+              {progress.tallerLiderazgo.completados}/1
+            </span>
+            <span className="text-xs text-slate-500 font-bold">({progress.tallerLiderazgo.horas.toFixed(1)}/10h)</span>
+          </div>
+          <div className={`text-xs font-black flex items-center gap-1 ${progress.tallerLiderazgo.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+            {progress.tallerLiderazgo.cumplido ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" /> Requisito Cumplido
+              </>
+            ) : (
+              <>
+                <Clock className="w-3.5 h-3.5" /> 1 pendiente
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Plan de Vida y Carrera */}
+        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 shadow-sm dark:shadow-xl space-y-2">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Plan de Vida y Carrera (PVC):</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-black text-unipaz-navy dark:text-white">
+              {progress.pvc.horas.toFixed(1)}
+            </span>
+            <span className="text-xs text-slate-500 font-bold">/ 75.00 hrs</span>
+          </div>
+          <div className={`text-xs font-black flex items-center gap-1 ${progress.pvc.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
+            {progress.pvc.cumplido ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" /> PVC I, II, III Acreditados
+              </>
+            ) : (
+              <>
+                <Compass className="w-3.5 h-3.5" /> En Progreso Anual
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN CENTRAL: PESTAÑAS DE EVENTOS REALIZADOS vs NO REALIZADOS vs PROGRAMADOS */}
+      <div className="rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+          <div>
+            <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight">
+              Historial de Actividades y Talleres
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Consulta tus horas generadas, actividades completadas y eventos donde no se registró salida (Check-Out).
+            </p>
+          </div>
+
+          {/* Segmented Tabs */}
+          <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 self-start sm:self-auto">
             <button
-              onClick={() => setShowCertModal(true)}
-              className="py-3 px-5 rounded-full bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+              onClick={() => setActiveTab('realizados')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'realizados'
+                  ? 'bg-white dark:bg-emerald-500 text-emerald-800 dark:text-slate-950 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
             >
-              <Award className="w-4 h-4" />
-              Descargar Constancia Oficial PDF
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Realizados ({realizados.length})
             </button>
-          ) : (
-            <div
-              className="py-2.5 px-4 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-xs font-semibold flex items-center gap-2"
-              title="Requiere mínimo 400 horas acumuladas"
+
+            <button
+              onClick={() => setActiveTab('no_realizados')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'no_realizados'
+                  ? 'bg-rose-500 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
             >
-              <Lock className="w-3.5 h-3.5 text-amber-500" />
-              <span>Constancia bloqueada ({(400 - progress.horasTotales).toFixed(1)}h restantes)</span>
-            </div>
-          )}
-        </div>
-      </div>
+              <XCircle className="w-3.5 h-3.5" />
+              No Realizados ({noRealizados.length})
+            </button>
 
-      {/* Grid Principal: Medidor Central + Tarjeta QR + Estado */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Columna Izquierda: Medidor Radial de Horas */}
-        <div className="lg:col-span-7 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-            <div>
-              <h2 className="text-lg font-black text-unipaz-navy dark:text-white flex items-center gap-2">
-                Progreso Global PFI
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-unipaz-cobalt/30 text-unipaz-cobalt dark:text-blue-300 border border-blue-200 dark:border-blue-400/20 font-bold">
-                  {progress.porcentajeMeta}% de la Meta
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Acumulación de horas para requisito normativo de titulación
-              </p>
-            </div>
-            <div className="hidden sm:block text-right text-xs">
-              <span className="text-slate-500 dark:text-slate-400">Nivel Actual:</span>
-              <div className="font-extrabold text-unipaz-orange dark:text-amber-300">{progress.escala}</div>
-            </div>
-          </div>
-
-          {/* SVG Radial Meter */}
-          <RadialProgress
-            currentHours={progress.horasTotales}
-            escala={progress.escala}
-            escalaTexto={progress.escalaTexto}
-            isAcreditado={progress.isAcreditado}
-          />
-
-          {/* Estado de Requisitos Obligatorios Resumen */}
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200 dark:border-white/10 text-center">
-            <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-white/10">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block truncate">Talleres Extracurr.</span>
-              <span className={`text-xs font-black ${progress.talleresExtracurriculares.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                {progress.talleresExtracurriculares.completados}/3 ({progress.talleresExtracurriculares.horas.toFixed(1)}h)
-              </span>
-            </div>
-
-            <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-white/10">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block truncate">Taller Liderazgo</span>
-              <span className={`text-xs font-black ${progress.tallerLiderazgo.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                {progress.tallerLiderazgo.completados}/1 ({progress.tallerLiderazgo.horas.toFixed(1)}h)
-              </span>
-            </div>
-
-            <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-2xl border border-slate-200 dark:border-white/10">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold block truncate">Bloque PVC</span>
-              <span className={`text-xs font-black ${progress.pvc.cumplido ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                {progress.pvc.horas.toFixed(1)} / 75h
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Columna Derecha: Credencial Digital Estudiantil QR */}
-        <div className="lg:col-span-5 space-y-6">
-          <StudentQrCard
-            student={currentUser}
-            horasTotales={progress.horasTotales}
-            escala={progress.escalaTexto}
-          />
-
-          {/* Tips / Callout */}
-          <div className="rounded-3xl bg-white dark:bg-gradient-to-br dark:from-blue-950/40 dark:to-slate-900/60 border border-slate-200/90 dark:border-blue-400/20 p-5 space-y-2 shadow-sm">
-            <div className="flex items-center gap-2 text-xs font-bold text-unipaz-navy dark:text-blue-300">
-              <TrendingUp className="w-4 h-4 text-unipaz-orange" />
-              ¿Cómo acreditar más horas?
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              {canGenerateCertificate
-                ? '¡Felicidades! Has superado el mínimo de 400 horas obligatorias. Puedes tramitar tu constancia oficial o seguir acumulando hasta 730h para Mención Sobresaliente.'
-                : `Necesitas acumular ${(400 - progress.horasTotales).toFixed(1)} horas más para desbloquear la emisión de tu Constancia Oficial de Titulación.`}
-            </p>
-            <Link
-              href="/estudiante/eventos"
-              className="inline-flex items-center gap-1 text-xs font-bold text-unipaz-orange dark:text-amber-300 hover:underline mt-2"
+            <button
+              onClick={() => setActiveTab('programados')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'programados'
+                  ? 'bg-unipaz-navy dark:bg-unipaz-cobalt text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
             >
-              Explorar actividades disponibles <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Sección 2: Requisitos Obligatorios Detallados */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-black text-unipaz-navy dark:text-white tracking-tight">
-              Validación de Requisitos Obligatorios
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Debes cumplir con estos 3 bloques para completar la acreditación reglamentaria:
-            </p>
+              <Calendar className="w-3.5 h-3.5" />
+              Programados ({programados.length})
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 1. Talleres Extracurriculares */}
-          <div className={`p-6 rounded-3xl border transition-all ${
-            progress.talleresExtracurriculares.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
-              : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Bloque 1 · 50.00 hrs
-              </span>
-              {progress.talleresExtracurriculares.cumplido ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              )}
-            </div>
-
-            <h4 className="text-base font-black text-unipaz-navy dark:text-white mt-2">
-              3 Talleres Extracurriculares
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              Culturales, deportivos o sociales (16.67 hrs c/u = 50.00 hrs totales).
-            </p>
-
-            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Completados:</span>
-              <span className="font-bold text-unipaz-navy dark:text-white font-mono">
-                {progress.talleresExtracurriculares.completados} de 3 talleres ({progress.talleresExtracurriculares.horas.toFixed(2)}h)
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Taller de Liderazgo */}
-          <div className={`p-6 rounded-3xl border transition-all ${
-            progress.tallerLiderazgo.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
-              : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Bloque 2 · 10.00 hrs
-              </span>
-              {progress.tallerLiderazgo.cumplido ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              )}
-            </div>
-
-            <h4 className="text-base font-black text-unipaz-navy dark:text-white mt-2">
-              1 Taller de Liderazgo Social
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              Enfoque en inclusión, perspectiva de género y promoción de derechos.
-            </p>
-
-            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Completados:</span>
-              <span className="font-bold text-unipaz-navy dark:text-white font-mono">
-                {progress.tallerLiderazgo.completados} de 1 taller ({progress.tallerLiderazgo.horas.toFixed(2)}h)
-              </span>
-            </div>
-          </div>
-
-          {/* 3. Plan de Vida y Carrera */}
-          <div className={`p-6 rounded-3xl border transition-all ${
-            progress.pvc.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
-              : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Bloque 3 · 75.00 hrs
-              </span>
-              {progress.pvc.cumplido ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              )}
-            </div>
-
-            <h4 className="text-base font-black text-unipaz-navy dark:text-white mt-2">
-              Plan de Vida y Carrera (PVC)
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-              PVC I (25h), PVC II (25h) y PVC III (25h) completados secuencialmente.
-            </p>
-
-            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Módulos:</span>
-              <div className="flex items-center gap-1 font-mono font-bold text-xs">
-                <span className={progress.pvc.pvc1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>I</span>·
-                <span className={progress.pvc.pvc2 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>II</span>·
-                <span className={progress.pvc.pvc3 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}>III</span>
-                <span className="text-slate-500 dark:text-slate-400 ml-1">({progress.pvc.horas.toFixed(2)}h)</span>
+        {/* TAB 1: EVENTOS REALIZADOS (ACREDITADOS) */}
+        {activeTab === 'realizados' && (
+          <div className="space-y-3">
+            {realizados.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                Aún no tienes actividades acreditadas. Inscríbete a los talleres del catálogo y realiza tu Check-In y Check-Out.
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sección 3: Historial de Asistencias y Actividades Acreditadas */}
-      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
-          <div>
-            <h3 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight">
-              Historial de Actividades Registradas
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Registro cronológico de asistencias, check-ins y horas acreditadas:
-            </p>
-          </div>
-          <Link
-            href="/estudiante/eventos"
-            className="text-xs font-bold text-unipaz-orange hover:underline flex items-center gap-1"
-          >
-            Ver catálogo completo <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {attendances.length === 0 ? (
-          <div className="text-center py-10 text-slate-500 dark:text-slate-400 space-y-2">
-            <Calendar className="w-10 h-10 mx-auto text-slate-400 dark:text-slate-600" />
-            <p className="text-sm font-medium">Aún no tienes asistencias registradas.</p>
-            <Link
-              href="/estudiante/eventos"
-              className="inline-block py-2 px-4 rounded-full bg-unipaz-orange text-white font-bold text-xs mt-2 shadow-sm"
-            >
-              Inscribirme a mi primer evento
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
-                  <th className="py-3 px-3">Actividad / Taller</th>
-                  <th className="py-3 px-3">Categoría</th>
-                  <th className="py-3 px-3">Modalidad</th>
-                  <th className="py-3 px-3">Estatus</th>
-                  <th className="py-3 px-3 text-right">Horas Acreditadas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {attendances.map((att) => {
-                  const ev = att.event;
-                  return (
-                    <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <div className="font-black text-unipaz-navy dark:text-white text-sm">
-                          {ev?.titulo || 'Actividad Formativa'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                          {ev?.fecha_evento || 'Fecha registrada'} · {ev?.ubicacion || 'Campus'}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-bold text-[11px]">
-                          {ev?.categoria || 'General'}
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {realizados.map((att) => (
+                  <div
+                    key={att.id}
+                    className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition-all"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300">
+                          {att.event?.categoria || 'Actividad PFI'}
                         </span>
-                      </td>
-                      <td className="py-3.5 px-3 capitalize text-slate-600 dark:text-slate-300 font-medium">
-                        {ev?.modalidad || 'presencial'}
-                      </td>
-                      <td className="py-3.5 px-3">
-                        {att.status === 'asistio' ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-black">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Acreditado
-                          </span>
-                        ) : att.status === 'registrado' ? (
-                          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                            <Clock className="w-3.5 h-3.5" /> Inscrito
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
-                            <AlertCircle className="w-3.5 h-3.5" /> {att.status}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-3 text-right font-mono font-black text-sm">
-                        {att.horas_acreditadas > 0 ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">+{att.horas_acreditadas.toFixed(2)} hrs</span>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500">0.00 hrs</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <span className="text-xs font-mono font-black text-emerald-600 dark:text-emerald-400">
+                          +{att.horas_acreditadas.toFixed(2)} hrs
+                        </span>
+                      </div>
+
+                      <h3 className="font-black text-unipaz-navy dark:text-white text-sm mt-2">
+                        {att.event?.titulo || 'Actividad Formativa'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-unipaz-cobalt" />
+                        {att.event?.fecha_evento} · {att.event?.modalidad}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Acreditada
+                      </span>
+
+                      {att.event && (
+                        <button
+                          onClick={() => setSelectedWorkshopAtt(att)}
+                          className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-[11px] flex items-center gap-1 transition-colors shadow-sm"
+                        >
+                          <Download className="w-3 h-3" />
+                          Constancia PDF
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </section>
 
-      {/* Modal para descargar PDF Oficial */}
-      {showCertModal && canGenerateCertificate && (
+        {/* TAB 2: EVENTOS NO REALIZADOS (SIN CHECK-OUT / INCOMPLETOS) */}
+        {activeTab === 'no_realizados' && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-400/20 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+              <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">¿Por qué aparecen como No Realizadas estas actividades?</p>
+                <p className="mt-0.5 opacity-90 leading-relaxed">
+                  Para acreditar horas oficiales, el reglamento PFI de UNIPAZ exige realizar tanto el <strong>Check-In</strong> como el <strong>Check-Out</strong> (mínimo 80% de permanencia). Si no realizaste tu Check-Out o tuviste un inconveniente justificado, acude a la Coordinación PFI para su validación manual.
+                </p>
+              </div>
+            </div>
+
+            {noRealizados.length === 0 ? (
+              <div className="py-12 text-center text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                ✓ ¡Excelente! No tienes actividades pendientes de Check-Out ni canceladas.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {noRealizados.map((att) => (
+                  <div
+                    key={att.id}
+                    className="p-5 rounded-2xl bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-500/30 space-y-3 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-[10px] font-bold text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-400/30">
+                          {att.info.statusLabel}
+                        </span>
+                        <span className="text-xs font-mono font-black text-rose-600 dark:text-rose-400">
+                          0.00 hrs
+                        </span>
+                      </div>
+
+                      <h3 className="font-black text-unipaz-navy dark:text-white text-sm mt-2">
+                        {att.event?.titulo || 'Actividad Formativa'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Fecha del evento: {att.event?.fecha_evento}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-500/20 text-[11px] text-slate-600 dark:text-slate-300">
+                      <p className="font-bold text-rose-700 dark:text-rose-300">Motivo de no acreditación:</p>
+                      <p className="mt-0.5 leading-tight">{att.info.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: EVENTOS PROGRAMADOS */}
+        {activeTab === 'programados' && (
+          <div className="space-y-3">
+            {programados.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                No tienes actividades programadas actualmente. Consulta el{' '}
+                <Link href="/estudiante/eventos" className="text-unipaz-orange font-bold hover:underline">
+                  Catálogo de Actividades
+                </Link>{' '}
+                para inscribirte.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {programados.map((att) => (
+                  <div
+                    key={att.id}
+                    className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-400/30">
+                        Inscrito / Por Asistir
+                      </span>
+                      <span className="text-xs font-mono font-bold text-unipaz-orange">
+                        +{att.event?.horas_pfi.toFixed(2)}h al acreditar
+                      </span>
+                    </div>
+
+                    <h3 className="font-black text-unipaz-navy dark:text-white text-sm">
+                      {att.event?.titulo}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-unipaz-cobalt" />
+                      {att.event?.fecha_evento} · {att.event?.hora_inicio} a {att.event?.hora_fin}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Constancia General */}
+      {showCertModal && (
         <CertificatePdfModal
           student={currentUser}
           progress={progress}
           isOpen={showCertModal}
           onClose={() => setShowCertModal(false)}
+        />
+      )}
+
+      {/* Modal Constancia Individual de Taller */}
+      {selectedWorkshopAtt && selectedWorkshopAtt.event && (
+        <WorkshopCertificatePdfModal
+          student={currentUser}
+          attendance={selectedWorkshopAtt}
+          event={selectedWorkshopAtt.event}
+          isOpen={!!selectedWorkshopAtt}
+          onClose={() => setSelectedWorkshopAtt(null)}
         />
       )}
     </div>

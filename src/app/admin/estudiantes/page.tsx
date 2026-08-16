@@ -12,18 +12,21 @@ import {
   Compass,
   FileCheck,
   Plus,
+  RotateCcw,
   Search,
   Send,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   User,
   UserCheck,
   Users,
   X,
+  XCircle,
 } from 'lucide-react';
+import { calculateStudentPFIProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { calculateStudentPFIProgress } from '@/lib/pfi-rules';
-import { PFIEvent, UserProfile } from '@/lib/types';
+import { AttendanceStatus, PFIEvent, UserProfile } from '@/lib/types';
 
 export default function AdminEstudiantesDirectoryPage() {
   const { profiles, events, attendances, validateAttendanceManually, assignEventToStudent, currentUser } = usePFI();
@@ -36,6 +39,7 @@ export default function AdminEstudiantesDirectoryPage() {
   const [isSpecialCase, setIsSpecialCase] = useState(false);
   const [assignFeedback, setAssignFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Filtro de lista de estudiantes
   const students = profiles.filter((p) => p.role === 'estudiante');
   const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
 
@@ -57,10 +61,14 @@ export default function AdminEstudiantesDirectoryPage() {
   const selectedStudentAttendances = selectedStudent
     ? attendances
         .filter((a) => a.student_id === selectedStudent.id)
-        .map((att) => ({
-          ...att,
-          event: eventsMap.get(att.event_id),
-        }))
+        .map((att) => {
+          const ev = eventsMap.get(att.event_id);
+          return {
+            ...att,
+            event: ev,
+            info: getAttendanceStatusInfo(att, ev),
+          };
+        })
     : [];
 
   const handleExecuteDirectAssign = (e: React.FormEvent) => {
@@ -88,7 +96,7 @@ export default function AdminEstudiantesDirectoryPage() {
           Directorio Estudiantil & Auditoría de Créditos
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Consulta el historial de horas, expedientes de titulación, asigna actividades directas por cohorte y valida créditos de actividades especiales.
+          Consulta el historial de horas, valida o modifica asistencias sin Check-Out por justificación administrativa y asigna actividades directas por cohorte.
         </p>
 
         {/* Buscador */}
@@ -177,7 +185,7 @@ export default function AdminEstudiantesDirectoryPage() {
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 hover:text-unipaz-navy dark:hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
               >
                 <FileCheck className="w-4 h-4 text-unipaz-orange" />
-                Auditar Expediente & Asignar
+                Auditar Expediente & Validar
               </button>
             </div>
           );
@@ -187,7 +195,7 @@ export default function AdminEstudiantesDirectoryPage() {
       {/* Modal de Auditoría de Expediente */}
       {selectedStudent && selectedStudentProgress && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white my-8 space-y-6">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl text-slate-900 dark:text-white my-8 space-y-6">
             <button
               onClick={() => setSelectedStudent(null)}
               className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
@@ -262,20 +270,25 @@ export default function AdminEstudiantesDirectoryPage() {
               </div>
             </div>
 
-            {/* Tabla de Asistencias del Estudiante */}
+            {/* Tabla de Asistencias del Estudiante con Modificación Administrativa */}
             <div className="space-y-2">
-              <h4 className="text-sm font-black text-unipaz-navy dark:text-white">
-                Registro de Actividades y Asistencias:
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-unipaz-navy dark:text-white">
+                  Auditoría y Gestión de Asistencias del Estudiante:
+                </h4>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Como Administrador puedes aprobar actividades sin Check-Out por justificación o marcarlas como no realizadas.
+                </span>
+              </div>
 
-              <div className="max-h-60 overflow-y-auto rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
+              <div className="max-h-72 overflow-y-auto rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/80 sticky top-0 font-bold">
                       <th className="py-2.5 px-3">Actividad</th>
-                      <th className="py-2.5 px-3">Estatus</th>
+                      <th className="py-2.5 px-3">Estatus del Estudiante</th>
                       <th className="py-2.5 px-3 text-right">Horas</th>
-                      <th className="py-2.5 px-3 text-right">Acción</th>
+                      <th className="py-2.5 px-3 text-right">Modificación Admin</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -287,32 +300,53 @@ export default function AdminEstudiantesDirectoryPage() {
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400">
                             {att.event?.categoria} · {att.event?.fecha_evento}
-                            {att.es_caso_especial && (
-                              <span className="text-amber-600 font-bold ml-2">(Caso Especial)</span>
+                            {att.notes && (
+                              <span className="text-slate-400 block italic mt-0.5">
+                                Nota: {att.notes}
+                              </span>
                             )}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 capitalize font-bold">
-                          {att.status === 'asistio' ? (
-                            <span className="text-emerald-600 dark:text-emerald-400">Acreditado</span>
-                          ) : (
-                            <span className="text-amber-600 dark:text-amber-400">{att.status}</span>
-                          )}
+                        <td className="py-2.5 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${att.info.badgeClass}`}>
+                            {att.info.statusLabel}
+                          </span>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-black text-slate-800 dark:text-white">
-                          +{att.horas_acreditadas.toFixed(2)}h
+                          {att.status === 'asistio' ? (
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              +{att.horas_acreditadas.toFixed(2)}h
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">0.00h</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-right">
-                          {att.status !== 'asistio' && (
-                            <button
-                              onClick={() => {
-                                validateAttendanceManually(att.id, 'asistio');
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-[10px] shadow-sm"
-                            >
-                              Aprobar
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-1.5">
+                            {att.status !== 'asistio' ? (
+                              <button
+                                onClick={() => {
+                                  const evHours = att.event?.horas_pfi || 10;
+                                  validateAttendanceManually(att.id, 'asistio', evHours);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-[10px] shadow-sm flex items-center gap-1"
+                                title="Acreditar como cumplida manualmente (por justificación o error de Check-Out)"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                Validar y Acreditar (+{att.event?.horas_pfi || 10}h)
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  validateAttendanceManually(att.id, 'incompleto', 0);
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 hover:text-rose-600 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-colors"
+                                title="Marcar como no realizada (quitar horas)"
+                              >
+                                Marcar No Realizada
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -35,6 +35,75 @@ export const PFI_RULES = {
 };
 
 /**
+ * Determina el estado real y descriptivo de una asistencia
+ */
+export function getAttendanceStatusInfo(
+  att: EventAttendance,
+  event?: PFIEvent
+): {
+  isRealizado: boolean;
+  isNoRealizado: boolean;
+  isProgramado: boolean;
+  statusLabel: string;
+  badgeClass: string;
+  description: string;
+} {
+  const isPastEvent = event ? new Date(`${event.fecha_evento}T23:59:59`) < new Date() : false;
+
+  if (att.status === 'asistio' && att.horas_acreditadas > 0) {
+    return {
+      isRealizado: true,
+      isNoRealizado: false,
+      isProgramado: false,
+      statusLabel: 'Realizada & Acreditada',
+      badgeClass: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-400/30',
+      description: `Actividad acreditada satisfactoriamente con +${att.horas_acreditadas.toFixed(2)} hrs PFI.`,
+    };
+  }
+
+  if (att.status === 'incompleto') {
+    return {
+      isRealizado: false,
+      isNoRealizado: true,
+      isProgramado: false,
+      statusLabel: 'No Realizada (Sin Check-Out)',
+      badgeClass: 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-400/30',
+      description: att.notes || 'No se registró Check-Out o la permanencia fue inferior al 80%. Otorga 0.00 hrs.',
+    };
+  }
+
+  if (att.status === 'registrado') {
+    if (isPastEvent || (att.check_in_timestamp && !att.check_out_timestamp)) {
+      return {
+        isRealizado: false,
+        isNoRealizado: true,
+        isProgramado: false,
+        statusLabel: 'No Realizada (Sin Check-Out)',
+        badgeClass: 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-400/30',
+        description: 'El evento concluyó sin registro de Check-Out. Requiere justificación o validación de Coordinación.',
+      };
+    }
+    return {
+      isRealizado: false,
+      isNoRealizado: false,
+      isProgramado: true,
+      statusLabel: 'Programada / Inscrito',
+      badgeClass: 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-400/30',
+      description: 'Inscripción activa. Recuerda realizar Check-In y Check-Out el día del evento.',
+    };
+  }
+
+  return {
+    isRealizado: false,
+    isNoRealizado: true,
+    isProgramado: false,
+    statusLabel: 'Cancelada / No Asistió',
+    badgeClass: 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-white/10',
+    description: 'Actividad no completada (0.00 hrs).',
+  };
+}
+
+/**
  * Calcula la escala de evaluación a partir del total de horas
  */
 export function calculateEvaluationScale(horasTotales: number): {
@@ -73,10 +142,7 @@ export function calculateEvaluationScale(horasTotales: number): {
 
 /**
  * Procesa el resumen de avance PFI de un estudiante a partir de sus asistencias
- * Aplicando la regla de tope:
- * - Talleres extracurriculares: máx 3 generan horas (hasta 50h).
- * - Taller de liderazgo: máx 1 genera horas (hasta 10h).
- * - PVC: máx 3 módulos (hasta 75h).
+ * Solo suman horas aquellas asistencias con status === 'asistio' y horas_acreditadas > 0
  */
 export function calculateStudentPFIProgress(
   attendances: EventAttendance[],
@@ -97,12 +163,13 @@ export function calculateStudentPFIProgress(
   
   const desglose: Record<string, { horas: number; cantidad: number }> = {};
   
-  // Procesar asistencias con horas acreditadas o estatus 'asistio'
+  // Procesar asistencias con horas acreditadas y estatus 'asistio'
   for (const att of attendances) {
-    if (att.status !== 'asistio' && att.horas_acreditadas <= 0) continue;
+    // Si no tiene estatus 'asistio' o sus horas son 0, NO suma
+    if (att.status !== 'asistio' || att.horas_acreditadas <= 0) continue;
     
     const event = att.event || eventsMap.get(att.event_id);
-    const horasNominales = att.horas_acreditadas > 0 ? Number(att.horas_acreditadas) : (event?.horas_pfi || 0);
+    const horasNominales = Number(att.horas_acreditadas);
     const cat = event?.categoria || 'General';
     
     let horasEfectivas = horasNominales;
@@ -249,7 +316,7 @@ export function validateStayDuration(
       permanenciaMinutos: Math.round(permanenciaMinutos),
       porcentajePermanencia: porcentajePercent,
       status: 'incompleto',
-      mensaje: `Permanencia insuficiente (${porcentajePercent}%). Se requiere al menos el 80% (${Math.round(duracionMinutos * 0.8)} min).`,
+      mensaje: `No se acreditó por permanencia insuficiente (${porcentajePercent}%). Se requiere al menos el 80% de estancia y Check-Out.`,
     };
   }
 }

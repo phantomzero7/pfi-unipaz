@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, CheckCircle2, Clock, Globe, KeyRound, MapPin, Sparkles, UserPlus, Users, XCircle } from 'lucide-react';
+import { getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { EventAttendance, PFIEvent } from '@/lib/types';
 
@@ -23,8 +24,10 @@ export const EventCard: React.FC<EventCardProps> = ({
   const [otpInput, setOtpInput] = useState('');
   const [otpMessage, setOtpMessage] = useState<{ success: boolean; text: string } | null>(null);
 
+  const statusInfo = attendance ? getAttendanceStatusInfo(attendance, event) : null;
   const isRegistered = Boolean(attendance && attendance.status !== 'cancelado');
-  const isAcreditado = attendance?.status === 'asistio';
+  const isAcreditado = statusInfo?.isRealizado;
+  const isNoRealizado = statusInfo?.isNoRealizado;
   const isFull = event.cupo_maximo > 0 && (event.cupo_ocupado || 0) >= event.cupo_maximo;
 
   const handleOtpSubmit = (e: React.FormEvent) => {
@@ -135,13 +138,23 @@ export const EventCard: React.FC<EventCardProps> = ({
       {/* Botones de Acción */}
       <div className="mt-5 pt-3.5 border-t border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-2">
         {isAcreditado ? (
-          <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 rounded-2xl px-4 py-2.5 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+          <div className="w-full flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 rounded-2xl px-4 py-2.5 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               ¡Actividad Acreditada!
             </span>
             <span className="font-black">
               +{attendance?.horas_acreditadas || event.horas_pfi} hrs
+            </span>
+          </div>
+        ) : isNoRealizado ? (
+          <div className="w-full flex items-center justify-between bg-rose-50 dark:bg-rose-500/15 border border-rose-300 dark:border-rose-500/30 rounded-2xl px-4 py-2.5 text-rose-800 dark:text-rose-300 text-xs font-bold">
+            <span className="flex items-center gap-1.5">
+              <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              {statusInfo?.statusLabel}
+            </span>
+            <span className="font-mono font-black">
+              0.00 hrs
             </span>
           </div>
         ) : isRegistered ? (
