@@ -5,7 +5,7 @@ import Image from 'next/image';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
-import { Award, CheckCircle2, Download, ExternalLink, FileText, Loader2, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Award, CheckCircle2, Download, ExternalLink, FileText, Loader2, Lock, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { PFIProgressSummary, UserProfile } from '@/lib/types';
 
 interface CertificatePdfModalProps {
@@ -25,6 +25,7 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
 
   if (!isOpen) return null;
 
+  const canGenerate = progress.horasTotales >= 400;
   const folio = `UNIPAZ-PFI-${new Date().getFullYear()}-${student.matricula}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
   const verificationUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/validar/${encodeURIComponent(folio)}?student=${encodeURIComponent(student.matricula)}&hours=${progress.horasTotales}`
@@ -61,6 +62,11 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
   };
 
   const generatePDF = async () => {
+    if (!canGenerate) {
+      alert('Se requiere un mínimo de 400.00 horas acreditadas para generar la constancia oficial de titulación.');
+      return;
+    }
+
     try {
       setGenerating(true);
       triggerConfetti();
@@ -281,8 +287,8 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Horas Totales Acumuladas:</span>
-              <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
-                {progress.horasTotales.toFixed(2)} hrs
+              <span className={`text-base font-black ${canGenerate ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                {progress.horasTotales.toFixed(2)} hrs {canGenerate ? '(≥ 400h)' : '(< 400h)'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -299,43 +305,59 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-400/20 text-xs text-blue-900 dark:text-blue-200">
-            <ShieldCheck className="w-5 h-5 text-unipaz-cobalt dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <p>
-              El documento generado cuenta con el <strong>Logo Oficial Institucional</strong>, Sello Digital y código QR de verificación que enlaza directamente al servidor de UNIPAZ.
-            </p>
-          </div>
+          {!canGenerate ? (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-400/20 text-xs text-amber-900 dark:text-amber-200">
+              <Lock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p>
+                No es posible descargar la constancia debido a que el estudiante cuenta con <strong>{progress.horasTotales.toFixed(2)} hrs</strong>. Se requiere un mínimo de <strong>400.00 hrs</strong> para la emisión oficial.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-400/20 text-xs text-blue-900 dark:text-blue-200">
+              <ShieldCheck className="w-5 h-5 text-unipaz-cobalt dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <p>
+                El documento generado cuenta con el <strong>Logo Oficial Institucional</strong>, Sello Digital y código QR de verificación que enlaza directamente al servidor de UNIPAZ.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
-          <button
-            onClick={generatePDF}
-            disabled={generating}
-            className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all duration-300 disabled:opacity-50 text-xs"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generando PDF Oficial...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Descargar Constancia Oficial PDF
-              </>
-            )}
-          </button>
+          {canGenerate ? (
+            <button
+              onClick={generatePDF}
+              disabled={generating}
+              className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all duration-300 disabled:opacity-50 text-xs"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generando PDF Oficial...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  Descargar Constancia Oficial PDF
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              disabled
+              className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold flex items-center justify-center gap-2 text-xs cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+              Constancia Bloqueada (Requiere ≥ 400.00 hrs)
+            </button>
+          )}
 
-          <a
-            href={verificationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto py-3.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-slate-300 dark:border-transparent"
+          <button
+            onClick={onClose}
+            className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors"
           >
-            <ExternalLink className="w-4 h-4" />
-            Validar en Línea
-          </a>
+            Cerrar
+          </button>
         </div>
       </div>
     </div>

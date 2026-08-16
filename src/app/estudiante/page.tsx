@@ -15,6 +15,7 @@ import {
   FileCheck,
   Flame,
   HelpCircle,
+  Lock,
   QrCode,
   ShieldCheck,
   Sparkles,
@@ -31,21 +32,22 @@ export default function EstudianteDashboardPage() {
 
   const progress = getStudentProgress();
   const attendances = getStudentAttendances();
+  const canGenerateCertificate = progress.horasTotales >= 400;
 
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Top Banner / Saludo y Estado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 rounded-3xl shadow-lg shadow-blue-950/5 dark:shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 rounded-3xl shadow-sm dark:shadow-xl">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange dark:text-amber-400">
+            <span className="text-xs font-black uppercase tracking-widest text-unipaz-orange">
               Expediente PFI Estudiantil
             </span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-mono font-bold">
               {currentUser.matricula}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
             ¡Hola, {currentUser.nombre}!
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
@@ -54,21 +56,31 @@ export default function EstudianteDashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Botón de Constancia Oficial */}
-          <button
-            onClick={() => setShowCertModal(true)}
-            className="py-3 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
-          >
-            <Award className="w-4 h-4" />
-            Descargar Constancia Oficial PDF
-          </button>
+          {/* Botón de Constancia Oficial con Validación de 400 Horas */}
+          {canGenerateCertificate ? (
+            <button
+              onClick={() => setShowCertModal(true)}
+              className="py-3 px-5 rounded-full bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+            >
+              <Award className="w-4 h-4" />
+              Descargar Constancia Oficial PDF
+            </button>
+          ) : (
+            <div
+              className="py-2.5 px-4 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-xs font-semibold flex items-center gap-2"
+              title="Requiere mínimo 400 horas acumuladas"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Constancia bloqueada ({(400 - progress.horasTotales).toFixed(1)}h restantes)</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Grid Principal: Medidor Central + Tarjeta QR + Estado */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Columna Izquierda: Medidor Radial de Horas */}
-        <div className="lg:col-span-7 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-lg shadow-blue-950/5 dark:shadow-2xl space-y-6">
+        <div className="lg:col-span-7 rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-2xl space-y-6">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
             <div>
               <h2 className="text-lg font-black text-unipaz-navy dark:text-white flex items-center gap-2">
@@ -129,13 +141,15 @@ export default function EstudianteDashboardPage() {
           />
 
           {/* Tips / Callout */}
-          <div className="rounded-3xl bg-white dark:bg-gradient-to-br dark:from-blue-950/40 dark:to-slate-900/60 border border-slate-200/90 dark:border-blue-400/20 p-5 space-y-2 shadow-lg shadow-blue-950/5">
+          <div className="rounded-3xl bg-white dark:bg-gradient-to-br dark:from-blue-950/40 dark:to-slate-900/60 border border-slate-200/90 dark:border-blue-400/20 p-5 space-y-2 shadow-sm">
             <div className="flex items-center gap-2 text-xs font-bold text-unipaz-navy dark:text-blue-300">
               <TrendingUp className="w-4 h-4 text-unipaz-orange" />
               ¿Cómo acreditar más horas?
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Inscríbete a los próximos talleres, asiste a las jornadas sociales de La Paz o publica artículos de investigación para sumar hasta 100 horas adicionales.
+              {canGenerateCertificate
+                ? '¡Felicidades! Has superado el mínimo de 400 horas obligatorias. Puedes tramitar tu constancia oficial o seguir acumulando hasta 730h para Mención Sobresaliente.'
+                : `Necesitas acumular ${(400 - progress.horasTotales).toFixed(1)} horas más para desbloquear la emisión de tu Constancia Oficial de Titulación.`}
             </p>
             <Link
               href="/estudiante/eventos"
@@ -151,7 +165,7 @@ export default function EstudianteDashboardPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
+            <h3 className="text-xl font-black text-unipaz-navy dark:text-white tracking-tight">
               Validación de Requisitos Obligatorios
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -164,7 +178,7 @@ export default function EstudianteDashboardPage() {
           {/* 1. Talleres Extracurriculares */}
           <div className={`p-6 rounded-3xl border transition-all ${
             progress.talleresExtracurriculares.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-md shadow-emerald-500/5'
+              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
               : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
           }`}>
             <div className="flex items-center justify-between">
@@ -196,7 +210,7 @@ export default function EstudianteDashboardPage() {
           {/* 2. Taller de Liderazgo */}
           <div className={`p-6 rounded-3xl border transition-all ${
             progress.tallerLiderazgo.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-md shadow-emerald-500/5'
+              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
               : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
           }`}>
             <div className="flex items-center justify-between">
@@ -228,7 +242,7 @@ export default function EstudianteDashboardPage() {
           {/* 3. Plan de Vida y Carrera */}
           <div className={`p-6 rounded-3xl border transition-all ${
             progress.pvc.cumplido
-              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-md shadow-emerald-500/5'
+              ? 'bg-white dark:bg-slate-900/70 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
               : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 shadow-sm'
           }`}>
             <div className="flex items-center justify-between">
@@ -263,10 +277,10 @@ export default function EstudianteDashboardPage() {
       </section>
 
       {/* Sección 3: Historial de Asistencias y Actividades Acreditadas */}
-      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-lg shadow-blue-950/5 dark:shadow-xl space-y-4">
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
-            <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
+            <h3 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight">
               Historial de Actividades Registradas
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -287,7 +301,7 @@ export default function EstudianteDashboardPage() {
             <p className="text-sm font-medium">Aún no tienes asistencias registradas.</p>
             <Link
               href="/estudiante/eventos"
-              className="inline-block py-2 px-4 rounded-xl bg-unipaz-orange text-white font-bold text-xs mt-2 shadow-md"
+              className="inline-block py-2 px-4 rounded-full bg-unipaz-orange text-white font-bold text-xs mt-2 shadow-sm"
             >
               Inscribirme a mi primer evento
             </Link>
@@ -357,7 +371,7 @@ export default function EstudianteDashboardPage() {
       </section>
 
       {/* Modal para descargar PDF Oficial */}
-      {showCertModal && (
+      {showCertModal && canGenerateCertificate && (
         <CertificatePdfModal
           student={currentUser}
           progress={progress}
