@@ -9,9 +9,12 @@ import {
   CheckCircle2,
   Clock,
   Compass,
+  Edit3,
   FileCheck,
+  FileText,
   Layers,
   Lock,
+  PenTool,
   Plus,
   RefreshCw,
   Save,
@@ -24,7 +27,7 @@ import {
   Users,
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
-import { EventCategory } from '@/lib/types';
+import { EventCategory, PFIGlobalSignatures } from '@/lib/types';
 
 export default function AdminConfiguracionPage() {
   const {
@@ -34,7 +37,6 @@ export default function AdminConfiguracionPage() {
     profiles,
     assignEventToStudent,
     batchAssignPVCByCohort,
-    getStudentProgress,
   } = usePFI();
 
   const [localHours, setLocalHours] = useState<Record<EventCategory, number>>({
@@ -42,6 +44,12 @@ export default function AdminConfiguracionPage() {
   });
   const [minHours, setMinHours] = useState<number>(pfiConfig.horasMinimasTitulacion);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Estados para Firmantes de Constancias
+  const [localSignatures, setLocalSignatures] = useState<PFIGlobalSignatures>({
+    ...pfiConfig.firmas,
+  });
+  const [savedSignaturesSuccess, setSavedSignaturesSuccess] = useState(false);
 
   // Estados para Asignación Directa Individual
   const [selectedStudentId, setSelectedStudentId] = useState<string>(
@@ -76,7 +84,7 @@ export default function AdminConfiguracionPage() {
     { key: 'Campaña', label: 'Campañas de Voluntariado', desc: 'Colectas, reforestación y desfiles (1.00 hr)' },
   ];
 
-  const handleSaveConfig = (e: React.FormEvent) => {
+  const handleSaveHoursConfig = (e: React.FormEvent) => {
     e.preventDefault();
     updateGlobalConfig({
       horasMinimasTitulacion: minHours,
@@ -84,6 +92,15 @@ export default function AdminConfiguracionPage() {
     });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleSaveSignatures = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateGlobalConfig({
+      firmas: localSignatures,
+    });
+    setSavedSignaturesSuccess(true);
+    setTimeout(() => setSavedSignaturesSuccess(false), 3000);
   };
 
   const handleDirectAssign = (e: React.FormEvent) => {
@@ -117,20 +134,379 @@ export default function AdminConfiguracionPage() {
           </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-unipaz-navy dark:text-white mt-1 tracking-tight">
-          Configurador Global PFI & Asignación de Cohortes
+          Configuración Global PFI & Emisión de Constancias
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Define los valores de horas oficiales por categoría, asigna automáticamente los módulos obligatorios de Plan de Vida y Carrera por cuatrimestre y gestiona casos especiales.
+          Configura quién firma las constancias oficiales (General, PVC, Talleres o Actividades), define los valores de horas oficiales por categoría y asigna actividades por cohorte.
         </p>
       </div>
 
-      {/* SECCIÓN 1: ASIGNACIÓN PROGRAMADA / AUTOMÁTICA DE PVC POR COHORTE */}
+      {/* SECCIÓN 1: CONFIGURADOR DE FIRMAS INSTITUCIONALES EN CONSTANCIAS */}
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
+          <div>
+            <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
+              <PenTool className="w-5 h-5 text-unipaz-orange" />
+              1. Firmantes Oficiales de Constancias (General, PVC, Talleres y Actividades)
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Personaliza los nombres y cargos de las autoridades que aparecerán al pie de cada tipo de constancia PDF:
+            </p>
+          </div>
+
+          {savedSignaturesSuccess && (
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4" /> Firmas actualizadas
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={handleSaveSignatures} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 1. Constancia General de Titulación (400 hrs) */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-unipaz-navy text-white text-[10px] font-black">400h</span>
+                <h4 className="text-xs font-black text-unipaz-navy dark:text-white">
+                  Constancia General de Titulación PFI
+                </h4>
+              </div>
+
+              {/* Firma 1 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Izquierda (Firma 1):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.general.firma1.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      general: {
+                        ...localSignatures.general,
+                        firma1: { ...localSignatures.general.firma1, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  placeholder="Nombre de la autoridad"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.general.firma1.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      general: {
+                        ...localSignatures.general,
+                        firma1: { ...localSignatures.general.firma1, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  placeholder="Cargo o departamento"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+
+              {/* Firma 2 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Derecha (Firma 2):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.general.firma2.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      general: {
+                        ...localSignatures.general,
+                        firma2: { ...localSignatures.general.firma2, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  placeholder="Nombre de la autoridad"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.general.firma2.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      general: {
+                        ...localSignatures.general,
+                        firma2: { ...localSignatures.general.firma2, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  placeholder="Cargo o departamento"
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+            </div>
+
+            {/* 2. Constancias de Plan de Vida y Carrera (PVC) */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-purple-600 text-white text-[10px] font-black">PVC</span>
+                <h4 className="text-xs font-black text-unipaz-navy dark:text-white">
+                  Constancias de Plan de Vida y Carrera (PVC I, II, III)
+                </h4>
+              </div>
+
+              {/* Firma 1 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Izquierda (Firma 1):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.pvc.firma1.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      pvc: {
+                        ...localSignatures.pvc,
+                        firma1: { ...localSignatures.pvc.firma1, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.pvc.firma1.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      pvc: {
+                        ...localSignatures.pvc,
+                        firma1: { ...localSignatures.pvc.firma1, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+
+              {/* Firma 2 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Derecha (Tutor / Orientador PVC):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.pvc.firma2.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      pvc: {
+                        ...localSignatures.pvc,
+                        firma2: { ...localSignatures.pvc.firma2, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.pvc.firma2.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      pvc: {
+                        ...localSignatures.pvc,
+                        firma2: { ...localSignatures.pvc.firma2, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+            </div>
+
+            {/* 3. Constancias de Talleres Extracurriculares & Liderazgo */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-unipaz-orange text-white text-[10px] font-black">Talleres</span>
+                <h4 className="text-xs font-black text-unipaz-navy dark:text-white">
+                  Constancias de Talleres Extracurriculares y Liderazgo
+                </h4>
+              </div>
+
+              {/* Firma 1 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Izquierda (Coordinación PFI):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.talleres.firma1.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      talleres: {
+                        ...localSignatures.talleres,
+                        firma1: { ...localSignatures.talleres.firma1, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.talleres.firma1.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      talleres: {
+                        ...localSignatures.talleres,
+                        firma1: { ...localSignatures.talleres.firma1, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+
+              {/* Firma 2 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Derecha (Instructor Titular / Facilitador):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.talleres.firma2.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      talleres: {
+                        ...localSignatures.talleres,
+                        firma2: { ...localSignatures.talleres.firma2, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.talleres.firma2.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      talleres: {
+                        ...localSignatures.talleres,
+                        firma2: { ...localSignatures.talleres.firma2, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+            </div>
+
+            {/* 4. Constancias de Actividades Especiales */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-blue-600 text-white text-[10px] font-black">Actividades</span>
+                <h4 className="text-xs font-black text-unipaz-navy dark:text-white">
+                  Constancias de Actividades, Simposios y Congresos
+                </h4>
+              </div>
+
+              {/* Firma 1 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Izquierda (Coordinación PFI):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.actividades.firma1.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      actividades: {
+                        ...localSignatures.actividades,
+                        firma1: { ...localSignatures.actividades.firma1, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.actividades.firma1.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      actividades: {
+                        ...localSignatures.actividades,
+                        firma1: { ...localSignatures.actividades.firma1, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+
+              {/* Firma 2 */}
+              <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-white/10">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Firma Derecha (Extensión Universitaria / Eventos):</span>
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.actividades.firma2.nombre}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      actividades: {
+                        ...localSignatures.actividades,
+                        firma2: { ...localSignatures.actividades.firma2, nombre: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-unipaz-orange"
+                />
+                <input
+                  type="text"
+                  required
+                  value={localSignatures.actividades.firma2.cargo}
+                  onChange={(e) =>
+                    setLocalSignatures({
+                      ...localSignatures,
+                      actividades: {
+                        ...localSignatures.actividades,
+                        firma2: { ...localSignatures.actividades.firma2, cargo: e.target.value },
+                      },
+                    })
+                  }
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:border-unipaz-orange"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              className="py-3 px-6 rounded-full bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+            >
+              <Save className="w-4 h-4" />
+              Guardar Firmantes de Constancias
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* SECCIÓN 2: ASIGNACIÓN PROGRAMADA / AUTOMÁTICA DE PVC POR COHORTE */}
       <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
             <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
               <Compass className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              1. Programación y Auto-Asignación de PVC por Cuatrimestre
+              2. Programación y Auto-Asignación de PVC por Cuatrimestre
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Los módulos de PVC se asignan según la etapa formativa del estudiante. Si un estudiante ya lo acreditó, el sistema omite la duplicación automáticamente.
@@ -224,12 +600,12 @@ export default function AdminConfiguracionPage() {
         </div>
       </section>
 
-      {/* SECCIÓN 2: ASIGNACIÓN DIRECTA INDIVIDUAL & CASOS ESPECIALES */}
+      {/* SECCIÓN 3: ASIGNACIÓN DIRECTA INDIVIDUAL & CASOS ESPECIALES */}
       <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
         <div>
           <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-unipaz-orange" />
-            2. Asignación Directa a Estudiante & Gestión de Casos Especiales
+            3. Asignación Directa a Estudiante & Gestión de Casos Especiales
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Asigna manualmente una actividad formativa o autoriza el recursamiento de un PVC como caso especial:
@@ -309,13 +685,13 @@ export default function AdminConfiguracionPage() {
         </form>
       </section>
 
-      {/* SECCIÓN 3: CONFIGURADOR GLOBAL DE HORAS PREESTABLECIDAS POR CATEGORÍA */}
+      {/* SECCIÓN 4: CONFIGURADOR GLOBAL DE HORAS PREESTABLECIDAS POR CATEGORÍA */}
       <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
             <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
               <Settings className="w-5 h-5 text-unipaz-cobalt" />
-              3. Catálogo Oficial de Horas por Categoría PFI
+              4. Catálogo Oficial de Horas por Categoría PFI
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Al dar de alta nuevos eventos, el sistema fija automáticamente las horas reglamentarias según este catálogo.
@@ -329,7 +705,7 @@ export default function AdminConfiguracionPage() {
           )}
         </div>
 
-        <form onSubmit={handleSaveConfig} className="space-y-4">
+        <form onSubmit={handleSaveHoursConfig} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {categories.map((c) => (
               <div

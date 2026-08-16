@@ -29,6 +29,30 @@ export type EventCategory =
   | 'Foro'                  // Foros, conferencias, salud (2.00h)
   | 'Campaña';              // Campañas de vacunación, colectas (1.00h)
 
+export interface SignatureConfig {
+  nombre: string;
+  cargo: string;
+}
+
+export interface PFIGlobalSignatures {
+  general: {
+    firma1: SignatureConfig;
+    firma2: SignatureConfig;
+  };
+  pvc: {
+    firma1: SignatureConfig;
+    firma2: SignatureConfig;
+  };
+  talleres: {
+    firma1: SignatureConfig;
+    firma2: SignatureConfig;
+  };
+  actividades: {
+    firma1: SignatureConfig;
+    firma2: SignatureConfig;
+  };
+}
+
 export interface PFIGlobalConfig {
   horasMinimasTitulacion: number; // 400
   horasSobresaliente: number; // 730
@@ -40,6 +64,7 @@ export interface PFIGlobalConfig {
     pvc2Cuatrimestres: number[]; // [4, 5, 6]
     pvc3Cuatrimestres: number[]; // [7, 8, 9]
   };
+  firmas: PFIGlobalSignatures;
 }
 
 export interface PFIEvent {
@@ -60,6 +85,8 @@ export interface PFIEvent {
   tolerancia_minutos?: number;
   ubicacion?: string;
   creado_por?: string;
+  instructor_titular?: string; // Nombre del instructor para firma de constancia
+  instructor_cargo?: string;
   activo: boolean;
   cuatrimestre_objetivo?: number; // p. ej. 1 para 1er año
   created_at?: string;

@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { Award, CheckCircle2, Download, ExternalLink, Loader2, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { usePFI } from '@/lib/store';
 import { EventAttendance, PFIEvent, UserProfile } from '@/lib/types';
 
 interface WorkshopCertificatePdfModalProps {
@@ -23,6 +24,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
   isOpen,
   onClose,
 }) => {
+  const { pfiConfig } = usePFI();
   const [generating, setGenerating] = useState(false);
 
   if (!isOpen) return null;
@@ -31,6 +33,57 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/validar/${encodeURIComponent(folio)}?student=${encodeURIComponent(student.matricula)}&event=${encodeURIComponent(event.titulo)}`
     : `https://unipaz-pfi.vercel.app/validar/${folio}`;
+
+  // Determinar firmantes según categoría del evento
+  const getSignaturesForEvent = () => {
+    const isPvc = event.categoria === 'PVC';
+    const isTaller = event.categoria === 'Taller Extracurricular' || event.categoria === 'Taller Liderazgo';
+
+    if (isPvc) {
+      return {
+        firma1: pfiConfig?.firmas?.pvc?.firma1 || {
+          nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+          cargo: 'Coordinador General del PFI UNIPAZ',
+        },
+        firma2: pfiConfig?.firmas?.pvc?.firma2 || {
+          nombre: 'LIC. ORIENTADOR VOCACIONAL Y TUTORÍA',
+          cargo: 'Coordinación de Plan de Vida y Carrera',
+        },
+      };
+    }
+
+    if (isTaller) {
+      return {
+        firma1: pfiConfig?.firmas?.talleres?.firma1 || {
+          nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+          cargo: 'Coordinador General del PFI UNIPAZ',
+        },
+        firma2: event.instructor_titular
+          ? {
+              nombre: event.instructor_titular,
+              cargo: event.instructor_cargo || 'Instructor Titular del Taller',
+            }
+          : pfiConfig?.firmas?.talleres?.firma2 || {
+              nombre: 'INSTRUCTOR TITULAR DEL TALLER',
+              cargo: 'Facilitador de Formación Extracurricular',
+            },
+      };
+    }
+
+    // Actividades generales (Simposios, Investigación, Jornadas, etc.)
+    return {
+      firma1: pfiConfig?.firmas?.actividades?.firma1 || {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      },
+      firma2: pfiConfig?.firmas?.actividades?.firma2 || {
+        nombre: 'RESPONSABLE DE EXTENSIÓN Y EVENTOS',
+        cargo: 'Dirección de Difusión y Vida Universitaria',
+      },
+    };
+  };
+
+  const currentSignatures = getSignaturesForEvent();
 
   const triggerConfetti = () => {
     confetti({
@@ -116,7 +169,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
       doc.setTextColor(0, 40, 85);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(22);
-      doc.text('CONSTANCIA DE PARTICIPACIÓN EN TALLER', 148.5, 46, { align: 'center' });
+      doc.text('CONSTANCIA DE PARTICIPACIÓN EN ACTIVIDAD FORMATIVA', 148.5, 46, { align: 'center' });
 
       doc.setFontSize(12);
       doc.setFont('helvetica', 'italic');
@@ -145,7 +198,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
       // Texto de participación en el taller
       doc.setFontSize(11);
       doc.text(
-        `Por haber participado y acreditado satisfactoriamente el taller formativo:`,
+        `Por haber participado y acreditado satisfactoriamente la actividad formativa:`,
         148.5,
         96,
         { align: 'center' }
@@ -176,7 +229,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
       doc.setTextColor(70, 70, 70);
       doc.text(`Impartido en Campus UNIPAZ el ${eventDate} · Modalidad: ${event.modalidad.toUpperCase()}`, 148.5, 134, { align: 'center' });
 
-      // Firmas Oficiales
+      // Firmas Oficiales Configurables
       doc.setDrawColor(120, 120, 120);
       doc.setLineWidth(0.5);
 
@@ -185,33 +238,33 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(0, 40, 85);
-      doc.text('MTRO. ROBERTO OJEDA LUCERO', 70, 173, { align: 'center' });
+      doc.text(currentSignatures.firma1.nombre.toUpperCase(), 70, 173, { align: 'center' });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 100, 100);
-      doc.text('Coordinador General del PFI UNIPAZ', 70, 177, { align: 'center' });
+      doc.text(currentSignatures.firma1.cargo, 70, 177, { align: 'center' });
 
       // Firma 2
       doc.line(192, 168, 262, 168);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(0, 40, 85);
-      doc.text('INSTRUCTOR TITULAR', 227, 173, { align: 'center' });
+      doc.text(currentSignatures.firma2.nombre.toUpperCase(), 227, 173, { align: 'center' });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 100, 100);
-      doc.text('Facilitador de Formación Integral', 227, 177, { align: 'center' });
+      doc.text(currentSignatures.firma2.cargo, 227, 177, { align: 'center' });
 
       // Código QR de validación institucional
       doc.addImage(qrDataUrl, 'PNG', 134.5, 148, 28, 28);
       doc.setFontSize(6.5);
       doc.setTextColor(120, 120, 120);
-      doc.text(`Folio Taller: ${folio}`, 148.5, 180, { align: 'center' });
+      doc.text(`Folio Actividad: ${folio}`, 148.5, 180, { align: 'center' });
       doc.text('Escanee el QR para validar autenticidad en la plataforma oficial UNIPAZ', 148.5, 183, { align: 'center' });
 
       // Guardar PDF
       const cleanTitle = event.titulo.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
-      doc.save(`Constancia_Taller_${cleanTitle}_${student.matricula}.pdf`);
+      doc.save(`Constancia_${cleanTitle}_${student.matricula}.pdf`);
     } catch (e) {
       console.error('Error generating workshop certificate:', e);
       alert('Hubo un error al generar la constancia del taller.');
@@ -243,7 +296,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
           </div>
           <div>
             <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
-              Constancia de Taller Acreditado
+              Constancia de Actividad Acreditada
             </h3>
             <p className="text-xs text-unipaz-orange dark:text-amber-300 font-semibold">
               Universidad Internacional de La Paz · Formación Integral
@@ -279,9 +332,9 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
               </span>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Folio de Taller:</span>
-              <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 font-semibold">
-                {folio}
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Firmantes Oficiales:</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold truncate max-w-[280px]">
+                {currentSignatures.firma1.nombre} & {currentSignatures.firma2.nombre}
               </span>
             </div>
           </div>
@@ -289,7 +342,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-400/20 text-xs text-blue-900 dark:text-blue-200">
             <ShieldCheck className="w-5 h-5 text-unipaz-cobalt dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <p>
-              Esta constancia avala formalmente tu participación y acreditación en este taller institucional de UNIPAZ.
+              Esta constancia avala formalmente tu participación y acreditación en este taller institucional de UNIPAZ con las firmas oficiales de las autoridades correspondientes.
             </p>
           </div>
         </div>
@@ -309,7 +362,7 @@ export const WorkshopCertificatePdfModal: React.FC<WorkshopCertificatePdfModalPr
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Descargar Constancia del Taller en PDF
+                Descargar Constancia en PDF
               </>
             )}
           </button>

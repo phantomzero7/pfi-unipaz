@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { Award, CheckCircle2, Download, ExternalLink, FileText, Loader2, Lock, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { usePFI } from '@/lib/store';
 import { PFIProgressSummary, UserProfile } from '@/lib/types';
 
 interface CertificatePdfModalProps {
@@ -21,6 +22,7 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { pfiConfig } = usePFI();
   const [generating, setGenerating] = useState(false);
 
   if (!isOpen) return null;
@@ -80,6 +82,16 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
 
       // Cargar logo en base64
       const logoBase64 = await getLogoBase64();
+
+      // Firmantes configurados institucionalmente
+      const firma1 = pfiConfig?.firmas?.general?.firma1 || {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      };
+      const firma2 = pfiConfig?.firmas?.general?.firma2 || {
+        nombre: 'DR. SECRETARIO ACADÉMICO',
+        cargo: 'Dirección de Asuntos Estudiantiles y Titulación',
+      };
 
       // Crear documento jsPDF en orientación Horizontal (Landscape A4: 297 x 210 mm)
       const doc = new jsPDF({
@@ -190,7 +202,7 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
       doc.setTextColor(70, 70, 70);
       doc.text(`La Paz, Baja California Sur, a ${todayDate}.`, 148.5, 142, { align: 'center' });
 
-      // Firmas Oficiales
+      // Firmas Oficiales Configurables
       doc.setDrawColor(120, 120, 120);
       doc.setLineWidth(0.5);
 
@@ -199,22 +211,22 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(0, 40, 85);
-      doc.text('MTRO. ROBERTO OJEDA LUCERO', 70, 173, { align: 'center' });
+      doc.text(firma1.nombre.toUpperCase(), 70, 173, { align: 'center' });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 100, 100);
-      doc.text('Coordinador General del PFI UNIPAZ', 70, 177, { align: 'center' });
+      doc.text(firma1.cargo, 70, 177, { align: 'center' });
 
       // Firma 2
       doc.line(192, 168, 262, 168);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(0, 40, 85);
-      doc.text('DR. SECRETARIO ACADÉMICO', 227, 173, { align: 'center' });
+      doc.text(firma2.nombre.toUpperCase(), 227, 173, { align: 'center' });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 100, 100);
-      doc.text('Dirección de Asuntos Estudiantiles', 227, 177, { align: 'center' });
+      doc.text(firma2.cargo, 227, 177, { align: 'center' });
 
       // Código QR de validación institucional en el centro inferior
       doc.addImage(qrDataUrl, 'PNG', 134.5, 148, 28, 28);
@@ -298,9 +310,9 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
               </span>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Folio Digital Único:</span>
-              <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 font-semibold">
-                {folio}
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Firmantes Oficiales:</span>
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
+                {pfiConfig?.firmas?.general?.firma1?.nombre || 'Coordinación PFI'} & {pfiConfig?.firmas?.general?.firma2?.nombre || 'Secretaría Académica'}
               </span>
             </div>
           </div>

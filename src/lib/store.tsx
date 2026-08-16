@@ -9,6 +9,7 @@ import {
   EventCategory,
   PFIEvent,
   PFIGlobalConfig,
+  PFIGlobalSignatures,
   PFIProgressSummary,
   UserProfile,
   UserRole,
@@ -35,6 +36,48 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
     pvc1Cuatrimestres: [1, 2, 3],
     pvc2Cuatrimestres: [4, 5, 6],
     pvc3Cuatrimestres: [7, 8, 9],
+  },
+  firmas: {
+    general: {
+      firma1: {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      },
+      firma2: {
+        nombre: 'DR. SECRETARIO ACADÉMICO',
+        cargo: 'Dirección de Asuntos Estudiantiles y Titulación',
+      },
+    },
+    pvc: {
+      firma1: {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      },
+      firma2: {
+        nombre: 'LIC. ORIENTADOR VOCACIONAL Y TUTORÍA',
+        cargo: 'Coordinación de Plan de Vida y Carrera',
+      },
+    },
+    talleres: {
+      firma1: {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      },
+      firma2: {
+        nombre: 'INSTRUCTOR TITULAR DEL TALLER',
+        cargo: 'Facilitador de Formación Extracurricular',
+      },
+    },
+    actividades: {
+      firma1: {
+        nombre: 'MTRO. ROBERTO OJEDA LUCERO',
+        cargo: 'Coordinador General del PFI UNIPAZ',
+      },
+      firma2: {
+        nombre: 'RESPONSABLE DE EXTENSIÓN Y EVENTOS',
+        cargo: 'Dirección de Difusión y Vida Universitaria',
+      },
+    },
   },
 };
 
@@ -140,7 +183,17 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedEvents) setEvents(JSON.parse(savedEvents));
       if (savedAttendances) setAttendances(JSON.parse(savedAttendances));
       if (savedUserId) setCurrentUserId(savedUserId);
-      if (savedConfig) setPfiConfig(JSON.parse(savedConfig));
+      if (savedConfig) {
+        const parsedConfig = JSON.parse(savedConfig);
+        setPfiConfig({
+          ...DEFAULT_PFI_CONFIG,
+          ...parsedConfig,
+          firmas: {
+            ...DEFAULT_PFI_CONFIG.firmas,
+            ...(parsedConfig.firmas || {}),
+          },
+        });
+      }
 
       if (savedTheme) {
         setThemeState(savedTheme);
@@ -218,6 +271,10 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...prev.categoriaHoras,
         ...(newConfig.categoriaHoras || {}),
       },
+      firmas: {
+        ...prev.firmas,
+        ...(newConfig.firmas || {}),
+      },
     }));
   };
 
@@ -274,7 +331,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Evento o Estudiante no encontrado.' };
     }
 
-    // Verificar si ya tiene asistencia o si ya cursó este PVC
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === studentId);
     if (existing) {
       if (existing.status === 'asistio' && !isSpecialCase) {
@@ -292,7 +348,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Si es un PVC, revisar si ya acreditó otro evento del mismo nivel PVC
     if (targetEvent.categoria === 'PVC' && !isSpecialCase) {
       const studentProgress = getStudentProgress(studentId);
       const titleUpper = targetEvent.titulo.toUpperCase();
@@ -369,7 +424,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         continue;
       }
 
-      // Revisar si ya está registrado
       const alreadyRegistered = attendances.some(
         (a) => a.event_id === targetEvent.id && a.student_id === student.id
       );
