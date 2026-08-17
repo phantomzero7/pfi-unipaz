@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { AttendanceJustificationModal } from '@/components/AttendanceJustificationModal';
 import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewalDictamenModal';
-import { exportStudentsToCsv } from '@/lib/export-utils';
+import { exportStudentsToCsv, exportStudentsToExcel } from '@/lib/export-utils';
 import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { AttendanceStatus, PFIEvent, UserProfile } from '@/lib/types';
@@ -158,13 +158,24 @@ export default function AdminEstudiantesDirectoryPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => exportStudentsToCsv(students, getStudentProgress)}
-          className="py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4" />
-          Exportar Padrón a Excel / CSV
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => exportStudentsToExcel(students, getStudentProgress, getStudentScholarshipProgress)}
+            className="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+            title="Descargar libro nativo de Microsoft Excel (.xlsx)"
+          >
+            <Download className="w-4 h-4" />
+            Descargar Excel (.xlsx)
+          </button>
+          <button
+            onClick={() => exportStudentsToCsv(students, getStudentProgress)}
+            className="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+            title="Exportar archivo CSV estándar UTF-8"
+          >
+            <FileText className="w-4 h-4 text-slate-500" />
+            CSV
+          </button>
+        </div>
       </div>
 
       {/* BANDEJA DE JUSTIFICACIONES PENDIENTES */}

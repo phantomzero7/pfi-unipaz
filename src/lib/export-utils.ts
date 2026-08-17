@@ -65,6 +65,56 @@ export function exportStudentsToCsv(
 }
 
 /**
+ * Exporta el padrón estudiantil con datos PFI y Becas a archivo Microsoft Excel (.xlsx) nativo
+ */
+export async function exportStudentsToExcel(
+  students: UserProfile[],
+  getProgressFn: (id: string) => PFIProgressSummary,
+  getScholarshipProgressFn?: (id: string) => import('./types').ScholarshipProgressSummary
+) {
+  const XLSX = await import('xlsx');
+
+  const data = students.map((std) => {
+    const prog = getProgressFn(std.id);
+    const sch = getScholarshipProgressFn ? getScholarshipProgressFn(std.id) : null;
+    const cuatri = std.cuatrimestre || 1;
+    const isRiesgo = cuatri >= 6 && prog.horasTotales < 200;
+
+    return {
+      Matrícula: std.matricula,
+      Nombre: std.nombre,
+      Apellidos: std.apellidos,
+      Carrera: std.carrera,
+      Grado: `${cuatri}° Cuatrimestre`,
+      'Periodo Ingreso': std.periodo_ingreso,
+      Correo: std.email,
+      'Horas Totales PFI': prog.horasTotales,
+      'Escala PFI': prog.escala,
+      'PVC I': prog.pvc.pvc1 ? 'CUMPLIDO' : 'PENDIENTE',
+      'PVC II': prog.pvc.pvc2 ? 'CUMPLIDO' : 'PENDIENTE',
+      'PVC III': prog.pvc.pvc3 ? 'CUMPLIDO' : 'PENDIENTE',
+      'Talleres Formativos': `${prog.talleresExtracurriculares.completados}/3`,
+      'Liderazgo Social': prog.tallerLiderazgo.cumplido ? 'CUMPLIDO' : 'PENDIENTE',
+      'Horas como Staff': prog.desglosePorRoles.staffHoras,
+      'Liberado para Titulación': prog.isAcreditado ? 'SÍ' : 'NO',
+      'Alerta de Rezago': isRiesgo ? 'ALERTA REZAGO' : 'REGULAR',
+      'Tiene Beca': std.tiene_beca ? 'SÍ' : 'NO',
+      'Tipo de Beca': std.tipo_beca || 'N/A',
+      '% Descuento': std.porcentaje_beca ? `${std.porcentaje_beca}%` : 'N/A',
+      'Puntos Beca Acumulados': sch ? sch.puntosTotales : 0,
+      'Meta Beca Cuatrimestral': 1000,
+      'Beca Refrendada': sch && sch.isAcreditadoBeca ? 'SÍ' : 'NO',
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Padrón PFI y Becas');
+
+  XLSX.writeFile(workbook, `Padron_PFI_Becas_UNIPAZ_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+/**
  * Exporta la lista de asistencia oficial de un evento a archivo CSV
  */
 export function exportEventAttendanceToCsv(
