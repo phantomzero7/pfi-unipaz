@@ -34,6 +34,7 @@ import { EventFeedbackModal } from '@/components/EventFeedbackModal';
 import { GraduationSimulatorWidget } from '@/components/GraduationSimulatorWidget';
 import { OfficialClearanceDictamenModal } from '@/components/OfficialClearanceDictamenModal';
 import { PrintableIdCardModal } from '@/components/PrintableIdCardModal';
+import { ScholarshipProgressWidget } from '@/components/ScholarshipProgressWidget';
 import { StudentBadgesShowcase } from '@/components/StudentBadgesShowcase';
 import { StudentQrCard } from '@/components/StudentQrCard';
 import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
@@ -42,8 +43,16 @@ import { usePFI } from '@/lib/store';
 import { EventAttendance, PFIEvent } from '@/lib/types';
 
 export default function EstudianteDashboard() {
-  const { currentUser, getStudentProgress, getStudentAttendances, events } = usePFI();
+  const {
+    currentUser,
+    getStudentProgress,
+    getStudentScholarshipProgress,
+    getStudentAttendances,
+    events,
+  } = usePFI();
+
   const progress = getStudentProgress();
+  const scholarshipProgress = getStudentScholarshipProgress();
   const attendances = getStudentAttendances();
 
   const [showCertModal, setShowCertModal] = useState(false);
@@ -138,6 +147,14 @@ export default function EstudianteDashboard() {
           </div>
         </div>
       </div>
+
+      {/* WIDGET DE GESTIÓN Y CONTROL DE BECA (Solo visible si el alumno cuenta con beca) */}
+      {currentUser.tiene_beca && (
+        <ScholarshipProgressWidget
+          student={currentUser}
+          scholarshipProgress={scholarshipProgress}
+        />
+      )}
 
       {/* Grid: Credencial QR + Avance Global */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

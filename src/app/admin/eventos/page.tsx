@@ -41,7 +41,7 @@ import { GoogleMeetAttendanceModal } from '@/components/GoogleMeetAttendanceModa
 import { KioskProjectorModal } from '@/components/KioskProjectorModal';
 import { SpeakerCertificatePdfModal } from '@/components/SpeakerCertificatePdfModal';
 import { exportEventAttendanceToCsv } from '@/lib/export-utils';
-import { getRoleBadgeInfo } from '@/lib/pfi-rules';
+import { getRoleBadgeInfo, getStandardScholarshipPoints } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { EventCategory, EventModality, ParticipantRole, PFIEvent, UserProfile } from '@/lib/types';
 
@@ -93,6 +93,8 @@ export default function AdminEventosManagerPage() {
     hora_inicio: string;
     hora_fin: string;
     horas_pfi: number;
+    puntos_beca: number;
+    puntos_beca_staff: number;
     permite_staff: boolean;
     cupo_staff: number;
     horas_staff: number;
@@ -113,6 +115,8 @@ export default function AdminEventosManagerPage() {
     hora_inicio: '10:00',
     hora_fin: '14:00',
     horas_pfi: 16.67,
+    puntos_beca: 200,
+    puntos_beca_staff: 100,
     permite_staff: true,
     cupo_staff: 5,
     horas_staff: 10.00,
@@ -189,6 +193,7 @@ export default function AdminEventosManagerPage() {
     setStudentSearchFilter('');
 
     const defaultHrs = getStandardHoursForCategory(defaultCat);
+    const defaultPts = getStandardScholarshipPoints(defaultCat);
     setFormData({
       titulo: '',
       descripcion: '',
@@ -199,6 +204,8 @@ export default function AdminEventosManagerPage() {
       hora_inicio: '10:00',
       hora_fin: '14:00',
       horas_pfi: defaultHrs,
+      puntos_beca: defaultPts,
+      puntos_beca_staff: 100,
       permite_staff: true,
       cupo_staff: 5,
       horas_staff: Math.round(defaultHrs * 1.5 * 100) / 100,
@@ -232,6 +239,8 @@ export default function AdminEventosManagerPage() {
       hora_inicio: evt.hora_inicio,
       hora_fin: evt.hora_fin,
       horas_pfi: evt.horas_pfi,
+      puntos_beca: evt.puntos_beca || getStandardScholarshipPoints(evt.categoria),
+      puntos_beca_staff: evt.puntos_beca_staff || 100,
       permite_staff: evt.permite_staff ?? true,
       cupo_staff: evt.cupo_staff ?? 5,
       horas_staff: evt.horas_staff || (evt.horas_pfi * 1.5),
@@ -476,7 +485,10 @@ export default function AdminEventosManagerPage() {
                   <td className="py-3.5 px-3 font-mono text-[11px]">
                     <div className="text-unipaz-orange font-bold">+{evt.horas_pfi.toFixed(1)}h (Oyente)</div>
                     <div className="text-purple-600 dark:text-purple-400 font-bold">+{evt.horas_staff || (evt.horas_pfi * 1.5).toFixed(1)}h (Staff)</div>
-                    <div className="text-amber-600 dark:text-amber-400 font-medium">+{evt.horas_ponente || 15}h (Ponente)</div>
+                    <div className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      +{evt.puntos_beca || 150} pts Beca
+                    </div>
                   </td>
                   <td className="py-3.5 px-3">
                     {evt.permite_staff ? (
@@ -759,10 +771,12 @@ export default function AdminEventosManagerPage() {
                       onChange={(e) => {
                         const cat = e.target.value as EventCategory;
                         const standardHrs = getStandardHoursForCategory(cat);
+                        const standardPts = getStandardScholarshipPoints(cat);
                         setFormData({
                           ...formData,
                           categoria: cat,
                           horas_pfi: standardHrs,
+                          puntos_beca: standardPts,
                           horas_staff: Math.round(standardHrs * 1.5 * 100) / 100,
                         });
                       }}
@@ -770,7 +784,7 @@ export default function AdminEventosManagerPage() {
                     >
                       {categories.map((c) => (
                         <option key={c} value={c}>
-                          {c} ({getStandardHoursForCategory(c)} hrs)
+                          {c} ({getStandardHoursForCategory(c)} hrs · {getStandardScholarshipPoints(c)} pts beca)
                         </option>
                       ))}
                     </select>
@@ -798,7 +812,7 @@ export default function AdminEventosManagerPage() {
                       required
                       value={formData.fecha_evento}
                       onChange={(e) => setFormData({ ...formData, fecha_evento: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-unipaz-orange"
                     />
                   </div>
 
@@ -809,18 +823,18 @@ export default function AdminEventosManagerPage() {
                       required
                       value={formData.hora_inicio}
                       onChange={(e) => setFormData({ ...formData, hora_inicio: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-unipaz-orange"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hora Fin:</label>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hora Término:</label>
                     <input
                       type="time"
                       required
                       value={formData.hora_fin}
                       onChange={(e) => setFormData({ ...formData, hora_fin: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange font-bold"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-unipaz-orange"
                     />
                   </div>
                 </div>
@@ -865,6 +879,60 @@ export default function AdminEventosManagerPage() {
                         value={formData.horas_ponente}
                         onChange={(e) => setFormData({ ...formData, horas_ponente: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Puntos de Beca (50 - 500) */}
+                <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-unipaz-orange" />
+                      Puntos para Alumnos Becados (Meta 1,000 pts):
+                    </span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-mono">
+                      Rango normativo: 50 a 500 pts
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-amber-800 dark:text-amber-300 mb-1 text-xs">
+                        Puntos de Beca (Oyente / General):
+                      </label>
+                      <input
+                        type="number"
+                        min="50"
+                        max="500"
+                        required
+                        value={formData.puntos_beca}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            puntos_beca: Math.min(500, Math.max(50, parseInt(e.target.value) || 50)),
+                          })
+                        }
+                        className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-purple-700 dark:text-purple-300 mb-1 text-xs">
+                        Puntos Extra para Becados en Staff:
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="250"
+                        value={formData.puntos_beca_staff}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            puntos_beca_staff: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-500/40 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-purple-500"
                       />
                     </div>
                   </div>

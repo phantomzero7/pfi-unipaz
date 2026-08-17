@@ -1,6 +1,7 @@
 import {
   AttendanceStatus,
   EventAttendance,
+  EventCategory,
   EvaluationScale,
   ParticipantRole,
   PFIEvent,
@@ -414,4 +415,152 @@ export function validateStayDuration(
       mensaje: `No se acreditó por permanencia insuficiente (${porcentajePercent}%). Se requiere al menos el 80% de estancia y Check-Out.`,
     };
   }
+}
+
+/**
+ * Retorna la asignación estándar de puntos de beca (50 a 500) según categoría y rol
+ */
+export function getStandardScholarshipPoints(category: EventCategory, role?: ParticipantRole): number {
+  let basePoints = 150;
+  switch (category) {
+    case 'Investigación':
+      basePoints = 500;
+      break;
+    case 'Club Anual':
+      basePoints = 300;
+      break;
+    case 'PVC':
+      basePoints = 250;
+      break;
+    case 'Taller Extracurricular':
+      basePoints = 200;
+      break;
+    case 'Simposio':
+      basePoints = 180;
+      break;
+    case 'Taller Liderazgo':
+      basePoints = 150;
+      break;
+    case 'Jornada Social':
+      basePoints = 120;
+      break;
+    case 'Foro':
+      basePoints = 80;
+      break;
+    case 'Cine Club':
+      basePoints = 60;
+      break;
+    case 'Campaña':
+      basePoints = 50;
+      break;
+    default:
+      basePoints = 100;
+  }
+
+  if (role === 'staff_logistica') {
+    basePoints = Math.min(500, basePoints + 100);
+  } else if (role === 'ponente') {
+    basePoints = Math.min(500, basePoints + 150);
+  }
+
+  return basePoints;
+}
+
+/**
+ * Calcula el progreso de puntos de beca de un estudiante becado (meta de 1000 puntos cuatrimestrales)
+ */
+export function calculateStudentScholarshipProgress(
+  student: UserProfile,
+  attendances: EventAttendance[],
+  eventsMap: Map<string, PFIEvent>
+): import('./types').ScholarshipProgressSummary {
+  if (!student.tiene_beca) {
+    return {
+      tieneBeca: false,
+      tipoBeca: '',
+      porcentajeBeca: 0,
+      promedioAcademico: student.promedio_academico || 0,
+      puntosTotales: 0,
+      puntosBrutos: 0,
+      puntosPenalizaciones: 0,
+      puntosMeta: 1000,
+      porcentajeCumplimiento: 0,
+      estatus: 'no_acreditado',
+      estatusTexto: 'Sin Beca Asignada',
+      isAcreditadoBeca: false,
+      actividadesBecadas: [],
+    };
+  }
+
+  const meta = student.puntos_beca_meta_cuatrimestral || 1000;
+  let puntosBrutos = 0;
+  let puntosPenalizaciones = student.puntos_beca_penalizaciones || 0;
+  const actividadesBecadas: import('./types').ScholarshipProgressSummary['actividadesBecadas'] = [];
+
+  attendances.forEach((att) => {
+    if (att.student_id !== student.id) return;
+    const event = eventsMap.get(att.event_id) || att.event;
+
+    if (att.penalizacion_puntos_beca) {
+      puntosPenalizaciones += att.penalizacion_puntos_beca;
+    }
+
+    if (att.status === 'asistio') {
+      let puntos = att.puntos_beca_acreditados;
+      if (puntos === undefined && event) {
+        puntos = event.puntos_beca || getStandardScholarshipPoints(event.categoria, att.rol_participacion);
+        if (att.rol_participacion === 'staff_logistica' && event.puntos_beca_staff) {
+          puntos += event.puntos_beca_staff;
+        }
+      }
+
+      const finalPuntos = Math.min(500, Math.max(50, puntos || 100));
+      puntosBrutos += finalPuntos;
+
+      if (event) {
+        actividadesBecadas.push({
+          id: att.id,
+          eventId: event.id,
+          titulo: event.titulo,
+          categoria: event.categoria,
+          fecha: event.fecha_evento,
+          puntosAcreditados: finalPuntos,
+          rol: att.rol_participacion || 'asistente',
+        });
+      }
+    }
+  });
+
+  const puntosTotales = Math.max(0, puntosBrutos - puntosPenalizaciones);
+  const porcentajeCumplimiento = Math.min(100, Math.round((puntosTotales / meta) * 100));
+
+  let estatus: import('./types').ScholarshipStatus = 'en_progreso';
+  let estatusTexto = 'En Progreso hacia la Meta';
+
+  if (puntosTotales >= meta) {
+    estatus = 'cumplido';
+    estatusTexto = '✓ Beca Acreditada y Renovada';
+  } else if (puntosTotales < 500) {
+    estatus = 'en_riesgo';
+    estatusTexto = '⚠️ En Riesgo de Pérdida de Beca';
+  } else {
+    estatus = 'en_progreso';
+    estatusTexto = 'En Progreso (Más del 50%)';
+  }
+
+  return {
+    tieneBeca: true,
+    tipoBeca: student.tipo_beca || 'Beca Institucional',
+    porcentajeBeca: student.porcentaje_beca || 50,
+    promedioAcademico: student.promedio_academico || 9.0,
+    puntosTotales,
+    puntosBrutos,
+    puntosPenalizaciones,
+    puntosMeta: meta,
+    porcentajeCumplimiento,
+    estatus,
+    estatusTexto,
+    isAcreditadoBeca: puntosTotales >= meta,
+    actividadesBecadas,
+  };
 }

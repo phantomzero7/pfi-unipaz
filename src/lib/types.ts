@@ -72,6 +72,15 @@ export interface UserProfile {
   avatar_url?: string;
   qr_secret: string;
   penalizaciones_acumuladas?: number;
+  
+  // Módulo de Becas y Estímulos UNIPAZ
+  tiene_beca?: boolean;
+  tipo_beca?: 'Excelencia Académica' | 'Deportiva (Garzas)' | 'Talento y Liderazgo' | 'Convenio Institucional' | 'Socioeconómica';
+  porcentaje_beca?: number; // 25, 50, 75, 100%
+  puntos_beca_meta_cuatrimestral?: number; // Mínimo 1000 pts
+  puntos_beca_penalizaciones?: number;
+  promedio_academico?: number; // e.g. 9.5
+  
   created_at?: string;
 }
 
@@ -117,6 +126,7 @@ export interface PFIGlobalConfig {
   maxTalleresExtracurriculares: number; // 3
   maxTalleresLiderazgo: number; // 1
   penalizacionNoShowStaff: number; // Horas descontadas si falta staff (ej. -5.0h)
+  puntosBecaMinimosCuatrimestre: number; // 1000
   categoriaHoras: Record<EventCategory, number>;
   reglasCohortePVC: {
     pvc1Cuatrimestres: number[]; // [1, 2, 3]
@@ -137,6 +147,10 @@ export interface PFIEvent {
   hora_inicio: string;  // HH:MM
   hora_fin: string;     // HH:MM
   horas_pfi: number;     // Horas como oyente/asistente
+  
+  // Puntos de Beca (50 - 500 pts)
+  puntos_beca?: number;       // Puntos otorgados a estudiantes becados (ej. 50 a 500 pts)
+  puntos_beca_staff?: number; // Puntos extra para staff becado
   
   // Roles diferenciados y Staff Logístico
   permite_staff?: boolean;
@@ -171,6 +185,11 @@ export interface EventAttendance {
   horas_acreditadas: number;
   penalizacion_horas?: number;
   motivo_penalizacion?: string;
+  
+  // Acreditación de Beca
+  puntos_beca_acreditados?: number;
+  penalizacion_puntos_beca?: number;
+  
   validado_por?: string | null; // ID del admin, docente o estudiante staff que escaneó
   qr_scanned_code?: string;
   qr_token_hash?: string;
@@ -243,3 +262,51 @@ export interface CertificateData {
   pvcHoras: number;
   otrasHoras: number;
 }
+
+export type ScholarshipStatus = 'cumplido' | 'en_progreso' | 'en_riesgo' | 'no_acreditado';
+
+export interface ScholarshipProgressSummary {
+  tieneBeca: boolean;
+  tipoBeca: string;
+  porcentajeBeca: number;
+  promedioAcademico: number;
+  puntosTotales: number;
+  puntosBrutos: number;
+  puntosPenalizaciones: number;
+  puntosMeta: number; // 1000 pts
+  porcentajeCumplimiento: number;
+  estatus: ScholarshipStatus;
+  estatusTexto: string;
+  isAcreditadoBeca: boolean;
+  actividadesBecadas: Array<{
+    id: string;
+    eventId: string;
+    titulo: string;
+    categoria: string;
+    fecha: string;
+    puntosAcreditados: number;
+    rol: ParticipantRole;
+  }>;
+}
+
+export interface ScholarshipRenewalDictamenData {
+  folio: string;
+  estudiante: UserProfile;
+  tipoBeca: string;
+  porcentajeBeca: number;
+  promedioAcademico: number;
+  cuatrimestre: number;
+  puntosTotales: number;
+  puntosMeta: number;
+  porcentajeCumplimiento: number;
+  fechaEmision: string;
+  hashVerificacion: string;
+  actividades: Array<{
+    titulo: string;
+    categoria: string;
+    fecha: string;
+    puntos: number;
+    rol: string;
+  }>;
+}
+

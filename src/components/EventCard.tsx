@@ -130,6 +130,14 @@ export const EventCard: React.FC<EventCardProps> = ({
                   {roleInfo.label}
                 </span>
               )}
+
+              {/* Badge de Puntos de Beca (Solo visible si el alumno tiene beca) */}
+              {currentUser.tiene_beca && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-500/30 flex items-center gap-1 shadow-sm">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                  +{event.puntos_beca || 150} Pts Beca
+                </span>
+              )}
             </div>
 
             <div className="px-3 py-1 rounded-full bg-gradient-to-r from-unipaz-orange to-amber-500 text-slate-950 font-black text-xs shadow-sm">

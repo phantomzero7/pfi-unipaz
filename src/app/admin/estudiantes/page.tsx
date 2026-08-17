@@ -28,8 +28,10 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { AttendanceJustificationModal } from '@/components/AttendanceJustificationModal';
+import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewalDictamenModal';
 import { exportStudentsToCsv } from '@/lib/export-utils';
-import { calculateStudentPFIProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
+import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { AttendanceStatus, PFIEvent, UserProfile } from '@/lib/types';
 
@@ -43,18 +45,36 @@ export default function AdminEstudiantesDirectoryPage() {
     validateAttendanceManually,
     assignEventToStudent,
     getStudentProgress,
+    getStudentScholarshipProgress,
+    assignScholarshipToStudent,
+    revokeScholarship,
     currentUser,
   } = usePFI();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'todos' | 'acreditados' | 'riesgo' | 'justificaciones'>('todos');
+  const [filterStatus, setFilterStatus] = useState<
+    'todos' | 'acreditados' | 'riesgo' | 'becados_todos' | 'becados_acreditados' | 'becados_riesgo' | 'no_becados'
+  >('todos');
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
 
-  // Modal para asignación directa a este estudiante
+  // Modal para asignación directa de eventos a este estudiante
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignEventId, setAssignEventId] = useState<string>(events[0]?.id || '');
   const [isSpecialCase, setIsSpecialCase] = useState(false);
   const [assignFeedback, setAssignFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Modal para asignación / gestión de becas
+  const [showScholarshipModal, setShowScholarshipModal] = useState(false);
+  const [showDictamenModal, setShowDictamenModal] = useState(false);
+  const [scholarshipForm, setScholarshipForm] = useState<{
+    tipo_beca: string;
+    porcentaje: number;
+    promedio: number;
+  }>({
+    tipo_beca: 'Excelencia Académica',
+    porcentaje: 50,
+    promedio: 9.5,
+  });
 
   const students = profiles.filter((p) => p.role === 'estudiante');
   const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
@@ -74,14 +94,19 @@ export default function AdminEstudiantesDirectoryPage() {
       if (!matchesQuery) return false;
 
       const prog = getStudentProgress(s.id);
+      const sch = getStudentScholarshipProgress(s.id);
       const cuatri = s.cuatrimestre || 1;
       const isRiesgo = cuatri >= 6 && prog.horasTotales < 200;
 
       if (filterStatus === 'acreditados') return prog.isAcreditado;
       if (filterStatus === 'riesgo') return isRiesgo;
+      if (filterStatus === 'becados_todos') return s.tiene_beca;
+      if (filterStatus === 'becados_acreditados') return s.tiene_beca && sch.isAcreditadoBeca;
+      if (filterStatus === 'becados_riesgo') return s.tiene_beca && !sch.isAcreditadoBeca;
+      if (filterStatus === 'no_becados') return !s.tiene_beca;
       return true;
     });
-  }, [students, searchTerm, filterStatus, getStudentProgress]);
+  }, [students, searchTerm, filterStatus, getStudentProgress, getStudentScholarshipProgress]);
 
   const selectedStudentProgress = selectedStudent
     ? calculateStudentPFIProgress(
@@ -225,7 +250,7 @@ export default function AdminEstudiantesDirectoryPage() {
         </div>
 
         {/* Pestañas de Filtro */}
-        <div className="flex items-center p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-bold self-start sm:self-auto shadow-sm">
+        <div className="flex flex-wrap items-center p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-bold gap-1 shadow-sm">
           <button
             onClick={() => setFilterStatus('todos')}
             className={`px-3 py-1.5 rounded-xl transition-all ${
@@ -254,7 +279,38 @@ export default function AdminEstudiantesDirectoryPage() {
                 : 'text-slate-500'
             }`}
           >
-            En Rezago (&lt;200h en 6°+)
+            En Rezago PFI
+          </button>
+          <button
+            onClick={() => setFilterStatus('becados_todos')}
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+              filterStatus === 'becados_todos'
+                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-black'
+                : 'text-slate-500'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            Becarios UNIPAZ
+          </button>
+          <button
+            onClick={() => setFilterStatus('becados_acreditados')}
+            className={`px-3 py-1.5 rounded-xl transition-all ${
+              filterStatus === 'becados_acreditados'
+                ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-900 dark:text-teal-200 font-black'
+                : 'text-slate-500'
+            }`}
+          >
+            Beca Renovada (≥1,000 pts)
+          </button>
+          <button
+            onClick={() => setFilterStatus('becados_riesgo')}
+            className={`px-3 py-1.5 rounded-xl transition-all ${
+              filterStatus === 'becados_riesgo'
+                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 font-black'
+                : 'text-slate-500'
+            }`}
+          >
+            Beca en Riesgo (&lt;1,000 pts)
           </button>
         </div>
       </div>
@@ -263,6 +319,7 @@ export default function AdminEstudiantesDirectoryPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredStudents.map((std) => {
           const prog = getStudentProgress(std.id);
+          const sch = getStudentScholarshipProgress(std.id);
           const cuatri = std.cuatrimestre || 1;
           const isRiesgo = cuatri >= 6 && prog.horasTotales < 200;
 
@@ -275,23 +332,35 @@ export default function AdminEstudiantesDirectoryPage() {
                   ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-300 dark:border-rose-500/40'
                   : prog.isAcreditado
                   ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-500/40'
+                  : std.tiene_beca
+                  ? 'bg-gradient-to-br from-amber-500/5 to-white dark:from-amber-950/20 dark:to-slate-900/60 border-amber-300/60 dark:border-amber-500/30'
                   : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/10 hover:border-unipaz-orange/40'
               }`}
             >
               <div>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     {std.matricula}
                   </span>
-                  {isRiesgo ? (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
-                      ⚠️ Rezago
-                    </span>
-                  ) : prog.isAcreditado ? (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300">
-                      ✓ Acreditado
-                    </span>
-                  ) : null}
+
+                  <div className="flex items-center gap-1">
+                    {std.tiene_beca && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-300/80 flex items-center gap-0.5">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                        Beca {std.porcentaje_beca}%
+                      </span>
+                    )}
+
+                    {isRiesgo ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-300">
+                        ⚠️ Rezago PFI
+                      </span>
+                    ) : prog.isAcreditado ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300">
+                        ✓ Acreditado
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 mt-3">
@@ -327,6 +396,18 @@ export default function AdminEstudiantesDirectoryPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Sub-fila de Beca si aplica */}
+                {std.tiene_beca && (
+                  <div className="mt-2 pt-2 border-t border-amber-200/60 dark:border-white/5 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-amber-800 dark:text-amber-300 text-[10px] font-sans font-semibold">
+                      Puntos Beca:
+                    </span>
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      {sch.puntosTotales} / 1,000 pts ({sch.porcentajeCumplimiento}%)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 pt-2 flex items-center justify-between text-[11px] text-unipaz-cobalt font-bold">
@@ -350,42 +431,121 @@ export default function AdminEstudiantesDirectoryPage() {
             </button>
 
             {/* Header del Estudiante */}
-            <div className="flex items-center gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
-              <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-unipaz-orange shadow-md flex-shrink-0">
-                <Image
-                  src={selectedStudent.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                  alt={selectedStudent.nombre}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-unipaz-orange">
-                    {selectedStudent.matricula}
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300">
-                    {selectedStudent.cuatrimestre ? `${selectedStudent.cuatrimestre}° Cuatrimestre` : selectedStudent.periodo_ingreso}
-                  </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-unipaz-orange shadow-md flex-shrink-0">
+                  <Image
+                    src={selectedStudent.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                    alt={selectedStudent.nombre}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <h3 className="text-xl font-black text-unipaz-navy dark:text-white mt-0.5">
-                  {selectedStudent.nombre} {selectedStudent.apellidos}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {selectedStudent.carrera} · {selectedStudent.email}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-unipaz-orange">
+                      {selectedStudent.matricula}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300">
+                      {selectedStudent.cuatrimestre ? `${selectedStudent.cuatrimestre}° Cuatrimestre` : selectedStudent.periodo_ingreso}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-unipaz-navy dark:text-white mt-0.5">
+                    {selectedStudent.nombre} {selectedStudent.apellidos}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {selectedStudent.carrera} · {selectedStudent.email}
+                  </p>
+                </div>
               </div>
 
-              <button
-                onClick={() => setShowAssignModal(true)}
-                className="py-2 px-3.5 rounded-xl bg-unipaz-orange text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Asignar Actividad
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setShowAssignModal(true)}
+                  className="py-2 px-3.5 rounded-xl bg-unipaz-orange text-white font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-orange-600"
+                >
+                  <Plus className="w-4 h-4" />
+                  Asignar Actividad
+                </button>
+              </div>
             </div>
 
-            {/* Resumen de Requisitos */}
+            {/* SECCIÓN DE GESTIÓN DE BECA DEL ALUMNO */}
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <div>
+                    <h4 className="font-black text-xs text-amber-900 dark:text-amber-200">
+                      Estatus de Beca Institucional
+                    </h4>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      {selectedStudent.tiene_beca
+                        ? `${selectedStudent.tipo_beca} (${selectedStudent.porcentaje_beca}% de Descuento)`
+                        : 'El estudiante no cuenta con beca asignada actualmente.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {selectedStudent.tiene_beca ? (
+                    <>
+                      <button
+                        onClick={() => setShowDictamenModal(true)}
+                        className="py-1.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm"
+                      >
+                        <FileCheck className="w-3.5 h-3.5" />
+                        Dictamen de Beca PDF
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`¿Deseas dar de baja la beca de ${selectedStudent.nombre}?`)) {
+                            revokeScholarship(selectedStudent.id);
+                            setSelectedStudent((prev) => (prev ? { ...prev, tiene_beca: false } : null));
+                          }
+                        }}
+                        className="py-1.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 hover:text-rose-600 text-slate-600 dark:text-slate-300 font-bold text-[11px]"
+                      >
+                        Revocar Beca
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setShowScholarshipModal(true)}
+                      className="py-1.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Asignar Beca
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {selectedStudent.tiene_beca && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-amber-200/80 dark:border-white/5 text-xs font-mono">
+                  <div>
+                    <span className="text-slate-400 font-sans block text-[10px]">Puntos Acumulados:</span>
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      +{getStudentScholarshipProgress(selectedStudent.id).puntosTotales} / 1,000 pts
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-sans block text-[10px]">Cumplimiento:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {getStudentScholarshipProgress(selectedStudent.id).porcentajeCumplimiento}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-sans block text-[10px]">Promedio Escolar:</span>
+                    <span className="font-bold text-unipaz-navy dark:text-white">
+                      {(selectedStudent.promedio_academico || 9.0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Resumen de Requisitos PFI */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-center">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block">Horas Totales</span>
@@ -459,7 +619,7 @@ export default function AdminEstudiantesDirectoryPage() {
         </div>
       )}
 
-      {/* MODAL DE ASIGNACIÓN DIRECTA */}
+      {/* MODAL DE ASIGNACIÓN DIRECTA DE ACTIVIDAD */}
       {showAssignModal && selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 shadow-2xl text-slate-900 dark:text-white space-y-4">
@@ -515,6 +675,133 @@ export default function AdminEstudiantesDirectoryPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE ASIGNACIÓN DE BECA INSTITUCIONAL */}
+      {showScholarshipModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-amber-300/80 dark:border-amber-500/30 rounded-3xl p-6 shadow-2xl text-slate-900 dark:text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <h3 className="font-black text-sm text-unipaz-navy dark:text-white">
+                  Asignar Beca Institucional
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowScholarshipModal(false)}
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              Asignación oficial para: <strong className="text-unipaz-navy dark:text-white">{selectedStudent.nombre} {selectedStudent.apellidos}</strong> ({selectedStudent.matricula})
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                assignScholarshipToStudent(
+                  selectedStudent.id,
+                  scholarshipForm.tipo_beca as any,
+                  scholarshipForm.porcentaje,
+                  scholarshipForm.promedio,
+                  1000
+                );
+                setSelectedStudent((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        tiene_beca: true,
+                        tipo_beca: scholarshipForm.tipo_beca as any,
+                        porcentaje_beca: scholarshipForm.porcentaje,
+                        promedio_academico: scholarshipForm.promedio,
+                        puntos_beca_meta_cuatrimestral: 1000,
+                      }
+                    : null
+                );
+                setShowScholarshipModal(false);
+              }}
+              className="space-y-4 text-xs"
+            >
+              <div>
+                <label className="block font-bold mb-1">Tipo de Beca / Estímulo:</label>
+                <select
+                  value={scholarshipForm.tipo_beca}
+                  onChange={(e) => setScholarshipForm({ ...scholarshipForm, tipo_beca: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
+                >
+                  <option value="Excelencia Académica">Beca de Excelencia Académica</option>
+                  <option value="Deportiva (Garzas)">Beca Deportiva (Garzas UNIPAZ)</option>
+                  <option value="Talento y Liderazgo">Beca de Talento y Liderazgo Social</option>
+                  <option value="Convenio Institucional">Beca por Convenio Institucional / Empresa</option>
+                  <option value="Apoyo Socioeconómico">Beca de Apoyo Socioeconómico</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">% de Descuento:</label>
+                  <select
+                    value={scholarshipForm.porcentaje}
+                    onChange={(e) => setScholarshipForm({ ...scholarshipForm, porcentaje: parseInt(e.target.value) || 50 })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
+                  >
+                    <option value="25">25% Descuento</option>
+                    <option value="50">50% Descuento</option>
+                    <option value="75">75% Descuento</option>
+                    <option value="100">100% Descuento Total</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">Promedio Actual:</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="7.0"
+                    max="10.0"
+                    value={scholarshipForm.promedio}
+                    onChange={(e) => setScholarshipForm({ ...scholarshipForm, promedio: parseFloat(e.target.value) || 9.0 })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 text-[11px] text-amber-900 dark:text-amber-200">
+                📌 <strong>Regla Institucional:</strong> El estudiante estará obligado a generar un mínimo de <strong>1,000 puntos cuatrimestrales</strong> en actividades formativas para refrendar el beneficio.
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowScholarshipModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                >
+                  Confirmar Asignación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DICTAMEN OFICIAL DE BECA */}
+      {showDictamenModal && selectedStudent && selectedStudent.tiene_beca && (
+        <ScholarshipRenewalDictamenModal
+          isOpen={showDictamenModal}
+          onClose={() => setShowDictamenModal(false)}
+          student={selectedStudent}
+          scholarshipProgress={getStudentScholarshipProgress(selectedStudent.id)}
+        />
       )}
     </div>
   );

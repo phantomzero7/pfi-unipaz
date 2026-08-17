@@ -2,7 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { MOCK_ATTENDANCES, MOCK_EVENTS, MOCK_PROFILES } from './mock-data';
-import { calculateStudentPFIProgress, PFI_RULES, validateStayDuration } from './pfi-rules';
+import {
+  calculateStudentPFIProgress,
+  calculateStudentScholarshipProgress,
+  getStandardScholarshipPoints,
+  PFI_RULES,
+  validateStayDuration,
+} from './pfi-rules';
 import {
   AppNotification,
   AttendanceJustification,
@@ -16,6 +22,7 @@ import {
   PFIGlobalConfig,
   PFIGlobalSignatures,
   PFIProgressSummary,
+  ScholarshipProgressSummary,
   StaffApplication,
   UserProfile,
   UserRole,
@@ -27,6 +34,7 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   maxTalleresExtracurriculares: 3,
   maxTalleresLiderazgo: 1,
   penalizacionNoShowStaff: 5.0,
+  puntosBecaMinimosCuatrimestre: 1000,
   categoriaHoras: {
     'Investigación': 100.00,
     'Club Anual': 33.34,
@@ -197,8 +205,18 @@ interface PFIContextType {
     }>
   ) => { success: boolean; message: string; accreditedCount: number; rejectedCount: number };
   
-  // Student Progress
+  // Student Progress & Scholarships
   getStudentProgress: (studentId?: string) => PFIProgressSummary;
+  getStudentScholarshipProgress: (studentId?: string) => ScholarshipProgressSummary;
+  assignScholarshipToStudent: (
+    studentId: string,
+    tipoBeca: UserProfile['tipo_beca'],
+    porcentaje: number,
+    promedio?: number,
+    meta?: number
+  ) => { success: boolean; message: string };
+  revokeScholarship: (studentId: string) => { success: boolean; message: string };
+  applyScholarshipPenalty: (attendanceId: string, puntosPenalizacion: number, motivo: string) => void;
   getStudentAttendances: (studentId?: string) => EventAttendance[];
   getEventById: (eventId: string) => PFIEvent | undefined;
   getStudentById: (studentId: string) => UserProfile | undefined;
@@ -1101,11 +1119,15 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       nominalHours
     );
 
+    const nominalScholarshipPoints = event.puntos_beca || getStandardScholarshipPoints(event.categoria, att.rol_participacion);
+    const pointsCredited = result.status === 'asistio' ? nominalScholarshipPoints : 0;
+
     const updated: EventAttendance = {
       ...att,
       check_out_timestamp: checkOutTime,
       status: result.status,
       horas_acreditadas: result.horasAcreditadas,
+      puntos_beca_acreditados: pointsCredited,
       validado_por: scannerId,
       notes: result.mensaje,
     };
@@ -1133,23 +1155,26 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (event.otp_online_code.trim().toUpperCase() !== otpCode.trim().toUpperCase()) {
-      return { success: false, message: 'Código OTP incorrecto o caducado.' };
+      return { success: false, message: 'Código OTP incorrecto o expirado.' };
     }
 
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === sId);
-    const now = new Date().toISOString();
+    const nominalScholarshipPoints = event.puntos_beca || getStandardScholarshipPoints(event.categoria, 'asistente');
 
     if (existing) {
+      if (existing.status === 'asistio') {
+        return { success: true, message: 'Ya tenías acreditada esta actividad virtual.', hoursCredited: existing.horas_acreditadas };
+      }
+
       setAttendances((prev) =>
         prev.map((a) =>
           a.id === existing.id
             ? {
                 ...a,
                 status: 'asistio',
-                check_in_timestamp: existing.check_in_timestamp || now,
-                check_out_timestamp: now,
                 horas_acreditadas: event.horas_pfi,
-                notes: 'Validado mediante código OTP en sesión virtual',
+                puntos_beca_acreditados: nominalScholarshipPoints,
+                notes: 'Acreditado mediante Token OTP Virtual en Vivo',
               }
             : a
         )
@@ -1161,18 +1186,17 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         student_id: sId,
         status: 'asistio',
         rol_participacion: 'asistente',
-        check_in_timestamp: now,
-        check_out_timestamp: now,
         horas_acreditadas: event.horas_pfi,
-        notes: 'Validado mediante código OTP en sesión virtual',
-        created_at: now,
+        puntos_beca_acreditados: nominalScholarshipPoints,
+        notes: 'Acreditado mediante Token OTP Virtual en Vivo',
+        created_at: new Date().toISOString(),
       };
       setAttendances((prev) => [...prev, newAttendance]);
     }
 
     return {
       success: true,
-      message: `¡Código OTP verificado! Se acreditaron +${event.horas_pfi.toFixed(2)} hrs PFI.`,
+      message: `¡Código OTP verificado! Se acreditaron +${event.horas_pfi.toFixed(2)} hrs PFI y +${nominalScholarshipPoints} Puntos Beca.`,
       hoursCredited: event.horas_pfi,
     };
   };
@@ -1194,17 +1218,114 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? (ev?.horas_ponente || 15.0)
           : (ev?.horas_pfi || 0);
 
+        const nominalPoints = ev?.puntos_beca || getStandardScholarshipPoints(ev?.categoria || 'Taller Extracurricular', assignedRole);
         const hours = customHours !== undefined ? customHours : status === 'asistio' ? nominalHrs : 0;
+        const points = status === 'asistio' ? nominalPoints : 0;
+
         return {
           ...a,
           status,
           rol_participacion: assignedRole,
           horas_acreditadas: hours,
+          puntos_beca_acreditados: points,
           validado_por: currentUser.id,
           notes: 'Validado manualmente por Coordinación PFI / Admin',
         };
       })
     );
+  };
+
+  const assignScholarshipToStudent = (
+    studentId: string,
+    tipoBeca: UserProfile['tipo_beca'],
+    porcentaje: number,
+    promedio?: number,
+    meta?: number
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              tiene_beca: true,
+              tipo_beca: tipoBeca || 'Excelencia Académica',
+              porcentaje_beca: porcentaje,
+              promedio_academico: promedio || p.promedio_academico || 9.0,
+              puntos_beca_meta_cuatrimestral: meta || 1000,
+            }
+          : p
+      )
+    );
+
+    addNotification({
+      user_id: studentId,
+      titulo: '🎓 Asignación de Beca Institucional',
+      mensaje: `Se ha asignado ${tipoBeca} (${porcentaje}%) a tu expediente. Tu meta cuatrimestral de renovación es de ${meta || 1000} puntos.`,
+      tipo: 'success',
+    });
+
+    return {
+      success: true,
+      message: `Beca asignada exitosamente a ${student.nombre} ${student.apellidos}.`,
+    };
+  };
+
+  const revokeScholarship = (studentId: string) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              tiene_beca: false,
+            }
+          : p
+      )
+    );
+
+    addNotification({
+      user_id: studentId,
+      titulo: 'Notificación de Beca Institucional',
+      mensaje: 'Tu estatus de beca ha sido modificado por el Comité de Becas.',
+      tipo: 'info',
+    });
+
+    return {
+      success: true,
+      message: `Beca revocada para ${student.nombre} ${student.apellidos}.`,
+    };
+  };
+
+  const applyScholarshipPenalty = (
+    attendanceId: string,
+    puntosPenalizacion: number,
+    motivo: string
+  ) => {
+    setAttendances((prev) =>
+      prev.map((a) =>
+        a.id === attendanceId
+          ? {
+              ...a,
+              penalizacion_puntos_beca: (a.penalizacion_puntos_beca || 0) + puntosPenalizacion,
+              notes: `${a.notes || ''} [Penalización Beca: -${puntosPenalizacion} pts (${motivo})]`,
+            }
+          : a
+      )
+    );
+  };
+
+  const getStudentScholarshipProgress = (studentId?: string): ScholarshipProgressSummary => {
+    const targetStudentId = studentId || currentUser.id;
+    const student = profiles.find((p) => p.id === targetStudentId) || currentUser;
+    const studentAtts = attendances.filter((a) => a.student_id === targetStudentId);
+    const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
+
+    return calculateStudentScholarshipProgress(student, studentAtts, eventsMap);
   };
 
   const bulkAccreditFromMeet = (
@@ -1223,6 +1344,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let accreditedCount = 0;
     let rejectedCount = 0;
+    const nominalScholarshipPoints = event.puntos_beca || getStandardScholarshipPoints(event.categoria, 'asistente');
 
     setAttendances((prev) => {
       let updatedList = [...prev];
@@ -1242,6 +1364,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     ...a,
                     status: 'asistio' as AttendanceStatus,
                     horas_acreditadas: event.horas_pfi,
+                    puntos_beca_acreditados: nominalScholarshipPoints,
                     check_in_timestamp: `${event.fecha_evento}T${event.hora_inicio}:00`,
                     check_out_timestamp: `${event.fecha_evento}T${event.hora_fin}:00`,
                     validado_por: currentUser.id,
@@ -1257,6 +1380,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               status: 'asistio' as AttendanceStatus,
               rol_participacion: 'asistente',
               horas_acreditadas: event.horas_pfi,
+              puntos_beca_acreditados: nominalScholarshipPoints,
               check_in_timestamp: `${event.fecha_evento}T${event.hora_inicio}:00`,
               check_out_timestamp: `${event.fecha_evento}T${event.hora_fin}:00`,
               validado_por: currentUser.id,
@@ -1268,8 +1392,8 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           addNotification({
             user_id: rec.studentId,
-            titulo: '🎉 Horas PFI Acreditadas (Google Meet)',
-            mensaje: `Se han acreditado +${event.horas_pfi} hrs de "${event.titulo}" tras validar tu permanencia en la sesión virtual de Meet.`,
+            titulo: '🎉 Horas PFI y Puntos Beca Acreditados',
+            mensaje: `Se han acreditado +${event.horas_pfi} hrs y +${nominalScholarshipPoints} puntos beca de "${event.titulo}" vía Google Meet.`,
             tipo: 'success',
           });
         } else {
@@ -1281,6 +1405,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     ...a,
                     status: 'incompleto' as AttendanceStatus,
                     horas_acreditadas: 0,
+                    puntos_beca_acreditados: 0,
                     notes: `Rechazado: permanencia insuficiente en Meet (${rec.durationMinutes} min / ${rec.attendancePercent}%).`,
                   }
                 : a
@@ -1354,7 +1479,11 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         validateOnlineOTP,
         validateAttendanceManually,
         bulkAccreditFromMeet,
+        assignScholarshipToStudent,
+        revokeScholarship,
+        applyScholarshipPenalty,
         getStudentProgress,
+        getStudentScholarshipProgress,
         getStudentAttendances,
         getEventById,
         getStudentById,
