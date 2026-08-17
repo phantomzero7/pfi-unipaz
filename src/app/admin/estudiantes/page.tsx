@@ -744,11 +744,22 @@ export default function AdminEstudiantesDirectoryPage() {
                   onChange={(e) => setScholarshipForm({ ...scholarshipForm, tipo_beca: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
                 >
-                  <option value="Excelencia Académica">Beca de Excelencia Académica</option>
-                  <option value="Deportiva (Garzas)">Beca Deportiva (Garzas UNIPAZ)</option>
-                  <option value="Talento y Liderazgo">Beca de Talento y Liderazgo Social</option>
-                  <option value="Convenio Institucional">Beca por Convenio Institucional / Empresa</option>
-                  <option value="Apoyo Socioeconómico">Beca de Apoyo Socioeconómico</option>
+                  <optgroup label="Becas Académicas y Deportivas">
+                    <option value="Excelencia Académica">Beca de Excelencia Académica (≥ 9.50)</option>
+                    <option value="Mérito Académico">Estímulo al Mérito Académico</option>
+                    <option value="Deportiva (Garzas)">Beca Deportiva (Garzas UNIPAZ)</option>
+                    <option value="Talento y Liderazgo">Beca de Talento y Liderazgo Social</option>
+                  </optgroup>
+                  <optgroup label="Estímulos de Inclusión y Responsabilidad Social">
+                    <option value="Madres Solteras / Jefas de Familia">Estímulo Madres Solteras / Jefas de Familia</option>
+                    <option value="Inclusión y Discapacidad">Estímulo de Inclusión y Personas con Discapacidad</option>
+                    <option value="Intercultural / Pueblos Originarios">Estímulo Intercultural / Pueblos Originarios</option>
+                    <option value="Apoyo Socioeconómico">Beca de Apoyo Socioeconómico</option>
+                  </optgroup>
+                  <optgroup label="Convenios y Posgrados">
+                    <option value="Convenio Institucional">Beca por Convenio Institucional / Empresa</option>
+                    <option value="Posgrados e Investigación">Estímulo de Posgrados e Investigación</option>
+                  </optgroup>
                 </select>
               </div>
 

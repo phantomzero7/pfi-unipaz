@@ -73,10 +73,21 @@ export interface UserProfile {
   qr_secret: string;
   penalizaciones_acumuladas?: number;
   
-  // Módulo de Becas y Estímulos UNIPAZ
+  // Módulo de Becas y Estímulos UNIPAZ / IESPAC
   tiene_beca?: boolean;
-  tipo_beca?: 'Excelencia Académica' | 'Deportiva (Garzas)' | 'Talento y Liderazgo' | 'Convenio Institucional' | 'Socioeconómica';
-  porcentaje_beca?: number; // 25, 50, 75, 100%
+  tipo_beca?:
+    | 'Excelencia Académica'
+    | 'Mérito Académico'
+    | 'Madres Solteras / Jefas de Familia'
+    | 'Inclusión y Discapacidad'
+    | 'Intercultural / Pueblos Originarios'
+    | 'Deportiva (Garzas)'
+    | 'Talento y Liderazgo'
+    | 'Convenio Institucional'
+    | 'Apoyo Socioeconómico'
+    | 'Posgrados e Investigación'
+    | string;
+  porcentaje_beca?: number; // 20, 25, 50, 75, 100%
   puntos_beca_meta_cuatrimestral?: number; // Mínimo 1000 pts
   puntos_beca_penalizaciones?: number;
   promedio_academico?: number; // e.g. 9.5
