@@ -33,7 +33,6 @@ import { AttendanceJustificationModal } from '@/components/AttendanceJustificati
 import { BecarioReportModal } from '@/components/BecarioReportModal';
 import { CertificatePdfModal } from '@/components/CertificatePdfModal';
 import { EventFeedbackModal } from '@/components/EventFeedbackModal';
-import { GraduationSimulatorWidget } from '@/components/GraduationSimulatorWidget';
 import { OfficialClearanceDictamenModal } from '@/components/OfficialClearanceDictamenModal';
 import { PrintableIdCardModal } from '@/components/PrintableIdCardModal';
 import { QrScannerModal } from '@/components/QrScannerModal';
@@ -338,9 +337,6 @@ export default function EstudianteDashboard() {
 
       {/* MEDALLAS E INSIGNIAS FORMATIVAS */}
       <StudentBadgesShowcase progress={progress} />
-
-      {/* SIMULADOR INTERACTIVO DE GRADUACIÓN */}
-      <GraduationSimulatorWidget progress={progress} />
 
       {/* HISTORIAL DE ACTIVIDADES (3 PESTAÑAS: REALIZADOS, NO REALIZADOS Y PROGRAMADOS) */}
       <div className="rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
