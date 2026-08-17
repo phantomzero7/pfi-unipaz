@@ -29,7 +29,12 @@ import {
   X,
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
-import { UserProfile } from '@/lib/types';
+import {
+  OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA,
+  OPCIONES_SEXO,
+  PROGRAMAS_ACADEMICOS,
+  UserProfile,
+} from '@/lib/types';
 
 interface ScholarshipApplicationModalProps {
   isOpen: boolean;
@@ -52,10 +57,11 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   // Form State - Paso 1: Académico y Personal
   const [nombre, setNombre] = useState(student.nombre || '');
   const [apellidos, setApellidos] = useState(student.apellidos || '');
-  const [carrera, setCarrera] = useState(student.carrera || 'Ingeniería en Desarrollo de Software');
+  const [carrera, setCarrera] = useState<string>(student.carrera || PROGRAMAS_ACADEMICOS[0]);
   const [cuatrimestre, setCuatrimestre] = useState(student.cuatrimestre?.toString() || '1');
   const [fechaNacimiento, setFechaNacimiento] = useState('2003-05-14');
-  const [sexo, setSexo] = useState<'Hombre' | 'Mujer'>('Hombre');
+  const [sexo, setSexo] = useState<string>('Hombre');
+  const [pertenenciaEtnica, setPertenenciaEtnica] = useState<string>(OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA[0]);
   const [estadoCivil, setEstadoCivil] = useState('Soltero/a');
   const [telefono, setTelefono] = useState('(612) 123-4567');
   const [email, setEmail] = useState(student.email || 'estudiante@unipaz.mx');
@@ -296,22 +302,31 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                   </div>
                 </div>
 
-                {/* Carrera y Cuatrimestre */}
+                {/* Programa Académico y Cuatrimestre */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                      Carrera / Licenciatura:
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
+                      Programa Académico:
                     </label>
-                    <input
-                      type="text"
-                      required
+                    <select
                       value={carrera}
                       onChange={(e) => setCarrera(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold"
-                    />
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
+                    >
+                      <optgroup label="Licenciaturas">
+                        {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('LICENCIATURA')).map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Maestrías y Posgrados">
+                        {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('MAESTRÍA')).map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </optgroup>
+                    </select>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Cuatrimestre:
                     </label>
                     <select
@@ -329,7 +344,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                 {/* Fecha Nacimiento, Sexo y Estado Civil */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Fecha de Nacimiento:
                     </label>
                     <div className="flex gap-2">
@@ -345,28 +360,21 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     </div>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Sexo:
                     </label>
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                      {(['Hombre', 'Mujer'] as const).map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setSexo(s)}
-                          className={`flex-1 py-1.5 rounded-lg font-bold text-xs transition-all ${
-                            sexo === s
-                              ? 'bg-white dark:bg-slate-700 text-unipaz-navy dark:text-white shadow-sm'
-                              : 'text-slate-500'
-                          }`}
-                        >
-                          {s}
-                        </button>
+                    <select
+                      value={sexo}
+                      onChange={(e) => setSexo(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold"
+                    >
+                      {OPCIONES_SEXO.map((s) => (
+                        <option key={s} value={s}>{s}</option>
                       ))}
-                    </div>
+                    </select>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Estado Civil:
                     </label>
                     <select
@@ -380,6 +388,25 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       <option value="Divorciado/a">Divorciado/a</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Autoadscripción Étnica y Grupos Prioritarios */}
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
+                    Autoadscripción Étnica y Grupos de Población Prioritaria:
+                  </label>
+                  <select
+                    value={pertenenciaEtnica}
+                    onChange={(e) => setPertenenciaEtnica(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
+                  >
+                    {OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">
+                    Información con fines de equidad, inclusión e impulso de becas afirmativas UNIPAZ.
+                  </span>
                 </div>
 
                 {/* Contacto */}

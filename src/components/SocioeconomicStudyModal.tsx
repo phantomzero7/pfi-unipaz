@@ -33,7 +33,12 @@ import {
   X,
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
-import { UserProfile } from '@/lib/types';
+import {
+  OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA,
+  OPCIONES_SEXO,
+  PROGRAMAS_ACADEMICOS,
+  UserProfile,
+} from '@/lib/types';
 
 interface SocioeconomicStudyModalProps {
   isOpen: boolean;
@@ -66,6 +71,9 @@ export const SocioeconomicStudyModal: React.FC<SocioeconomicStudyModalProps> = (
 
   // PASO 1: Datos Generales y Domicilios
   const [tipoTramite, setTipoTramite] = useState<'Beca Nueva (Aspirante)' | 'Reincorporación / Pérdida Previa de Beca' | 'Aumento de Porcentaje'>('Beca Nueva (Aspirante)');
+  const [programaAcademico, setProgramaAcademico] = useState<string>(student.carrera || PROGRAMAS_ACADEMICOS[0]);
+  const [sexo, setSexo] = useState<string>('Hombre');
+  const [pertenenciaEtnica, setPertenenciaEtnica] = useState<string>(OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA[0]);
   const [curp, setCurp] = useState('VAAC030514HBSLR09');
   const [rfc, setRfc] = useState('VAAC030514AB1');
   const [lugarNacimiento, setLugarNacimiento] = useState('La Paz, Baja California Sur');
@@ -363,6 +371,61 @@ export const SocioeconomicStudyModal: React.FC<SocioeconomicStudyModalProps> = (
                         {t}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Programa Académico */}
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+                    Programa Académico:
+                  </label>
+                  <select
+                    value={programaAcademico}
+                    onChange={(e) => setProgramaAcademico(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                  >
+                    <optgroup label="Licenciaturas">
+                      {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('LICENCIATURA')).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Maestrías y Posgrados">
+                      {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('MAESTRÍA')).map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+
+                {/* Sexo y Autoadscripción Étnica */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+                      Sexo:
+                    </label>
+                    <select
+                      value={sexo}
+                      onChange={(e) => setSexo(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
+                    >
+                      {OPCIONES_SEXO.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] mb-1">
+                      Autoadscripción Étnica / Población Prioritaria:
+                    </label>
+                    <select
+                      value={pertenenciaEtnica}
+                      onChange={(e) => setPertenenciaEtnica(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold text-slate-900 dark:text-white"
+                    >
+                      {OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

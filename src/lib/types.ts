@@ -58,16 +58,60 @@ export interface Badge {
   fecha_obtenida?: string;
 }
 
+export const PROGRAMAS_ACADEMICOS = [
+  'LICENCIATURA EN ADMINISTRACIÓN',
+  'LICENCIATURA EN ADMINISTRACIÓN DE HOTELES Y RESTAURANTES',
+  'LICENCIATURA EN ADMINISTRACIÓN DE NEGOCIOS INTERNACIONALES',
+  'LICENCIATURA EN COMUNICACIÓN',
+  'LICENCIATURA EN CONTADURÍA PÚBLICA',
+  'LICENCIATURA EN DERECHO',
+  'LICENCIATURA EN DESARROLLO TURÍSTICO',
+  'LICENCIATURA EN DISEÑO GRÁFICO',
+  'LICENCIATURA EN ENFERMERÍA',
+  'LICENCIATURA EN MÉDICO CIRUJANO',
+  'LICENCIATURA EN MERCADOTECNIA INTERNACIONAL',
+  'LICENCIATURA EN PSICOLOGÍA',
+  'LICENCIATURA EN TRABAJO SOCIAL',
+  'MAESTRÍA  ADMINISTRACIÓN',
+  'MAESTRÍA  ADMINISTRACIÓN PÚBLICA',
+  'MAESTRÍA  EDUCACIÓN',
+  'MAESTRÍA CIENCIAS DEL DERECHO CON ÉNFASIS EN CONSTITUCIONAL Y AMPARO',
+  'MAESTRÍA EN TERAPIA SISTÉMICA FAMILIAR Y DE PAREJA CON PERSPECTIVA DE GÉNERO',
+  'MAESTRÍA INCLUSIÓN SOCIAL, GÉNERO Y DERECHOS HUMANOS',
+] as const;
+
+export type ProgramaAcademico = typeof PROGRAMAS_ACADEMICOS[number] | string;
+
+export const OPCIONES_SEXO = [
+  'Hombre',
+  'Mujer',
+  'Otro',
+  'Prefiero no decirlo',
+] as const;
+
+export const OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA = [
+  'Ninguno / Población General',
+  'Comunidad / Pueblo Indígena (Pueblos Originarios)',
+  'Comunidad Afromexicana / Afrodescendiente',
+  'Persona con Discapacidad',
+  'Comunidad LGBTIQ+',
+  'Población Migrante / En situación de movilidad',
+  'Otro',
+] as const;
+
 export interface UserProfile {
   id: string;
   matricula: string;
   nombre: string;
   apellidos: string;
-  carrera: string;
+  carrera: string; // Programa Académico
+  programa_academico?: string;
   periodo_ingreso: string;
   cuatrimestre?: number; // 1 to 9
   email: string;
   role: UserRole;
+  sexo?: string;
+  pertenencia_etnica_prioritaria?: string;
   es_docente_colaborador?: boolean;
   avatar_url?: string;
   qr_secret: string;

@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
                   <th className="py-3 px-3">Estudiante</th>
-                  <th className="py-3 px-3">Carrera</th>
+                  <th className="py-3 px-3">Programa Académico</th>
                   <th className="py-3 px-3">Progreso Horas</th>
                   <th className="py-3 px-3">Nivel PFI</th>
                   <th className="py-3 px-3 text-right">Estatus</th>

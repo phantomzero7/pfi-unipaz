@@ -277,7 +277,7 @@ export default function AdminEstudiantesDirectoryPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, matrícula o carrera..."
+            placeholder="Buscar por nombre, matrícula o programa académico..."
             className="w-full bg-white dark:bg-slate-900/70 border border-slate-200/90 dark:border-white/15 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-unipaz-orange shadow-sm"
           />
         </div>
