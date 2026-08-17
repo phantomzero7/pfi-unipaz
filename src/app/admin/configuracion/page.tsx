@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Award,
   BookOpen,
+  Building2,
   Calendar,
   CheckCircle2,
   Clock,
@@ -894,6 +895,30 @@ export default function AdminConfiguracionPage() {
               {pfiConfig.estudio_socioeconomico_habilitado ? 'Desactivar Formato Socioeconómico' : 'Habilitar Botón de Estudio'}
             </button>
           </div>
+        </div>
+
+        {/* Card Adicional: Becas Especiales de Servicio Departamental */}
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-500/10 via-white to-blue-500/5 dark:from-blue-950/30 dark:via-slate-900 dark:to-blue-950/10 border border-blue-200 dark:border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-blue-950 dark:text-blue-200">
+                Becas de Apoyo Departamental (Biblioteca, INDE, DEDU)
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 max-w-2xl">
+                Los alumnos becarios asignados a prestar servicio en <strong>Biblioteca</strong>, <strong>INDE</strong> (Instituto de Investigación e Innovación) o <strong>DEDU</strong> reciben automáticamente sus <strong>1,000 puntos cuatrimestrales</strong> al término del periodo mediante validación del Administrador.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/admin/estudiantes"
+            className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 flex-shrink-0"
+          >
+            Gestionar Becarios Departamentales →
+          </a>
         </div>
       </section>
     </div>

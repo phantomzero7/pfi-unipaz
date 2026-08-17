@@ -220,6 +220,18 @@ interface PFIContextType {
     promedio?: number,
     meta?: number
   ) => { success: boolean; message: string };
+  assignDepartmentalScholarship: (
+    studentId: string,
+    departamento: string,
+    porcentaje: number,
+    horasSemanales?: number,
+    promedio?: number
+  ) => { success: boolean; message: string };
+  accreditDepartmentalService: (
+    studentId: string,
+    acreditar?: boolean,
+    motivo?: string
+  ) => { success: boolean; message: string };
   revokeScholarship: (studentId: string) => { success: boolean; message: string };
   applyScholarshipPenalty: (attendanceId: string, puntosPenalizacion: number, motivo: string) => void;
   
@@ -1284,6 +1296,89 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const assignDepartmentalScholarship = (
+    studentId: string,
+    departamento: string,
+    porcentaje: number,
+    horasSemanales: number = 10,
+    promedio?: number
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    const tipoBeca = `Apoyo Departamental - ${departamento}`;
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              tiene_beca: true,
+              tipo_beca: tipoBeca,
+              porcentaje_beca: porcentaje,
+              promedio_academico: promedio || p.promedio_academico || 9.0,
+              puntos_beca_meta_cuatrimestral: 1000,
+              es_becario_departamental: true,
+              departamento_beca: departamento,
+              horas_departamentales_semanales: horasSemanales,
+              cumplimiento_departamental_acreditado: false,
+              puntos_departamentales_otorgados: 1000,
+            }
+          : p
+      )
+    );
+
+    addNotification({
+      user_id: studentId,
+      titulo: '🏢 Asignación de Beca Departamental',
+      mensaje: `Has sido asignado como becario en el departamento de ${departamento} (${horasSemanales} hrs/semana). Al término del cuatrimestre se te otorgarán los 1,000 puntos cuatrimestrales.`,
+      tipo: 'success',
+    });
+
+    return {
+      success: true,
+      message: `Beca departamental en ${departamento} asignada con éxito a ${student.nombre} ${student.apellidos}.`,
+    };
+  };
+
+  const accreditDepartmentalService = (
+    studentId: string,
+    acreditar: boolean = true,
+    motivo?: string
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              cumplimiento_departamental_acreditado: acreditar,
+              fecha_acreditacion_departamental: acreditar ? new Date().toISOString().split('T')[0] : undefined,
+              puntos_departamentales_otorgados: acreditar ? 1000 : 0,
+            }
+          : p
+      )
+    );
+
+    if (acreditar) {
+      addNotification({
+        user_id: studentId,
+        titulo: '🎉 1,000 Puntos Acreditados por Labor Departamental',
+        mensaje: `La jefatura de ${student.departamento_beca || 'tu departamento'} ha validado satisfactoriamente tus horas de servicio. Se han otorgado los 1,000 puntos cuatrimestrales de beca.`,
+        tipo: 'success',
+      });
+    }
+
+    return {
+      success: true,
+      message: acreditar
+        ? `Se han acreditado los 1,000 puntos departamentales a ${student.nombre} ${student.apellidos}.`
+        : `Se ha revocado la acreditación departamental de ${student.nombre} ${student.apellidos}.`,
+    };
+  };
+
   const revokeScholarship = (studentId: string) => {
     const student = profiles.find((p) => p.id === studentId);
     if (!student) return { success: false, message: 'Estudiante no encontrado.' };
@@ -1294,6 +1389,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? {
               ...p,
               tiene_beca: false,
+              es_becario_departamental: false,
+              departamento_beca: undefined,
+              cumplimiento_departamental_acreditado: false,
             }
           : p
       )
@@ -1656,6 +1754,8 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         validateAttendanceManually,
         bulkAccreditFromMeet,
         assignScholarshipToStudent,
+        assignDepartmentalScholarship,
+        accreditDepartmentalService,
         revokeScholarship,
         applyScholarshipPenalty,
         toggleScholarshipApplicationPeriod,

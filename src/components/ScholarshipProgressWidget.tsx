@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import {
   AlertTriangle,
   Award,
+  Building2,
   Calendar,
   CheckCircle2,
   ChevronRight,
+  Clock,
   FileCheck,
   GraduationCap,
   Percent,
@@ -89,6 +91,42 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
             Ver Dictamen de Beca
           </button>
         </div>
+
+        {/* ALERTA ESPECIAL PARA BECADOS DEPARTAMENTALES (Biblioteca, INDE, DEDU) */}
+        {scholarshipProgress.esBecarioDepartamental && (
+          <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-blue-600 text-white flex-shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-blue-950 dark:text-blue-200">
+                    Beca de Servicio Departamental: {scholarshipProgress.departamentoBeca || 'Departamento Asignado'}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300">
+                    {student.horas_departamentales_semanales || 10} hrs / semana
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                  {scholarshipProgress.cumplimientoDepartamentalAcreditado
+                    ? '✓ Horas departamentales completadas y validadas. Los 1,000 puntos cuatrimestrales han sido otorgados satisfactoriamente.'
+                    : 'Servicio en curso. Al término del cuatrimestre y validación de la jefatura, se otorgarán los 1,000 puntos para tu renovación.'}
+                </p>
+              </div>
+            </div>
+
+            {scholarshipProgress.cumplimientoDepartamentalAcreditado ? (
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-[11px] flex-shrink-0 flex items-center gap-1 shadow-sm">
+                <CheckCircle2 className="w-3.5 h-3.5" /> 1,000 Puntos Acreditados
+              </span>
+            ) : (
+              <span className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] flex-shrink-0 flex items-center gap-1 shadow-sm">
+                <Clock className="w-3.5 h-3.5" /> En Servicio Activo
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Tacómetro / Indicador Circular SVG Interactivo hacia los 1,000 Puntos */}
         <div className="p-6 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-amber-200/80 dark:border-white/10 shadow-unipaz-soft flex flex-col md:flex-row items-center justify-between gap-6">

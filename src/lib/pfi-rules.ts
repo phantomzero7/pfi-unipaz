@@ -418,47 +418,47 @@ export function validateStayDuration(
 }
 
 /**
- * Retorna la asignación estándar de puntos de beca (10 a 100) según categoría y rol
+ * Retorna la asignación estándar de puntos de beca (mínimo 50, múltiplos de 10)
  */
 export function getStandardScholarshipPoints(
   category: EventCategory,
   role: ParticipantRole = 'asistente'
 ): number {
-  let basePoints = 20;
+  let basePoints: number;
 
   switch (category) {
     case 'Investigación':
       basePoints = 100;
       break;
     case 'Club Anual':
-      basePoints = 60;
-      break;
-    case 'PVC':
-      basePoints = 50;
-      break;
-    case 'Taller Extracurricular':
-      basePoints = 40;
+      basePoints = 90;
       break;
     case 'Simposio':
-      basePoints = 35;
+      basePoints = 80;
+      break;
+    case 'PVC':
+      basePoints = 70;
+      break;
+    case 'Taller Extracurricular':
+      basePoints = 60;
       break;
     case 'Taller Liderazgo':
-      basePoints = 30;
+      basePoints = 60;
       break;
     case 'Jornada Social':
-      basePoints = 25;
+      basePoints = 50;
       break;
     case 'Foro':
-      basePoints = 20;
+      basePoints = 50;
       break;
     case 'Cine Club':
-      basePoints = 15;
+      basePoints = 50;
       break;
     case 'Campaña':
-      basePoints = 10;
+      basePoints = 50;
       break;
     default:
-      basePoints = 20;
+      basePoints = 50;
   }
 
   if (role === 'staff_logistica') {
@@ -467,6 +467,8 @@ export function getStandardScholarshipPoints(
     basePoints = Math.min(100, basePoints + 30);
   }
 
+  // Garantizar múltiplo de 10 y mínimo 50 puntos
+  basePoints = Math.max(50, Math.round(basePoints / 10) * 10);
   return basePoints;
 }
 
@@ -495,7 +497,8 @@ export function getActiveStaffEventsForStudent(
 
 /**
  * Calcula el progreso de puntos de beca de un estudiante becado (meta de 1000 puntos cuatrimestrales)
- * Cada actividad otorga entre 10 y 100 puntos. Sin límite máximo de acumulación.
+ * Escala por actividad: Mínimo 50 puntos en múltiplos de 10.
+ * Becados Departamentales (Biblioteca, INDE, DEDU): Se les otorgan 1,000 puntos cuatrimestrales al término por su servicio.
  */
 export function calculateStudentScholarshipProgress(
   student: UserProfile,
@@ -516,6 +519,7 @@ export function calculateStudentScholarshipProgress(
       estatus: 'no_acreditado',
       estatusTexto: 'Sin Beca Asignada',
       isAcreditadoBeca: false,
+      esBecarioDepartamental: false,
       actividadesBecadas: [],
     };
   }
@@ -525,6 +529,25 @@ export function calculateStudentScholarshipProgress(
   let puntosPenalizaciones = student.puntos_beca_penalizaciones || 0;
   const actividadesBecadas: import('./types').ScholarshipProgressSummary['actividadesBecadas'] = [];
 
+  // 1. Acreditación directa para Becados Departamentales (Biblioteca, INDE, DEDU)
+  const puntosDepartamentales = (student.es_becario_departamental && student.cumplimiento_departamental_acreditado)
+    ? (student.puntos_departamentales_otorgados || 1000)
+    : 0;
+
+  if (puntosDepartamentales > 0) {
+    puntosBrutos += puntosDepartamentales;
+    actividadesBecadas.push({
+      id: `dept-${student.id}`,
+      eventId: 'dept-service',
+      titulo: `Labor Departamental Cuatrimestral: ${student.departamento_beca || 'Departamento Asignado'} (Horas Cumplidas)`,
+      categoria: 'Investigación',
+      fecha: student.fecha_acreditacion_departamental || new Date().toISOString().split('T')[0],
+      puntosAcreditados: puntosDepartamentales,
+      rol: 'staff_logistica',
+    });
+  }
+
+  // 2. Acumulación por actividades y eventos institucionales
   attendances.forEach((att) => {
     if (att.student_id !== student.id) return;
     const event = eventsMap.get(att.event_id) || att.event;
@@ -542,8 +565,8 @@ export function calculateStudentScholarshipProgress(
         }
       }
 
-      // Cada actividad otorga entre 10 y 100 puntos
-      const finalPuntos = Math.min(100, Math.max(10, puntos || 20));
+      // Cada actividad otorga mínimo 50 puntos en múltiplos de 10
+      const finalPuntos = Math.max(50, Math.round((puntos || 50) / 10) * 10);
       puntosBrutos += finalPuntos;
 
       if (event) {
@@ -568,7 +591,12 @@ export function calculateStudentScholarshipProgress(
 
   if (puntosTotales >= meta) {
     estatus = 'cumplido';
-    estatusTexto = '✓ Beca Acreditada y Renovada';
+    estatusTexto = student.es_becario_departamental
+      ? '✓ 1,000 Puntos Acreditados (Labor Departamental Cumplida)'
+      : '✓ Beca Acreditada y Renovada';
+  } else if (student.es_becario_departamental && !student.cumplimiento_departamental_acreditado) {
+    estatus = 'en_progreso';
+    estatusTexto = `En Servicio: ${student.departamento_beca} (${student.horas_departamentales_semanales || 10}h/sem - 1,000 pts al término)`;
   } else if (puntosTotales < 500) {
     estatus = 'en_riesgo';
     estatusTexto = '⚠️ En Riesgo de Pérdida de Beca';
@@ -590,6 +618,10 @@ export function calculateStudentScholarshipProgress(
     estatus,
     estatusTexto,
     isAcreditadoBeca: puntosTotales >= meta,
+    esBecarioDepartamental: student.es_becario_departamental,
+    departamentoBeca: student.departamento_beca,
+    cumplimientoDepartamentalAcreditado: student.cumplimiento_departamental_acreditado,
+    puntosDepartamentales,
     actividadesBecadas,
   };
 }

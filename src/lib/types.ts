@@ -91,11 +91,22 @@ export interface UserProfile {
     | 'Intercultural / Pueblos Originarios'
     | 'Talento y Liderazgo'
     | 'Posgrados e Investigación'
+    | 'Apoyo Departamental - Biblioteca'
+    | 'Apoyo Departamental - INDE'
+    | 'Apoyo Departamental - DEDU'
     | string;
   porcentaje_beca?: number; // 20, 25, 30, 40, 50, 60, 75, 80, 100%
   puntos_beca_meta_cuatrimestral?: number; // Mínimo 1000 pts
   puntos_beca_penalizaciones?: number;
   promedio_academico?: number; // e.g. 9.5
+  
+  // Becarios Departamentales (Biblioteca, INDE, DEDU)
+  es_becario_departamental?: boolean;
+  departamento_beca?: 'Biblioteca' | 'INDE (Instituto de Investigación e Innovación)' | 'DEDU (Dirección de Extensión y Difusión)' | string;
+  horas_departamentales_semanales?: number;
+  cumplimiento_departamental_acreditado?: boolean;
+  fecha_acreditacion_departamental?: string;
+  puntos_departamentales_otorgados?: number; // 1,000 pts al término
   
   // Formatos y Solicitudes de Becario
   solicitud_beca_status?: 'ninguna' | 'enviada' | 'en_evaluacion' | 'aprobada' | 'rechazada';
@@ -310,6 +321,10 @@ export interface ScholarshipProgressSummary {
   estatus: ScholarshipStatus;
   estatusTexto: string;
   isAcreditadoBeca: boolean;
+  esBecarioDepartamental?: boolean;
+  departamentoBeca?: string;
+  cumplimientoDepartamentalAcreditado?: boolean;
+  puntosDepartamentales?: number;
   actividadesBecadas: Array<{
     id: string;
     eventId: string;
