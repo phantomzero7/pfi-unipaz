@@ -910,7 +910,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: `Inscripción exitosa a "${event.titulo}".` };
   };
 
-  // CANCELACIÓN DE REGISTRO CON PROMOCIÓN AUTOMÁTICA DE LISTA DE ESPERA
+  // CANCELACIÓN DE REGISTRO CON REGLA DE 10 MINUTOS Y PROMOCIÓN DE LISTA DE ESPERA
   const cancelRegistration = (eventId: string, studentId?: string) => {
     const sId = studentId || currentUser.id;
     const existing = attendances.find((a) => a.event_id === eventId && a.student_id === sId);
@@ -921,6 +921,21 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (existing.status === 'asistio') {
       return { success: false, message: 'No puedes cancelar una actividad ya acreditada.' };
+    }
+
+    const ev = events.find((e) => e.id === eventId);
+    if (ev) {
+      const eventDateTime = new Date(`${ev.fecha_evento}T${ev.hora_inicio || '00:00'}`).getTime();
+      const now = Date.now();
+      const diffMinutes = (eventDateTime - now) / (1000 * 60);
+
+      // Si el evento ya concluyó o faltan menos de 10 minutos:
+      if (!isNaN(diffMinutes) && diffMinutes < 10) {
+        return {
+          success: false,
+          message: 'Solo puedes cancelar tu inscripción hasta 10 minutos antes del inicio del evento. Tu lugar ha quedado en firme y se registrará inasistencia si no completas tu Check-in y Check-out.',
+        };
+      }
     }
 
     // Buscar si hay alguien en lista de espera para promoverlo

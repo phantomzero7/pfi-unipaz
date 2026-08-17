@@ -267,41 +267,51 @@ export const EventCard: React.FC<EventCardProps> = ({
               </span>
             </div>
           ) : isRegistered ? (
-            <div className="w-full space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-300">
-                  <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                  Inscripción Confirmada ({roleInfo.label})
-                </span>
+            <div className="w-full space-y-2.5">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <span className="font-black text-xs text-emerald-950 dark:text-emerald-200 block">
+                      Inscripción Confirmada
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                      Rol: {roleInfo.label}
+                    </span>
+                  </div>
+                </div>
 
-                {onCancel && (
-                  <button
-                    onClick={onCancel}
-                    className="text-xs text-rose-500 hover:text-rose-600 font-semibold transition-colors"
-                  >
-                    Cancelar cupo
-                  </button>
-                )}
-              </div>
+                {/* Botón Cancelar Inscripción con Regla de 10 minutos */}
+                {(() => {
+                  const eventDateTime = new Date(`${event.fecha_evento}T${event.hora_inicio || '00:00'}`).getTime();
+                  const diffMinutes = (eventDateTime - Date.now()) / (1000 * 60);
+                  const canCancel = !isNaN(diffMinutes) && diffMinutes >= 10;
 
-              {/* Botón Calendario */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => downloadIcsFile(event)}
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-all border border-slate-200 dark:border-white/10"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-unipaz-orange" />
-                  Descargar .ics
-                </button>
-                <a
-                  href={getGoogleCalendarUrl(event)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] flex items-center justify-center gap-1 transition-all border border-slate-200 dark:border-white/10"
-                >
-                  <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  Google Cal
-                </a>
+                  if (canCancel && onCancel) {
+                    return (
+                      <button
+                        onClick={() => {
+                          if (confirm(`¿Deseas cancelar tu inscripción a "${event.titulo}"? Esta acción liberará tu lugar.`)) {
+                            onCancel();
+                          }
+                        }}
+                        className="py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-500/30 transition-all"
+                        title="Puedes cancelar hasta 10 minutos antes del inicio"
+                      >
+                        Cancelar Lugar
+                      </button>
+                    );
+                  } else {
+                    return (
+                      <span
+                        className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg"
+                        title="Las cancelaciones cierran 10 minutos antes del evento"
+                      >
+                        En Firme
+                      </span>
+                    );
+                  }
+                })()}
               </div>
 
               {event.otp_online_code && (
@@ -321,11 +331,11 @@ export const EventCard: React.FC<EventCardProps> = ({
               className={`w-full py-2.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
                 isFull
                   ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 shadow-md shadow-orange-500/20'
+                  : 'bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 shadow-md shadow-orange-500/20 hover:scale-[1.02]'
               }`}
             >
               <UserPlus className="w-4 h-4" />
-              {isFull ? 'Cupo Agotado' : 'Registrarme como Oyente'}
+              {isFull ? 'Cupo Agotado' : 'Inscribirme al Evento'}
             </button>
           )}
         </div>

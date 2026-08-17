@@ -54,6 +54,7 @@ export default function EstudianteDashboard() {
     getStudentAttendances,
     events,
     attendances,
+    feedbacks,
     pfiConfig,
   } = usePFI();
 
@@ -222,21 +223,6 @@ export default function EstudianteDashboard() {
               </button>
             )}
 
-            {canDownloadGeneralCert ? (
-              <button
-                onClick={() => setShowCertModal(true)}
-                className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-105"
-              >
-                <Download className="w-4 h-4" />
-                Constancia PFI
-              </button>
-            ) : (
-              <div className="py-2 px-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-slate-500 text-xs font-semibold flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5" />
-                {progress.horasTotales.toFixed(0)}/400 hrs (En Proceso)
-              </div>
-            )}
-
             <button
               onClick={() => setShowPrintableCardModal(true)}
               className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
@@ -248,6 +234,83 @@ export default function EstudianteDashboard() {
           </div>
         </div>
       </div>
+
+      {/* SECCIÓN DE EVENTOS PENDIENTES DE EVALUACIÓN */}
+      {(() => {
+        const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
+        const accredited = studentAttendances.filter((a) => a.status === 'asistio');
+        const pending = accredited
+          .filter((a) => !feedbacks.some((f) => f.event_id === a.event_id && f.student_id === currentUser.id))
+          .map((a) => ({
+            attendance: a,
+            event: eventsMap.get(a.event_id),
+          }))
+          .filter((item): item is { attendance: EventAttendance; event: PFIEvent } => Boolean(item.event));
+
+        if (pending.length === 0) return null;
+
+        return (
+          <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-white dark:from-amber-950/30 dark:via-orange-950/20 dark:to-slate-900/80 border border-amber-300 dark:border-amber-500/30 shadow-md space-y-4 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-sm shadow-amber-500/20">
+                  <Star className="w-5 h-5 fill-slate-950" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-500/20 text-amber-950 dark:text-amber-200">
+                      Encuestas de Calidad
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                      {pending.length} Pendiente{pending.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-unipaz-navy dark:text-white mt-0.5">
+                    Actividades Pendientes de Evaluación
+                  </h3>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md">
+                Tu opinión es confidencial y ayuda a evaluar a los instructores y la calidad de los talleres universitarios.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {pending.map(({ attendance, event }) => (
+                <div
+                  key={attendance.id}
+                  className="p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-white/10 flex flex-col justify-between space-y-3 shadow-sm hover:border-amber-400 transition-colors"
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span className="font-bold text-amber-900 dark:text-amber-300">{event.categoria}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        +{attendance.horas_acreditadas || event.horas_pfi} hrs ✓
+                      </span>
+                    </div>
+                    <h4 className="font-black text-xs text-unipaz-navy dark:text-white mt-1.5 leading-snug">
+                      {event.titulo}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {event.fecha_evento} · {event.ubicacion || 'Campus UNIPAZ'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedFeedbackEvent(event);
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:scale-105"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-slate-950" />
+                    Evaluar Actividad
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* WIDGET DE GESTIÓN Y CONTROL DE BECA (Solo visible si el alumno cuenta con beca) */}
       {currentUser.tiene_beca && (
