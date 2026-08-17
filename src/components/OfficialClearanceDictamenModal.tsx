@@ -102,10 +102,10 @@ export const OfficialClearanceDictamenModal: React.FC<OfficialClearanceDictamenM
                   Universidad Internacional de La Paz
                 </h1>
                 <p className="text-xs font-bold text-unipaz-orange uppercase tracking-wider">
-                  Coordinación General del Plan de Formación Integral (PFI)
+                  Programa de Formación Integral
                 </p>
                 <p className="text-[10px] text-slate-500 font-medium">
-                  Dirección de Asuntos Estudiantiles y Titulación Profesional
+                  Dirección de Extensión y Difusión Universitaria
                 </p>
               </div>
             </div>
@@ -120,10 +120,10 @@ export const OfficialClearanceDictamenModal: React.FC<OfficialClearanceDictamenM
           {/* Título Central */}
           <div className="text-center space-y-1">
             <h2 className="text-lg font-black text-unipaz-navy tracking-tight uppercase underline decoration-unipaz-orange decoration-2 underline-offset-4">
-              Dictamen de No Adeudo y Acreditación Total del PFI
+              Dictamen de Acreditación Total del PFI
             </h2>
             <p className="text-xs text-slate-600 font-medium max-w-xl mx-auto">
-              Para fines de trámite de titulación profesional conforme al Reglamento General del Plan de Formación Integral.
+              Para fines de trámite de titulación profesional conforme al Reglamento General del Programa de Formación Integral.
             </p>
           </div>
 
@@ -150,7 +150,7 @@ export const OfficialClearanceDictamenModal: React.FC<OfficialClearanceDictamenM
           {/* Certificación y Declaración */}
           <div className="text-xs text-slate-800 leading-relaxed text-justify space-y-2">
             <p>
-              Por medio del presente documento, la <strong>Coordinación General del Plan de Formación Integral (PFI)</strong> de la <strong>Universidad Internacional de La Paz</strong> hace constar que el(la) estudiante arriba citado(a) ha cumplido satisfactoriamente con la totalidad de los requisitos formativos, horas y créditos establecidos en el modelo institucional para la obtención del grado académico.
+              Por medio del presente documento, la <strong>Dirección de Extensión y Difusión Universitaria</strong> de la <strong>Universidad Internacional de La Paz</strong>, a través del <strong>Programa de Formación Integral</strong>, hace constar que el(la) estudiante arriba citado(a) ha cumplido satisfactoriamente con la totalidad de los requisitos formativos, horas y créditos establecidos en el modelo institucional para la obtención del grado académico.
             </p>
           </div>
 

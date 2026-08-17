@@ -213,6 +213,7 @@ export interface PFIEvent {
   instructor_titular?: string;
   instructor_cargo?: string;
   activo: boolean;
+  archivado?: boolean;
   cuatrimestre_objetivo?: number;
   created_at?: string;
 }

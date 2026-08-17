@@ -48,6 +48,11 @@ export default function EventosCatalogPage() {
   const filteredEvents = useMemo(() => {
     return events
       .filter((ev) => {
+        const att = attendances.find(
+          (a) => a.event_id === ev.id && a.student_id === currentUser.id
+        );
+        const isCompleted = att?.status === 'asistio';
+
         // Filtrado por pestaña principal
         if (activeTab === 'actividades') {
           const isTallerOrPVC =
@@ -55,16 +60,23 @@ export default function EventosCatalogPage() {
             ev.categoria === 'Taller Liderazgo' ||
             ev.categoria === 'PVC';
           if (isTallerOrPVC) return false;
+          // Si ya lo completó en el periodo, se quita del catálogo de invitación
+          if (isCompleted) return false;
+          // No mostrar eventos archivados
+          if (ev.archivado) return false;
         } else if (activeTab === 'talleres') {
           const isTaller =
             ev.categoria === 'Taller Extracurricular' || ev.categoria === 'Taller Liderazgo';
           if (!isTaller) return false;
+          // Si ya lo completó, se quita del catálogo de invitación
+          if (isCompleted) return false;
+          if (ev.archivado) return false;
         } else if (activeTab === 'pvc') {
           if (ev.categoria !== 'PVC') return false;
+          if (isCompleted) return false;
+          if (ev.archivado) return false;
         } else if (activeTab === 'mis_eventos') {
-          const att = attendances.find(
-            (a) => a.event_id === ev.id && a.student_id === currentUser.id
-          );
+          // En Mis Inscripciones y Realizados aparecen todos sus cupos activos, confirmados y realizados
           if (!att || att.status === 'cancelado') return false;
         }
 
@@ -100,19 +112,29 @@ export default function EventosCatalogPage() {
       });
   }, [events, attendances, currentUser, activeTab, searchTerm, selectedModality, onlyAvailableSpots]);
 
-  // Contadores por categoría
-  const countActividades = events.filter(
-    (e) =>
-      e.categoria !== 'Taller Extracurricular' &&
-      e.categoria !== 'Taller Liderazgo' &&
-      e.categoria !== 'PVC'
-  ).length;
+  // Contadores por categoría (solo invitaciones activas pendientes de completar)
+  const countActividades = events.filter((e) => {
+    const isTallerOrPVC =
+      e.categoria === 'Taller Extracurricular' ||
+      e.categoria === 'Taller Liderazgo' ||
+      e.categoria === 'PVC';
+    if (isTallerOrPVC || e.archivado) return false;
+    const att = attendances.find((a) => a.event_id === e.id && a.student_id === currentUser.id);
+    return att?.status !== 'asistio';
+  }).length;
 
-  const countTalleres = events.filter(
-    (e) => e.categoria === 'Taller Extracurricular' || e.categoria === 'Taller Liderazgo'
-  ).length;
+  const countTalleres = events.filter((e) => {
+    const isTaller = e.categoria === 'Taller Extracurricular' || e.categoria === 'Taller Liderazgo';
+    if (!isTaller || e.archivado) return false;
+    const att = attendances.find((a) => a.event_id === e.id && a.student_id === currentUser.id);
+    return att?.status !== 'asistio';
+  }).length;
 
-  const countPVC = events.filter((e) => e.categoria === 'PVC').length;
+  const countPVC = events.filter((e) => {
+    if (e.categoria !== 'PVC' || e.archivado) return false;
+    const att = attendances.find((a) => a.event_id === e.id && a.student_id === currentUser.id);
+    return att?.status !== 'asistio';
+  }).length;
 
   const countMisInscritos = attendances.filter(
     (a) => a.student_id === currentUser.id && a.status !== 'cancelado'
