@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  Award,
   Calendar,
   Camera,
   ChevronDown,
@@ -69,10 +70,11 @@ export const Navbar: React.FC = () => {
 
   const adminLinks = [
     { href: '/admin', label: 'Panel General', icon: LayoutDashboard },
-    { href: '/admin/configuracion', label: 'Configurador & Becas', icon: Settings },
+    { href: '/admin/configuracion', label: 'Configurador PFI', icon: Settings },
+    { href: '/admin/becas', label: 'Gestión de Becas', icon: Award },
     { href: '/admin/eventos', label: 'Gestión de Eventos', icon: Calendar },
     { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
-    { href: '/admin/estudiantes', label: 'Directorio & Becados', icon: Users },
+    { href: '/admin/estudiantes', label: 'Directorio Alumnos', icon: Users },
   ];
 
   const currentLinks = isAdmin ? adminLinks : isDedu ? deduLinks : studentLinks;
