@@ -744,21 +744,28 @@ export default function AdminEstudiantesDirectoryPage() {
                   onChange={(e) => setScholarshipForm({ ...scholarshipForm, tipo_beca: e.target.value })}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
                 >
-                  <optgroup label="Becas Académicas y Deportivas">
-                    <option value="Excelencia Académica">Beca de Excelencia Académica (≥ 9.50)</option>
+                  <optgroup label="Excelencia, Mérito e Investigación">
+                    <option value="Excelencia Académica (Promedio 9.6 - 10.0)">Beca de Excelencia Académica (9.6 - 10.0)</option>
                     <option value="Mérito Académico">Estímulo al Mérito Académico</option>
-                    <option value="Deportiva (Garzas)">Beca Deportiva (Garzas UNIPAZ)</option>
+                    <option value="Investigación y Publicaciones">Beca de Investigación y Publicaciones</option>
+                    <option value="Posgrados e Investigación">Estímulo de Posgrados e Investigación</option>
+                  </optgroup>
+                  <optgroup label="Socioeconómicas, Familiares y Convenios">
+                    <option value="Estudio Socioeconómico (desde 2° Cuatrimestre)">Beca Estudio Socioeconómico (desde 2° Cuatrimestre)</option>
+                    <option value="Convenios Institucionales">Beca por Convenios Institucionales / Empresas</option>
+                    <option value="Familiar / Hermanos (20%)">Beca Familiar / Hermanos (20%)</option>
+                    <option value="Egresados UNIPAZ">Beca Egresados UNIPAZ</option>
+                    <option value="Promoción Educativa">Beca de Promoción Educativa</option>
+                  </optgroup>
+                  <optgroup label="Deportivas, Culturales y Talento">
+                    <option value="Deportiva (Garzas UNIPAZ)">Beca Deportiva (Garzas UNIPAZ)</option>
+                    <option value="Cultural y Artística">Beca Cultural y Artística</option>
                     <option value="Talento y Liderazgo">Beca de Talento y Liderazgo Social</option>
                   </optgroup>
                   <optgroup label="Estímulos de Inclusión y Responsabilidad Social">
                     <option value="Madres Solteras / Jefas de Familia">Estímulo Madres Solteras / Jefas de Familia</option>
                     <option value="Inclusión y Discapacidad">Estímulo de Inclusión y Personas con Discapacidad</option>
                     <option value="Intercultural / Pueblos Originarios">Estímulo Intercultural / Pueblos Originarios</option>
-                    <option value="Apoyo Socioeconómico">Beca de Apoyo Socioeconómico</option>
-                  </optgroup>
-                  <optgroup label="Convenios y Posgrados">
-                    <option value="Convenio Institucional">Beca por Convenio Institucional / Empresa</option>
-                    <option value="Posgrados e Investigación">Estímulo de Posgrados e Investigación</option>
                   </optgroup>
                 </select>
               </div>
@@ -771,10 +778,15 @@ export default function AdminEstudiantesDirectoryPage() {
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, porcentaje: parseInt(e.target.value) || 50 })}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
                   >
+                    <option value="20">20% Descuento (Hermanos / Convenio)</option>
                     <option value="25">25% Descuento</option>
+                    <option value="30">30% Descuento</option>
+                    <option value="40">40% Descuento</option>
                     <option value="50">50% Descuento</option>
+                    <option value="60">60% Descuento</option>
                     <option value="75">75% Descuento</option>
-                    <option value="100">100% Descuento Total</option>
+                    <option value="80">80% Descuento</option>
+                    <option value="100">100% Descuento Total (Exención)</option>
                   </select>
                 </div>
 

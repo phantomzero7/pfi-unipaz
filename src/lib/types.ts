@@ -76,18 +76,23 @@ export interface UserProfile {
   // Módulo de Becas y Estímulos UNIPAZ / IESPAC
   tiene_beca?: boolean;
   tipo_beca?:
-    | 'Excelencia Académica'
+    | 'Excelencia Académica (Promedio 9.6 - 10.0)'
     | 'Mérito Académico'
+    | 'Estudio Socioeconómico (desde 2° Cuatrimestre)'
+    | 'Convenios Institucionales'
+    | 'Familiar / Hermanos (20%)'
+    | 'Egresados UNIPAZ'
+    | 'Promoción Educativa'
+    | 'Deportiva (Garzas UNIPAZ)'
+    | 'Cultural y Artística'
+    | 'Investigación y Publicaciones'
     | 'Madres Solteras / Jefas de Familia'
     | 'Inclusión y Discapacidad'
     | 'Intercultural / Pueblos Originarios'
-    | 'Deportiva (Garzas)'
     | 'Talento y Liderazgo'
-    | 'Convenio Institucional'
-    | 'Apoyo Socioeconómico'
     | 'Posgrados e Investigación'
     | string;
-  porcentaje_beca?: number; // 20, 25, 50, 75, 100%
+  porcentaje_beca?: number; // 20, 25, 30, 40, 50, 60, 75, 80, 100%
   puntos_beca_meta_cuatrimestral?: number; // Mínimo 1000 pts
   puntos_beca_penalizaciones?: number;
   promedio_academico?: number; // e.g. 9.5
