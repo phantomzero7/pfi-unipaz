@@ -38,10 +38,17 @@ const config: Config = {
         },
       },
       boxShadow: {
-        "unipaz-card": "0 8px 30px rgb(0, 40, 85, 0.12)",
+        "unipaz-soft": "0 8px 30px rgb(0, 40, 85, 0.08)",
+        "unipaz-card": "0 8px 30px rgb(0, 40, 85, 0.08)",
+        "unipaz-btn-tactile": "0 4px 14px 0 rgba(255, 85, 0, 0.39)",
         "unipaz-glow-orange": "0 0 25px rgba(255, 85, 0, 0.35)",
         "unipaz-glow-cobalt": "0 0 25px rgba(0, 86, 179, 0.4)",
         "unipaz-glow-gold": "0 0 25px rgba(255, 170, 0, 0.4)",
+      },
+      dropShadow: {
+        "unipaz-halo-orange": "0 0 12px rgba(255, 85, 0, 0.3)",
+        "unipaz-halo-gold": "0 0 12px rgba(255, 170, 0, 0.35)",
+        "unipaz-halo-emerald": "0 0 12px rgba(16, 185, 129, 0.3)",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
