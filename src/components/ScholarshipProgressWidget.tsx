@@ -85,10 +85,14 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
 
           <button
             onClick={() => setShowDictamenModal(true)}
-            className="py-2.5 px-4 rounded-2xl bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 border border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-200 font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 self-start sm:self-auto"
+            className={`py-2.5 px-4 rounded-2xl border font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 self-start sm:self-auto ${
+              student.refrendo_beca_aprobado_admin
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-500/20'
+                : 'bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-200'
+            }`}
           >
             <FileCheck className="w-4 h-4 text-unipaz-orange" />
-            Ver Dictamen de Beca
+            {student.refrendo_beca_aprobado_admin ? 'Ver Dictamen Aprobado' : 'Estado de Refrendo Cuatrimestral'}
           </button>
         </div>
 
@@ -102,7 +106,7 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-blue-950 dark:text-blue-200">
-                    Beca de Servicio Departamental: {scholarshipProgress.departamentoBeca || 'Departamento Asignado'}
+                    Beca de Apoyo Departamental: {scholarshipProgress.departamentoBeca || 'Departamento Asignado'}
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300">
                     {student.horas_departamentales_semanales || 10} hrs / semana
@@ -110,15 +114,15 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
                   {scholarshipProgress.cumplimientoDepartamentalAcreditado
-                    ? '✓ Horas departamentales completadas y validadas. Los 1,000 puntos cuatrimestrales han sido otorgados satisfactoriamente.'
-                    : 'Servicio en curso. Al término del cuatrimestre y validación de la jefatura, se otorgarán los 1,000 puntos para tu renovación.'}
+                    ? '✓ Horas de labor departamental concluidas. Los 1,000 puntos cuatrimestrales han sido acreditados a tu expediente.'
+                    : 'Horas de apoyo cuatrimestral en curso. Al concluir el periodo y validarse por la jefatura departamental, se otorgarán los 1,000 puntos correspondientes.'}
                 </p>
               </div>
             </div>
 
             {scholarshipProgress.cumplimientoDepartamentalAcreditado ? (
               <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-[11px] flex-shrink-0 flex items-center gap-1 shadow-sm">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 1,000 Puntos Acreditados
+                <CheckCircle2 className="w-3.5 h-3.5" /> 1,000 Pts Acreditados
               </span>
             ) : (
               <span className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-black text-[11px] flex-shrink-0 flex items-center gap-1 shadow-sm">
@@ -128,7 +132,7 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
           </div>
         )}
 
-        {/* Tacómetro / Indicador Circular SVG Interactivo hacia los 1,000 Puntos */}
+        {/* Tacómetro / Indicador Circular SVG Interactivo hacia los 1,000 Puntos Cuatrimestrales */}
         <div className="p-6 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-amber-200/80 dark:border-white/10 shadow-unipaz-soft flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Tacómetro SVG Radial */}
           <div className="relative flex items-center justify-center flex-shrink-0">
@@ -167,7 +171,7 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
             {/* Centro del Tacómetro */}
             <div className="absolute flex flex-col items-center justify-center text-center">
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Acumulado
+                Puntos Cuatrimestrales
               </span>
               <div className="flex items-baseline gap-0.5">
                 <span className="text-3xl font-black text-unipaz-navy dark:text-white font-mono tracking-tight">
@@ -203,61 +207,81 @@ export const ScholarshipProgressWidget: React.FC<ScholarshipProgressWidgetProps>
 
               <div className="text-right">
                 <span className="text-slate-400 text-[11px] uppercase font-bold block">
-                  Puntos Restantes
+                  Puntos Restantes en el Periodo
                 </span>
                 <span
                   className={`text-base font-black font-mono ${
                     isAcreditadoBeca ? 'text-emerald-600 dark:text-emerald-400' : 'text-unipaz-orange'
                   }`}
                 >
-                  {isAcreditadoBeca ? '¡0 pts (Completado!)' : `${puntosRestantes} pts`}
+                  {isAcreditadoBeca ? '0 pts (Meta Cuatrimestral Lograda)' : `${puntosRestantes} pts`}
                 </span>
               </div>
             </div>
 
-            {/* Estado Semafórico */}
+            {/* Estado Semafórico con Aclaración Normativa */}
             <div
-              className={`p-3.5 rounded-2xl border flex items-center gap-3 ${
-                isAcreditadoBeca
+              className={`p-3.5 rounded-2xl border flex items-start gap-3 ${
+                student.refrendo_beca_aprobado_admin
                   ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
+                  : isAcreditadoBeca
+                  ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-500/30 text-blue-900 dark:text-blue-200'
                   : puntosTotales >= 500
                   ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
                   : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200'
               }`}
             >
-              {isAcreditadoBeca ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              {student.refrendo_beca_aprobado_admin ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              ) : isAcreditadoBeca ? (
+                <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               ) : puntosTotales >= 500 ? (
-                <Zap className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <Zap className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               ) : (
-                <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
               )}
               <div className="text-[11px] leading-relaxed">
-                {isAcreditadoBeca
-                  ? '¡Excelente! Has alcanzado los 1,000 puntos reglamentarios. Tu dictamen oficial de renovación está listo para ser descargado y entregado al Comité de Becas.'
+                {student.refrendo_beca_aprobado_admin
+                  ? `✓ Dictamen de Renovación Cuatrimestral Aprobado por la Administración. Has cumplido los 1,000 puntos, promedio mínimo, pagos al corriente y refrendo de beca.`
+                  : isAcreditadoBeca
+                  ? `¡Meta de 1,000 puntos cuatrimestrales completada! El cumplimiento de puntos es uno de los requisitos del Reglamento de Becas. La Administración revisará tu expediente (promedio normativo, 0 materias reprobadas ni exámenes extraordinarios, pagos en tiempo y forma, entrega de refrendo de beca y conducta) para emitir la resolución oficial de renovación al cierre del ciclo.`
                   : puntosTotales >= 500
-                  ? `Llevas un buen ritmo cuatrimestral. Te restan ${puntosRestantes} puntos para garantizar el refrendo del ${porcentajeBeca}% de descuento en tu colegiatura.`
-                  : `Atención: Acumulas menos de 500 puntos. Inscríbete en simposios, talleres extracurriculares o como staff logístico para alcanzar la meta antes del cierre de actas.`}
+                  ? `Llevas un buen ritmo cuatrimestral. Te restan ${puntosRestantes} puntos para completar la meta formativa del periodo para el refrendo del ${porcentajeBeca}% de descuento.`
+                  : `Atención: Acumulas ${puntosTotales} de los 1,000 puntos cuatrimestrales. Inscríbete en talleres extracurriculares, conferencias o como staff para alcanzar la meta antes del término del periodo.`}
               </div>
             </div>
 
-            {/* Rangos de Puntos por Actividad */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px]">
-              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5">
-                <span className="text-slate-400 block">Investigación</span>
-                <strong className="text-unipaz-navy dark:text-white font-mono font-bold">+500 pts</strong>
+            {/* Checklist Normativo de Renovación Cuatrimestral */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                  Criterios Reglamentarios para Renovación Cuatrimestral:
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">
+                  Revisión por Administración
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5">
-                <span className="text-slate-400 block">Club Anual</span>
-                <strong className="text-unipaz-navy dark:text-white font-mono font-bold">+300 pts</strong>
-              </div>
-              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5">
-                <span className="text-slate-400 block">PVC / Talleres</span>
-                <strong className="text-unipaz-navy dark:text-white font-mono font-bold">+200-250 pts</strong>
-              </div>
-              <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-500/20">
-                <span className="text-purple-700 dark:text-purple-300 block">Staff Logístico</span>
-                <strong className="text-purple-800 dark:text-purple-300 font-mono font-bold">+100 pts Extra</strong>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                  <span className={isAcreditadoBeca ? 'text-emerald-500 font-bold' : 'text-amber-500'}>
+                    {isAcreditadoBeca ? '✓' : '○'}
+                  </span>
+                  <span>1,000 Puntos Formativos Cuatrimestrales ({puntosTotales}/1,000)</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                  <span className="text-blue-500 font-bold">ℹ</span>
+                  <span>Promedio mín. {student.tipo_beca?.includes('Excelencia') ? '9.0' : '8.0'} (0 Reprobaciones / Extraordinarios)</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                  <span className="text-blue-500 font-bold">ℹ</span>
+                  <span>Colegiaturas y Pagos en Tiempo y Forma</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                  <span className={student.informe_becario_entregado ? 'text-emerald-500 font-bold' : 'text-slate-400'}>
+                    {student.informe_becario_entregado ? '✓' : '○'}
+                  </span>
+                  <span>Entrega de Solicitud de Refrendo / Informe de Becario</span>
+                </div>
               </div>
             </div>
           </div>

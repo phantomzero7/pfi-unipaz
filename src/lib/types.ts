@@ -108,9 +108,15 @@ export interface UserProfile {
   fecha_acreditacion_departamental?: string;
   puntos_departamentales_otorgados?: number; // 1,000 pts al término
   
-  // Formatos y Solicitudes de Becario
+  // Formatos y Solicitudes de Becario / Refrendo Cuatrimestral
   solicitud_beca_status?: 'ninguna' | 'enviada' | 'en_evaluacion' | 'aprobada' | 'rechazada';
   tipo_beca_solicitada?: string;
+  refrendo_beca_aprobado_admin?: boolean;
+  fecha_resolucion_refrendo?: string;
+  resolucion_refrendo_observaciones?: string;
+  cumple_cero_reprobaciones?: boolean;
+  cumple_pagos_al_corriente?: boolean;
+  cumple_sin_sanciones?: boolean;
   informe_becario_entregado?: boolean;
   estudio_socioeconomico_entregado?: boolean;
   fecha_informe_becario?: string;

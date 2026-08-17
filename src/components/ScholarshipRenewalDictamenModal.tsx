@@ -374,27 +374,66 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
             </div>
           </div>
 
+          {/* Criterios Normativos de Validación */}
+          <div className="space-y-2">
+            <h4 className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[11px]">
+              Verificación de Requisitos Reglamentarios para Refrendo Cuatrimestral:
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] p-3 rounded-xl bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <span className={scholarshipProgress.puntosTotales >= 1000 ? 'text-emerald-600 font-bold' : 'text-amber-500 font-bold'}>
+                  {scholarshipProgress.puntosTotales >= 1000 ? '✓' : '○'}
+                </span>
+                <span>Puntos Cuatrimestrales: <strong>{scholarshipProgress.puntosTotales} / 1,000 pts</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-600 font-bold">✓</span>
+                <span>Promedio: <strong>{scholarshipProgress.promedioAcademico.toFixed(2)}</strong> (0 Reprobaciones / 0 Extraordinarios)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-600 font-bold">✓</span>
+                <span>Estado Financiero: <strong>Colegiaturas al Corriente</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={student.informe_becario_entregado ? 'text-emerald-600 font-bold' : 'text-amber-500 font-bold'}>
+                  {student.informe_becario_entregado ? '✓' : '○'}
+                </span>
+                <span>Refrendo Cuatrimestral e Informe: <strong>{student.informe_becario_entregado ? 'Entregado' : 'En proceso'}</strong></span>
+              </div>
+            </div>
+          </div>
+
           {/* Veredicto de Renovación */}
           <div
-            className={`p-4 rounded-2xl border flex items-center gap-3 ${
-              isRenovada
+            className={`p-4 rounded-2xl border flex items-start gap-3 ${
+              student.refrendo_beca_aprobado_admin
                 ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
+                : scholarshipProgress.puntosTotales >= 1000
+                ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-500/30 text-blue-900 dark:text-blue-200'
                 : 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
             }`}
           >
-            {isRenovada ? (
-              <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+            {student.refrendo_beca_aprobado_admin ? (
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+            ) : scholarshipProgress.puntosTotales >= 1000 ? (
+              <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
             ) : (
-              <TrendingUp className="w-6 h-6 text-amber-600 flex-shrink-0" />
+              <TrendingUp className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
             )}
             <div>
               <span className="font-black block text-xs uppercase">
-                {isRenovada ? 'Dictamen Favorable de Renovación' : 'Proceso de Renovación en Curso'}
+                {student.refrendo_beca_aprobado_admin
+                  ? 'Dictamen Favorable de Renovación (Aprobado por Administración)'
+                  : scholarshipProgress.puntosTotales >= 1000
+                  ? 'Puntos Cuatrimestrales Completados (Expediente en Revisión Administrativa)'
+                  : 'Proceso de Acumulación de Puntos Cuatrimestrales en Curso'}
               </span>
-              <p className="text-[11px] mt-0.5">
-                {isRenovada
-                  ? `El estudiante ha acreditado exitosamente ${scholarshipProgress.puntosTotales} puntos cuatrimestrales (meta: 1,000 pts). Se aprueba la ratificación del ${scholarshipProgress.porcentajeBeca}% de descuento en colegiatura para el siguiente ciclo escolar.`
-                  : `El estudiante acumula ${scholarshipProgress.puntosTotales} de 1,000 puntos requeridos (${scholarshipProgress.porcentajeCumplimiento}%). Le faltan ${scholarshipProgress.puntosMeta - scholarshipProgress.puntosTotales} puntos para garantizar el refrendo.`}
+              <p className="text-[11px] mt-0.5 leading-relaxed">
+                {student.refrendo_beca_aprobado_admin
+                  ? `La Administración ha verificado el cumplimiento total de los requisitos: 1,000 puntos cuatrimestrales, promedio reglamentario sin reprobaciones, pagos en tiempo y forma y entrega de informe. Se ratifica el ${scholarshipProgress.porcentajeBeca}% de descuento en colegiatura para el siguiente ciclo escolar.`
+                  : scholarshipProgress.puntosTotales >= 1000
+                  ? `El estudiante ha alcanzado los 1,000 puntos cuatrimestrales. Su expediente se encuentra en proceso de revisión por la Administración al término del ciclo para constatar que no existan reprobaciones, adeudos ni sanciones antes de liberar el dictamen definitivo.`
+                  : `El estudiante acumula ${scholarshipProgress.puntosTotales} de 1,000 puntos cuatrimestrales requeridos (${scholarshipProgress.porcentajeCumplimiento}%). Le restan ${scholarshipProgress.puntosMeta - scholarshipProgress.puntosTotales} puntos para cumplir con el eje formativo de becas.`}
               </p>
             </div>
           </div>

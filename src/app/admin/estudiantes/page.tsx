@@ -1033,6 +1033,35 @@ export default function AdminEstudiantesDirectoryPage() {
                 </div>
               </div>
 
+              {/* Verificación de 5 Criterios Normativos Cuatrimestrales */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1.5">
+                <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
+                  Verificación de Requisitos Normativos Cuatrimestrales:
+                </span>
+                <div className="space-y-1 text-[11px] text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-unipaz-orange focus:ring-0" />
+                    <span>✓ Acumulación de 1,000 puntos formativos cuatrimestrales</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-unipaz-orange focus:ring-0" />
+                    <span>✓ Promedio mínimo ({selectedStudent.promedio_academico || 9.0}) y 0 materias reprobadas / extraordinarios</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-unipaz-orange focus:ring-0" />
+                    <span>✓ Colegiaturas y pagos cubiertos en tiempo y forma (sin adeudos)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-unipaz-orange focus:ring-0" />
+                    <span>✓ Solicitud de refrendo cuatrimestral e informe de becario entregados</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-unipaz-orange focus:ring-0" />
+                    <span>✓ Sin sanciones académicas ni disciplinarias en el periodo</span>
+                  </label>
+                </div>
+              </div>
+
               {resolutionData.aprobado && (
                 <>
                   <div>

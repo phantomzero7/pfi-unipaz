@@ -1674,27 +1674,27 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const student = profiles.find((p) => p.id === studentId);
     if (!student) return { success: false, message: 'Estudiante no encontrado.' };
 
-    if (aprobado) {
-      assignScholarshipToStudent(
-        studentId,
-        tipoBeca || student.tipo_beca_solicitada || 'Excelencia Académica (Promedio 9.6 - 10.0)',
-        porcentaje || 50,
-        student.promedio_academico || 9.0
-      );
+    const todayStr = new Date().toISOString().split('T')[0];
 
-      addNotification({
-        user_id: studentId,
-        titulo: '🎉 ¡Resolución Favorable de Beca UNIPAZ!',
-        mensaje: `El Comité de Becas ha aprobado tu beneficio: ${tipoBeca || student.tipo_beca_solicitada} con ${porcentaje || 50}% de descuento. ${observaciones ? `Observaciones: ${observaciones}` : ''}`,
-        tipo: 'success',
-      });
-    } else {
+    if (aprobado) {
+      const bType = tipoBeca || student.tipo_beca_solicitada || 'Excelencia Académica (Promedio 9.6 - 10.0)';
+      const bPct = porcentaje || 50;
+
       setProfiles((prev) =>
         prev.map((p) =>
           p.id === studentId
             ? {
                 ...p,
-                solicitud_beca_status: 'rechazada',
+                tiene_beca: true,
+                tipo_beca: bType,
+                porcentaje_beca: bPct,
+                solicitud_beca_status: 'aprobada',
+                refrendo_beca_aprobado_admin: true,
+                fecha_resolucion_refrendo: todayStr,
+                resolucion_refrendo_observaciones: observaciones || 'Requisitos normativos cuatrimestrales verificados y aprobados por Administración.',
+                cumple_cero_reprobaciones: true,
+                cumple_pagos_al_corriente: true,
+                cumple_sin_sanciones: true,
               }
             : p
         )
@@ -1702,16 +1702,42 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       addNotification({
         user_id: studentId,
-        titulo: 'Resolución de Solicitud de Beca',
-        mensaje: `El Comité de Becas ha emitido resolución para tu solicitud. ${observaciones ? `Motivo: ${observaciones}` : 'No se cumplieron los requisitos normativos.'}`,
+        titulo: '🎉 ¡Resolución Favorable de Renovación de Beca!',
+        mensaje: `La Administración y el Comité de Becas han aprobado tu renovación: ${bType} con ${bPct}% de descuento para el siguiente periodo. Se constató tu cumplimiento de 1,000 puntos cuatrimestrales, promedio sin reprobaciones y pagos al corriente.`,
+        tipo: 'success',
+      });
+
+      return {
+        success: true,
+        message: `Resolución aprobatoria y refrendo cuatrimestral emitido con éxito para ${student.nombre} ${student.apellidos}.`,
+      };
+    } else {
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === studentId
+            ? {
+                ...p,
+                solicitud_beca_status: 'rechazada',
+                refrendo_beca_aprobado_admin: false,
+                fecha_resolucion_refrendo: todayStr,
+                resolucion_refrendo_observaciones: observaciones || 'No cumple con alguno de los criterios normativos cuatrimestrales.',
+              }
+            : p
+        )
+      );
+
+      addNotification({
+        user_id: studentId,
+        titulo: 'Notificación de Dictamen de Beca',
+        mensaje: `La Administración ha emitido una resolución no aprobatoria sobre tu solicitud/refrendo de beca. ${observaciones ? `Motivo: ${observaciones}` : 'Acude a la Dirección de Extensión y Difusión para aclaraciones.'}`,
         tipo: 'warning',
       });
-    }
 
-    return {
-      success: true,
-      message: `Resolución notificada al estudiante ${student.nombre} ${student.apellidos}.`,
-    };
+      return {
+        success: true,
+        message: `Resolución no favorable registrada para ${student.nombre} ${student.apellidos}.`,
+      };
+    }
   };
 
   const resetToDefaultData = () => {
