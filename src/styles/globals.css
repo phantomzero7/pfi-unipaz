@@ -29,15 +29,15 @@
 
 /* Glassmorphism & Institutional Cards */
 .glass-panel {
-  @apply bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-xl shadow-blue-950/5 dark:shadow-2xl rounded-3xl transition-all;
+  @apply bg-white/85 dark:bg-slate-900/60 backdrop-blur-md dark:backdrop-blur-xl border border-slate-200/70 dark:border-white/10 shadow-xl shadow-blue-950/5 dark:shadow-2xl rounded-3xl transition-all;
 }
 
 .glass-panel-subtle {
-  @apply bg-slate-100/80 dark:bg-slate-800/40 backdrop-blur-lg border border-slate-200 dark:border-white/10 rounded-2xl;
+  @apply bg-slate-100/80 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200/70 dark:border-white/10 rounded-2xl;
 }
 
 .glass-card-interactive {
-  @apply bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-lg shadow-blue-950/5 dark:shadow-xl rounded-3xl transition-all duration-300 hover:border-unipaz-orange/40 hover:scale-[1.01];
+  @apply bg-white/85 dark:bg-slate-900/60 backdrop-blur-md dark:backdrop-blur-xl border border-slate-200/70 dark:border-white/10 shadow-xl shadow-blue-950/5 dark:shadow-2xl rounded-3xl transition-all duration-300 hover:border-unipaz-orange/40 hover:scale-[1.01];
 }
 
 .glass-pill {
