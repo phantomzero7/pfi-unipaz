@@ -65,7 +65,7 @@ export const SocioeconomicStudyModal: React.FC<SocioeconomicStudyModalProps> = (
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // PASO 1: Datos Generales y Domicilios
-  const [tipoTramite, setTipoTramite] = useState<'Beca Nueva' | 'Aumento de Beca' | 'Refrendo Cuatrimestral'>('Beca Nueva');
+  const [tipoTramite, setTipoTramite] = useState<'Beca Nueva (Aspirante)' | 'Reincorporación / Pérdida Previa de Beca' | 'Aumento de Porcentaje'>('Beca Nueva (Aspirante)');
   const [curp, setCurp] = useState('VAAC030514HBSLR09');
   const [rfc, setRfc] = useState('VAAC030514AB1');
   const [lugarNacimiento, setLugarNacimiento] = useState('La Paz, Baja California Sur');
@@ -335,13 +335,21 @@ export const SocioeconomicStudyModal: React.FC<SocioeconomicStudyModalProps> = (
             {/* PASO 1: DATOS GENERALES Y DOMICILIOS */}
             {currentStep === 1 && (
               <div className="space-y-4 animate-fadeIn">
+                {/* Aviso Normativo sobre Aplicación del Estudio */}
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/70 dark:border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Criterio Normativo:</strong> Este estudio socioeconómico es aplicable para <strong>estudiantes de nuevo ingreso / primer trámite</strong> o <strong>alumnos que hayan perdido su beneficio</strong> y solicitan reincorporación. Para el refrendo cuatrimestral ordinario, únicamente se presenta el Informe de Becario.
+                  </span>
+                </div>
+
                 {/* Tipo de Trámite */}
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
                   <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
                     Tipo de Trámite Socioeconómico:
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {(['Beca Nueva', 'Aumento de Beca', 'Refrendo Cuatrimestral'] as const).map((t) => (
+                    {(['Beca Nueva (Aspirante)', 'Reincorporación / Pérdida Previa de Beca', 'Aumento de Porcentaje'] as const).map((t) => (
                       <button
                         key={t}
                         type="button"

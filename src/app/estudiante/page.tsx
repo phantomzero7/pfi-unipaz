@@ -200,12 +200,12 @@ export default function EstudianteDashboard() {
               </button>
             )}
 
-            {/* Botón Estudio Socioeconómico (Cuando está habilitado) */}
-            {pfiConfig.estudio_socioeconomico_habilitado && (
+            {/* Botón Estudio Socioeconómico (Solo para Beca Nueva o Reincorporación por pérdida de beca) */}
+            {pfiConfig.estudio_socioeconomico_habilitado && !currentUser.tiene_beca && (
               <button
                 onClick={() => setShowSocioeconomicModal(true)}
                 className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
-                title="Llenar Cédula de Estudio Socioeconómico"
+                title="Llenar Cédula de Estudio Socioeconómico (Para Beca Nueva o Reincorporación)"
               >
                 <FileCheck className="w-4 h-4 text-unipaz-orange" />
                 Estudio Socioeconómico
