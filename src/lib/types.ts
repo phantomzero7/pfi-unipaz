@@ -99,6 +99,27 @@ export const OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA = [
   'Otro',
 ] as const;
 
+export const isProgramaSemestral = (carreraOrPrograma?: string): boolean => {
+  if (!carreraOrPrograma) return false;
+  const upper = carreraOrPrograma.toUpperCase();
+  return upper.includes('MÉDICO CIRUJANO') || upper.includes('MEDICO CIRUJANO');
+};
+
+export const getMaxPeriodos = (carreraOrPrograma?: string): number => {
+  return isProgramaSemestral(carreraOrPrograma) ? 12 : 16;
+};
+
+export const getNombrePeriodo = (carreraOrPrograma?: string): 'Semestre' | 'Cuatrimestre' => {
+  return isProgramaSemestral(carreraOrPrograma) ? 'Semestre' : 'Cuatrimestre';
+};
+
+export const formatGradoAcademico = (student?: { carrera?: string; cuatrimestre?: number; periodo_ingreso?: string }): string => {
+  if (!student) return 'Activo';
+  const num = student.cuatrimestre || 1;
+  const periodo = getNombrePeriodo(student.carrera);
+  return `${num}° ${periodo}`;
+};
+
 export interface UserProfile {
   id: string;
   matricula: string;
@@ -107,7 +128,7 @@ export interface UserProfile {
   carrera: string; // Programa Académico
   programa_academico?: string;
   periodo_ingreso: string;
-  cuatrimestre?: number; // 1 to 9
+  cuatrimestre?: number; // 1 to 16 para programas cuatrimestrales (estudiantes regulares e irregulares), 1 to 12 para Médico Cirujano (semestral)
   email: string;
   role: UserRole;
   sexo?: string;

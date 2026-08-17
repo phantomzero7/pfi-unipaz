@@ -44,7 +44,7 @@ import { StudentQrCard } from '@/components/StudentQrCard';
 import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
 import { getActiveStaffEventsForStudent, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { EventAttendance, PFIEvent } from '@/lib/types';
+import { EventAttendance, formatGradoAcademico, PFIEvent } from '@/lib/types';
 
 export default function EstudianteDashboard() {
   const {
@@ -181,7 +181,7 @@ export default function EstudianteDashboard() {
                 {currentUser.nombre} {currentUser.apellidos}
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                {currentUser.carrera} · {currentUser.cuatrimestre ? `${currentUser.cuatrimestre}° Cuatrimestre` : currentUser.periodo_ingreso}
+                {currentUser.carrera} · {formatGradoAcademico(currentUser)}
               </p>
             </div>
           </div>

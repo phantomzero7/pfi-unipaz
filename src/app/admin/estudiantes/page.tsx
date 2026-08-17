@@ -34,7 +34,7 @@ import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewal
 import { exportStudentsToCsv, exportStudentsToExcel } from '@/lib/export-utils';
 import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { AttendanceStatus, PFIEvent, UserProfile } from '@/lib/types';
+import { AttendanceStatus, formatGradoAcademico, PFIEvent, UserProfile } from '@/lib/types';
 
 export default function AdminEstudiantesDirectoryPage() {
   const {
@@ -437,7 +437,7 @@ export default function AdminEstudiantesDirectoryPage() {
                   <div>
                     <span className="text-slate-400 block text-[10px]">Grado:</span>
                     <span className="font-bold text-slate-700 dark:text-slate-300">
-                      {std.cuatrimestre ? `${std.cuatrimestre}° Cuatrimestre` : std.periodo_ingreso}
+                      {formatGradoAcademico(std)}
                     </span>
                   </div>
                   <div className="text-right">
@@ -498,7 +498,7 @@ export default function AdminEstudiantesDirectoryPage() {
                       {selectedStudent.matricula}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300">
-                      {selectedStudent.cuatrimestre ? `${selectedStudent.cuatrimestre}° Cuatrimestre` : selectedStudent.periodo_ingreso}
+                      {formatGradoAcademico(selectedStudent)}
                     </span>
                   </div>
                   <h3 className="text-xl font-black text-unipaz-navy dark:text-white mt-0.5">

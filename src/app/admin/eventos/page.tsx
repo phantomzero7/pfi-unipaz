@@ -1084,10 +1084,10 @@ export default function AdminEventosManagerPage() {
                           onChange={(e) => setSelectedCuatrimestreFilter(e.target.value)}
                           className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-unipaz-orange"
                         >
-                          <option value="todos">Todos los Cuatrimestres</option>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
+                          <option value="todos">Todos los Periodos (Cuatrimestre / Semestre)</option>
+                          {Array.from({ length: 16 }, (_, i) => i + 1).map((c) => (
                             <option key={c} value={c}>
-                              {c}° Cuatrimestre
+                              {c}° Periodo {c > 10 ? '(Extensión / Irregular)' : ''}
                             </option>
                           ))}
                         </select>

@@ -30,6 +30,10 @@ import {
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
 import {
+  formatGradoAcademico,
+  getMaxPeriodos,
+  getNombrePeriodo,
+  isProgramaSemestral,
   OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA,
   OPCIONES_SEXO,
   PROGRAMAS_ACADEMICOS,
@@ -199,7 +203,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
             <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-white/10 text-left text-xs space-y-1">
               <div><strong>Folio de Solicitud:</strong> <span className="font-mono text-unipaz-orange font-bold">SOL-BECA-{student.matricula}-{new Date().getFullYear()}</span></div>
               <div><strong>Estudiante:</strong> {nombre} {apellidos} ({student.matricula})</div>
-              <div><strong>Carrera:</strong> {carrera} · {cuatrimestre}° Cuatrimestre</div>
+              <div><strong>Programa Académico:</strong> {carrera} · {cuatrimestre}° {getNombrePeriodo(carrera)}</div>
               <div><strong>Fecha de Envío:</strong> {new Date().toLocaleDateString('es-MX')}</div>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -327,15 +331,17 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
-                      Cuatrimestre:
+                      {getNombrePeriodo(carrera)}:
                     </label>
                     <select
                       value={cuatrimestre}
                       onChange={(e) => setCuatrimestre(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold font-mono"
                     >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
-                        <option key={c} value={c}>{c}° Cuatrimestre</option>
+                      {Array.from({ length: getMaxPeriodos(carrera) }, (_, i) => i + 1).map((c) => (
+                        <option key={c} value={c}>
+                          {c}° {getNombrePeriodo(carrera)} {c > 10 && !isProgramaSemestral(carrera) ? '(Extensión / Irregular)' : ''}
+                        </option>
                       ))}
                     </select>
                   </div>
