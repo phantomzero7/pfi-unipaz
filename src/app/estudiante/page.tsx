@@ -216,10 +216,10 @@ export default function EstudianteDashboard() {
               <button
                 onClick={() => setShowDictamenModal(true)}
                 className="py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-105"
-                title="Dictamen Oficial de Liberación para Titulación"
+                title="Dictamen Oficial de Acreditación Total del PFI"
               >
                 <ShieldCheck className="w-4 h-4" />
-                Dictamen de Titulación
+                Dictamen PFI
               </button>
             )}
 
