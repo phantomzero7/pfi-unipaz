@@ -8,6 +8,7 @@ import {
   Award,
   BookOpen,
   Calendar,
+  Camera,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -29,16 +30,20 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AttendanceJustificationModal } from '@/components/AttendanceJustificationModal';
+import { BecarioReportModal } from '@/components/BecarioReportModal';
 import { CertificatePdfModal } from '@/components/CertificatePdfModal';
 import { EventFeedbackModal } from '@/components/EventFeedbackModal';
 import { GraduationSimulatorWidget } from '@/components/GraduationSimulatorWidget';
 import { OfficialClearanceDictamenModal } from '@/components/OfficialClearanceDictamenModal';
 import { PrintableIdCardModal } from '@/components/PrintableIdCardModal';
+import { QrScannerModal } from '@/components/QrScannerModal';
+import { ScholarshipApplicationModal } from '@/components/ScholarshipApplicationModal';
 import { ScholarshipProgressWidget } from '@/components/ScholarshipProgressWidget';
+import { SocioeconomicStudyModal } from '@/components/SocioeconomicStudyModal';
 import { StudentBadgesShowcase } from '@/components/StudentBadgesShowcase';
 import { StudentQrCard } from '@/components/StudentQrCard';
 import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
-import { getAttendanceStatusInfo } from '@/lib/pfi-rules';
+import { getActiveStaffEventsForStudent, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { EventAttendance, PFIEvent } from '@/lib/types';
 
@@ -49,22 +54,33 @@ export default function EstudianteDashboard() {
     getStudentScholarshipProgress,
     getStudentAttendances,
     events,
+    attendances,
+    pfiConfig,
   } = usePFI();
 
   const progress = getStudentProgress();
   const scholarshipProgress = getStudentScholarshipProgress();
-  const attendances = getStudentAttendances();
+  const studentAttendances = getStudentAttendances();
 
   const [showCertModal, setShowCertModal] = useState(false);
   const [showDictamenModal, setShowDictamenModal] = useState(false);
   const [showPrintableCardModal, setShowPrintableCardModal] = useState(false);
+  const [showScholarshipAppModal, setShowScholarshipAppModal] = useState(false);
+  const [showBecarioReportModal, setShowBecarioReportModal] = useState(false);
+  const [showSocioeconomicModal, setShowSocioeconomicModal] = useState(false);
+  const [showStaffScannerModal, setShowStaffScannerModal] = useState(false);
+
   const [selectedWorkshopAtt, setSelectedWorkshopAtt] = useState<EventAttendance | null>(null);
   const [selectedJustificationAtt, setSelectedJustificationAtt] = useState<EventAttendance | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<PFIEvent | null>(null);
   const [activeTab, setActiveTab] = useState<'realizados' | 'no_realizados' | 'programados'>('realizados');
 
+  // Determinar si es staff temporal activo para un evento hoy
+  const activeStaffEvents = getActiveStaffEventsForStudent(currentUser.id, events, attendances);
+  const isTemporaryStaffActive = activeStaffEvents.length > 0;
+
   // Clasificar asistencias
-  const classifiedAttendances = attendances.map((att) => ({
+  const classifiedAttendances = studentAttendances.map((att) => ({
     ...att,
     info: getAttendanceStatusInfo(att, att.event),
   }));
@@ -77,6 +93,68 @@ export default function EstudianteDashboard() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* BANNER 1: STAFF LOGÍSTICO TEMPORAL ACTIVO (Permiso de Escáner con Cámara) */}
+      {isTemporaryStaffActive && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-950 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-purple-500/40 animate-pulse">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <Camera className="w-6 h-6 text-purple-300" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-purple-300">
+                Rol Temporal de Staff Logístico Asignado
+              </span>
+              <h3 className="text-sm sm:text-base font-black">
+                Pase de Lista Activo: {activeStaffEvents.map((e) => e.titulo).join(', ')}
+              </h3>
+              <p className="text-xs text-purple-200/80">
+                Tu permiso de escáner por cámara está habilitado durante este evento para registrar el Check-In y Check-Out de los asistentes.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowStaffScannerModal(true)}
+            className="py-2.5 px-5 rounded-2xl bg-white text-purple-950 hover:bg-purple-50 font-black text-xs flex items-center gap-2 shadow-lg transition-all hover:scale-105 flex-shrink-0"
+          >
+            <Camera className="w-4 h-4 text-purple-700" />
+            Abrir Escáner de Asistencias
+          </button>
+        </div>
+      )}
+
+      {/* BANNER 2: CONVOCATORIA DE BECAS ABIERTA (Solo si el periodo está activo) */}
+      {pfiConfig.periodo_solicitud_becas_activo && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-md flex-shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange">
+                Convocatoria Institucional de Becas y Estímulos
+              </span>
+              <h4 className="text-xs sm:text-sm font-black text-unipaz-navy dark:text-white">
+                Periodo de Solicitud de Beca Abierto (Vigencia hasta el {pfiConfig.fecha_fin_solicitud_becas || '25 de Septiembre'})
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Excelencia Académica (≥9.0), Convenios, Familiares, Deportivas, Inclusión y Apoyo Socioeconómico.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowScholarshipAppModal(true)}
+              className="py-2.5 px-4 rounded-2xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Postular a Beca
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Institucional */}
       <div className="relative overflow-hidden rounded-3xl bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-2xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
@@ -108,8 +186,32 @@ export default function EstudianteDashboard() {
             </div>
           </div>
 
-          {/* Botones de Acción Documental y Titulación */}
+          {/* Botones de Acción Documental, Formularios y Titulación */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Botón Llenar Informe de Becario (Cuando está habilitado) */}
+            {currentUser.tiene_beca && pfiConfig.informe_becario_habilitado && (
+              <button
+                onClick={() => setShowBecarioReportModal(true)}
+                className="py-2.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+                title="Llenar Informe Cuatrimestral de Becario"
+              >
+                <FileText className="w-4 h-4" />
+                Informe Becario
+              </button>
+            )}
+
+            {/* Botón Estudio Socioeconómico (Cuando está habilitado) */}
+            {pfiConfig.estudio_socioeconomico_habilitado && (
+              <button
+                onClick={() => setShowSocioeconomicModal(true)}
+                className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
+                title="Llenar Cédula de Estudio Socioeconómico"
+              >
+                <FileCheck className="w-4 h-4 text-unipaz-orange" />
+                Estudio Socioeconómico
+              </button>
+            )}
+
             {canDownloadGeneralCert && (
               <button
                 onClick={() => setShowDictamenModal(true)}
@@ -523,6 +625,42 @@ export default function EstudianteDashboard() {
           isOpen={Boolean(selectedFeedbackEvent)}
           onClose={() => setSelectedFeedbackEvent(null)}
           event={selectedFeedbackEvent}
+        />
+      )}
+
+      {/* MODAL DE POSTULACIÓN A BECA */}
+      {showScholarshipAppModal && (
+        <ScholarshipApplicationModal
+          isOpen={showScholarshipAppModal}
+          onClose={() => setShowScholarshipAppModal(false)}
+          student={currentUser}
+        />
+      )}
+
+      {/* MODAL DE INFORME DE BECARIO */}
+      {showBecarioReportModal && (
+        <BecarioReportModal
+          isOpen={showBecarioReportModal}
+          onClose={() => setShowBecarioReportModal(false)}
+          student={currentUser}
+        />
+      )}
+
+      {/* MODAL DE ESTUDIO SOCIOECONÓMICO */}
+      {showSocioeconomicModal && (
+        <SocioeconomicStudyModal
+          isOpen={showSocioeconomicModal}
+          onClose={() => setShowSocioeconomicModal(false)}
+          student={currentUser}
+        />
+      )}
+
+      {/* MODAL DE ESCÁNER PARA STAFF TEMPORAL */}
+      {showStaffScannerModal && (
+        <QrScannerModal
+          isOpen={showStaffScannerModal}
+          onClose={() => setShowStaffScannerModal(false)}
+          defaultEventId={activeStaffEvents[0]?.id}
         />
       )}
     </div>

@@ -32,9 +32,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   onClose,
   defaultEventId,
 }) => {
-  const { events, profiles, checkInStudent, checkOutStudent } = usePFI();
+  const { events, profiles, currentUser, canUserScanEvent, checkInStudent, checkOutStudent } = usePFI();
+
+  const scannableEvents = events.filter((e) => canUserScanEvent(e.id, currentUser.id));
+
   const [selectedEventId, setSelectedEventId] = useState<string>(
-    defaultEventId || (events[0]?.id || '')
+    defaultEventId || (scannableEvents[0]?.id || events[0]?.id || '')
   );
   const [mode, setMode] = useState<'check_in' | 'check_out'>('check_in');
   const [manualQuery, setManualQuery] = useState('');
@@ -57,8 +60,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   useEffect(() => {
     if (defaultEventId) {
       setSelectedEventId(defaultEventId);
+    } else if (scannableEvents.length > 0 && !scannableEvents.some((e) => e.id === selectedEventId)) {
+      setSelectedEventId(scannableEvents[0].id);
     }
-  }, [defaultEventId]);
+  }, [defaultEventId, scannableEvents, selectedEventId]);
 
   // Cargar lista de cámaras disponibles (Smartphones tienen traseras y frontales)
   useEffect(() => {
@@ -269,11 +274,15 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               onChange={(e) => setSelectedEventId(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-unipaz-orange"
             >
-              {events.map((evt) => (
-                <option key={evt.id} value={evt.id}>
-                  {evt.titulo} ({evt.horas_pfi} hrs · {evt.fecha_evento})
-                </option>
-              ))}
+              {scannableEvents.length === 0 ? (
+                <option value="">No tienes eventos activos con permiso de escaneo</option>
+              ) : (
+                scannableEvents.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.titulo} ({evt.horas_pfi} hrs · {evt.fecha_evento})
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

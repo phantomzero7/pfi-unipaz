@@ -748,6 +748,154 @@ export default function AdminConfiguracionPage() {
           </div>
         </form>
       </section>
+
+      {/* SECCIÓN 5: GESTIÓN DE CONVOCATORIAS, INFORMES Y ESTUDIOS DE BECAS (EXCLUSIVO ADMINISTRADOR) */}
+      <section className="rounded-3xl bg-gradient-to-br from-amber-500/10 via-white to-orange-500/5 dark:from-amber-950/20 dark:via-slate-900/80 dark:to-orange-950/10 border border-amber-300/80 dark:border-amber-500/30 p-6 sm:p-8 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200 dark:border-white/10 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-300/60">
+                Control Escolar & Comité de Becas
+              </span>
+            </div>
+            <h2 className="text-xl font-black text-unipaz-navy dark:text-white tracking-tight mt-1 flex items-center gap-2">
+              <Award className="w-5 h-5 text-unipaz-orange" />
+              5. Gestión de Convocatorias, Formularios y Dictámenes de Beca
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+              Controla las fechas del periodo de solicitud de becas, habilita los formatos obligatorios y notifica resoluciones.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Periodo de Solicitud */}
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-white/10 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Convocatoria</span>
+                <span
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    pfiConfig.periodo_solicitud_becas_activo
+                      ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {pfiConfig.periodo_solicitud_becas_activo ? '● ACTIVA' : '○ CERRADA'}
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-unipaz-navy dark:text-white">
+                Periodo de Solicitud de Beca
+              </h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Permite a los estudiantes postularse a becas y estímulos institucionales desde su portal.
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Inicio:</span>
+                  <input
+                    type="date"
+                    value={pfiConfig.fecha_inicio_solicitud_becas || '2026-09-01'}
+                    onChange={(e) => updateGlobalConfig({ fecha_inicio_solicitud_becas: e.target.value })}
+                    className="w-full p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 font-mono text-[11px]"
+                  />
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Cierre:</span>
+                  <input
+                    type="date"
+                    value={pfiConfig.fecha_fin_solicitud_becas || '2026-09-25'}
+                    onChange={(e) => updateGlobalConfig({ fecha_fin_solicitud_becas: e.target.value })}
+                    className="w-full p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => updateGlobalConfig({ periodo_solicitud_becas_activo: !pfiConfig.periodo_solicitud_becas_activo })}
+              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all shadow-sm ${
+                pfiConfig.periodo_solicitud_becas_activo
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              {pfiConfig.periodo_solicitud_becas_activo ? 'Cerrar Periodo de Solicitud' : 'Abrir Periodo de Solicitud'}
+            </button>
+          </div>
+
+          {/* Card 2: Llenado de Informe de Becario */}
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-white/10 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Becarios</span>
+                <span
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    pfiConfig.informe_becario_habilitado
+                      ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {pfiConfig.informe_becario_habilitado ? '● HABILITADO' : '○ INACTIVO'}
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-unipaz-navy dark:text-white">
+                Informe Cuatrimestral de Becario
+              </h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Habilita el botón de llenado del informe formativo en el portal de los alumnos becarios para la renovación de su descuento.
+              </p>
+            </div>
+
+            <button
+              onClick={() => updateGlobalConfig({ informe_becario_habilitado: !pfiConfig.informe_becario_habilitado })}
+              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all shadow-sm ${
+                pfiConfig.informe_becario_habilitado
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white'
+                  : 'bg-unipaz-orange hover:bg-orange-600 text-white'
+              }`}
+            >
+              {pfiConfig.informe_becario_habilitado ? 'Desactivar Formato de Informe' : 'Habilitar Botón de Informe'}
+            </button>
+          </div>
+
+          {/* Card 3: Estudio Socioeconómico */}
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-white/10 shadow-sm space-y-4 flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Trabajo Social</span>
+                <span
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    pfiConfig.estudio_socioeconomico_habilitado
+                      ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  }`}
+                >
+                  {pfiConfig.estudio_socioeconomico_habilitado ? '● HABILITADO' : '○ INACTIVO'}
+                </span>
+              </div>
+              <h3 className="text-sm font-black text-unipaz-navy dark:text-white">
+                Cédula de Estudio Socioeconómico
+              </h3>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Habilita el formulario digital para captura de ingresos, dependientes económicos y situación familiar de los solicitantes.
+              </p>
+            </div>
+
+            <button
+              onClick={() => updateGlobalConfig({ estudio_socioeconomico_habilitado: !pfiConfig.estudio_socioeconomico_habilitado })}
+              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-all shadow-sm ${
+                pfiConfig.estudio_socioeconomico_habilitado
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white'
+                  : 'bg-unipaz-navy hover:bg-blue-900 text-white'
+              }`}
+            >
+              {pfiConfig.estudio_socioeconomico_habilitado ? 'Desactivar Formato Socioeconómico' : 'Habilitar Botón de Estudio'}
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -48,6 +48,7 @@ export default function AdminEstudiantesDirectoryPage() {
     getStudentScholarshipProgress,
     assignScholarshipToStudent,
     revokeScholarship,
+    notifyScholarshipResolution,
     currentUser,
   } = usePFI();
 
@@ -66,12 +67,25 @@ export default function AdminEstudiantesDirectoryPage() {
   // Modal para asignación / gestión de becas
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
   const [showDictamenModal, setShowDictamenModal] = useState(false);
+  const [showResolutionModal, setShowResolutionModal] = useState(false);
+  const [resolutionData, setResolutionData] = useState<{
+    aprobado: boolean;
+    tipo_beca: string;
+    porcentaje: number;
+    observaciones: string;
+  }>({
+    aprobado: true,
+    tipo_beca: 'Excelencia Académica (Promedio 9.6 - 10.0)',
+    porcentaje: 50,
+    observaciones: 'Cumple con el promedio mínimo requerido y expediente normativo.',
+  });
+
   const [scholarshipForm, setScholarshipForm] = useState<{
     tipo_beca: string;
     porcentaje: number;
     promedio: number;
   }>({
-    tipo_beca: 'Excelencia Académica',
+    tipo_beca: 'Excelencia Académica (Promedio 9.6 - 10.0)',
     porcentaje: 50,
     promedio: 9.5,
   });
@@ -821,6 +835,156 @@ export default function AdminEstudiantesDirectoryPage() {
                   className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold"
                 >
                   Confirmar Asignación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NOTIFICAR RESOLUCIÓN DE BECA */}
+      {showResolutionModal && selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100">
+            <button
+              onClick={() => setShowResolutionModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-unipaz-orange">Comité de Becas UNIPAZ</span>
+                <h3 className="text-base font-black text-unipaz-navy dark:text-white">
+                  Notificar Resolución de Beca a {selectedStudent.nombre}
+                </h3>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                notifyScholarshipResolution(
+                  selectedStudent.id,
+                  resolutionData.aprobado,
+                  resolutionData.tipo_beca,
+                  resolutionData.porcentaje,
+                  resolutionData.observaciones
+                );
+                setShowResolutionModal(false);
+                setSelectedStudent((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        tiene_beca: resolutionData.aprobado,
+                        tipo_beca: resolutionData.aprobado ? (resolutionData.tipo_beca as any) : undefined,
+                        porcentaje_beca: resolutionData.aprobado ? resolutionData.porcentaje : undefined,
+                        solicitud_beca_status: resolutionData.aprobado ? 'aprobada' : 'rechazada',
+                      }
+                    : null
+                );
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block font-bold mb-1">Sentido del Dictamen:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setResolutionData({ ...resolutionData, aprobado: true })}
+                    className={`py-2 px-3 rounded-xl font-bold border transition-all ${
+                      resolutionData.aprobado
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-white/10 text-slate-600'
+                    }`}
+                  >
+                    ✓ Aprobada / Favorable
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResolutionData({ ...resolutionData, aprobado: false })}
+                    className={`py-2 px-3 rounded-xl font-bold border transition-all ${
+                      !resolutionData.aprobado
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-white/10 text-slate-600'
+                    }`}
+                  >
+                    ✕ Rechazada / No Procede
+                  </button>
+                </div>
+              </div>
+
+              {resolutionData.aprobado && (
+                <>
+                  <div>
+                    <label className="block font-bold mb-1">Tipo de Beca Asignada:</label>
+                    <select
+                      value={resolutionData.tipo_beca}
+                      onChange={(e) => setResolutionData({ ...resolutionData, tipo_beca: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-semibold text-xs"
+                    >
+                      <option value="Excelencia Académica (Promedio 9.6 - 10.0)">Excelencia Académica (9.6 - 10.0)</option>
+                      <option value="Mérito Académico">Mérito Académico</option>
+                      <option value="Estudio Socioeconómico (desde 2° Cuatrimestre)">Estudio Socioeconómico</option>
+                      <option value="Convenios Institucionales">Convenios Institucionales</option>
+                      <option value="Familiar / Hermanos (20%)">Familiar / Hermanos (20%)</option>
+                      <option value="Deportiva (Garzas UNIPAZ)">Deportiva (Garzas)</option>
+                      <option value="Cultural y Artística">Cultural y Artística</option>
+                      <option value="Madres Solteras / Jefas de Familia">Madres Solteras</option>
+                      <option value="Inclusión y Discapacidad">Inclusión y Discapacidad</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold mb-1">Porcentaje de Descuento:</label>
+                    <select
+                      value={resolutionData.porcentaje}
+                      onChange={(e) => setResolutionData({ ...resolutionData, porcentaje: parseInt(e.target.value) || 50 })}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-mono font-bold text-xs"
+                    >
+                      <option value="20">20% Descuento</option>
+                      <option value="25">25% Descuento</option>
+                      <option value="30">30% Descuento</option>
+                      <option value="40">40% Descuento</option>
+                      <option value="50">50% Descuento</option>
+                      <option value="60">60% Descuento</option>
+                      <option value="75">75% Descuento</option>
+                      <option value="80">80% Descuento</option>
+                      <option value="100">100% Descuento Total</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block font-bold mb-1">Observaciones o Fundamento del Comité:</label>
+                <textarea
+                  rows={3}
+                  value={resolutionData.observaciones}
+                  onChange={(e) => setResolutionData({ ...resolutionData, observaciones: e.target.value })}
+                  placeholder="Fundamento, promedio validado o condiciones de permanencia..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResolutionModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-bold flex items-center justify-center gap-1.5 shadow-md"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Notificar Dictamen al Estudiante
                 </button>
               </div>
             </form>

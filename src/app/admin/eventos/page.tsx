@@ -884,15 +884,15 @@ export default function AdminEventosManagerPage() {
                   </div>
                 </div>
 
-                {/* Puntos de Beca (50 - 500) */}
+                {/* Puntos de Beca (10 - 100 pts) */}
                 <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-black text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-unipaz-orange" />
-                      Puntos para Alumnos Becados (Meta 1,000 pts):
+                      Puntos para Alumnos Becados (Meta Cuatrimestral 1,000 pts):
                     </span>
                     <span className="text-[10px] text-amber-700 dark:text-amber-400 font-mono">
-                      Rango normativo: 50 a 500 pts
+                      Rango normativo: 10 a 100 pts
                     </span>
                   </div>
 
@@ -903,14 +903,14 @@ export default function AdminEventosManagerPage() {
                       </label>
                       <input
                         type="number"
-                        min="50"
-                        max="500"
+                        min="10"
+                        max="100"
                         required
                         value={formData.puntos_beca}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            puntos_beca: Math.min(500, Math.max(50, parseInt(e.target.value) || 50)),
+                            puntos_beca: Math.min(100, Math.max(10, parseInt(e.target.value) || 10)),
                           })
                         }
                         className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-unipaz-orange"
@@ -919,17 +919,17 @@ export default function AdminEventosManagerPage() {
 
                     <div>
                       <label className="block font-bold text-purple-700 dark:text-purple-300 mb-1 text-xs">
-                        Puntos Extra para Becados en Staff:
+                        Puntos Extra para Becados en Staff (Opcional):
                       </label>
                       <input
                         type="number"
                         min="0"
-                        max="250"
+                        max="100"
                         value={formData.puntos_beca_staff}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            puntos_beca_staff: parseInt(e.target.value) || 0,
+                            puntos_beca_staff: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)),
                           })
                         }
                         className="w-full bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-500/40 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-purple-500"

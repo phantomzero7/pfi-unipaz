@@ -6,18 +6,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Calendar,
+  Camera,
   ChevronDown,
   Compass,
   FileCheck,
+  GraduationCap,
   LayoutDashboard,
   Moon,
   QrCode,
   RotateCcw,
   ScanLine,
   Settings,
+  Shield,
   Sun,
   Users,
 } from 'lucide-react';
+import { getActiveStaffEventsForStudent } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import { NotificationBell } from './NotificationBell';
 import { QrScannerModal } from './QrScannerModal';
@@ -25,13 +29,29 @@ import { StudentQrCard } from './StudentQrCard';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { currentUser, profiles, switchUser, getStudentProgress, resetToDefaultData, theme, toggleTheme } = usePFI();
+  const {
+    currentUser,
+    profiles,
+    events,
+    attendances,
+    switchUser,
+    getStudentProgress,
+    resetToDefaultData,
+    theme,
+    toggleTheme,
+  } = usePFI();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showQrCardModal, setShowQrCardModal] = useState(false);
   const [showScannerModal, setShowScannerModal] = useState(false);
 
-  const isStaffOrAdmin = currentUser.role === 'staff' || currentUser.role === 'admin';
+  const isAdmin = currentUser.role === 'admin';
+  const isDedu = currentUser.role === 'dedu';
+  const isStaffOrAdmin = isAdmin || isDedu || currentUser.role === 'staff';
   const progress = getStudentProgress();
+
+  // Verifica si el estudiante es Staff temporal para un evento activo hoy
+  const activeStaffEvents = getActiveStaffEventsForStudent(currentUser.id, events, attendances);
+  const isTemporaryStaffActive = activeStaffEvents.length > 0;
 
   const studentLinks = [
     { href: '/estudiante', label: 'Mi Dashboard', icon: LayoutDashboard },
@@ -40,15 +60,22 @@ export const Navbar: React.FC = () => {
     { href: '/estudiante/constancias', label: 'Mis Constancias', icon: FileCheck },
   ];
 
-  const adminLinks = [
-    { href: '/admin', label: 'Panel General', icon: LayoutDashboard },
-    { href: '/admin/configuracion', label: 'Configurador PFI', icon: Settings },
-    { href: '/admin/eventos', label: 'Gestión de Eventos', icon: Calendar },
+  const deduLinks = [
+    { href: '/admin', label: 'Panel DEDU', icon: LayoutDashboard },
+    { href: '/admin/eventos', label: 'Eventos & Staff', icon: Calendar },
     { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
-    { href: '/admin/estudiantes', label: 'Directorio Estudiantil', icon: Users },
+    { href: '/admin/estudiantes', label: 'Pases de Lista', icon: Users },
   ];
 
-  const currentLinks = isStaffOrAdmin ? adminLinks : studentLinks;
+  const adminLinks = [
+    { href: '/admin', label: 'Panel General', icon: LayoutDashboard },
+    { href: '/admin/configuracion', label: 'Configurador & Becas', icon: Settings },
+    { href: '/admin/eventos', label: 'Gestión de Eventos', icon: Calendar },
+    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
+    { href: '/admin/estudiantes', label: 'Directorio & Becados', icon: Users },
+  ];
+
+  const currentLinks = isAdmin ? adminLinks : isDedu ? deduLinks : studentLinks;
 
   return (
     <>

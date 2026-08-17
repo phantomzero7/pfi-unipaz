@@ -418,56 +418,84 @@ export function validateStayDuration(
 }
 
 /**
- * Retorna la asignación estándar de puntos de beca (50 a 500) según categoría y rol
+ * Retorna la asignación estándar de puntos de beca (10 a 100) según categoría y rol
  */
-export function getStandardScholarshipPoints(category: EventCategory, role?: ParticipantRole): number {
-  let basePoints = 150;
+export function getStandardScholarshipPoints(
+  category: EventCategory,
+  role: ParticipantRole = 'asistente'
+): number {
+  let basePoints = 20;
+
   switch (category) {
     case 'Investigación':
-      basePoints = 500;
+      basePoints = 100;
       break;
     case 'Club Anual':
-      basePoints = 300;
-      break;
-    case 'PVC':
-      basePoints = 250;
-      break;
-    case 'Taller Extracurricular':
-      basePoints = 200;
-      break;
-    case 'Simposio':
-      basePoints = 180;
-      break;
-    case 'Taller Liderazgo':
-      basePoints = 150;
-      break;
-    case 'Jornada Social':
-      basePoints = 120;
-      break;
-    case 'Foro':
-      basePoints = 80;
-      break;
-    case 'Cine Club':
       basePoints = 60;
       break;
-    case 'Campaña':
+    case 'PVC':
       basePoints = 50;
       break;
+    case 'Taller Extracurricular':
+      basePoints = 40;
+      break;
+    case 'Simposio':
+      basePoints = 35;
+      break;
+    case 'Taller Liderazgo':
+      basePoints = 30;
+      break;
+    case 'Jornada Social':
+      basePoints = 25;
+      break;
+    case 'Foro':
+      basePoints = 20;
+      break;
+    case 'Cine Club':
+      basePoints = 15;
+      break;
+    case 'Campaña':
+      basePoints = 10;
+      break;
     default:
-      basePoints = 100;
+      basePoints = 20;
   }
 
   if (role === 'staff_logistica') {
-    basePoints = Math.min(500, basePoints + 100);
+    basePoints = Math.min(100, basePoints + 20);
   } else if (role === 'ponente') {
-    basePoints = Math.min(500, basePoints + 150);
+    basePoints = Math.min(100, basePoints + 30);
   }
 
   return basePoints;
 }
 
 /**
+ * Determina si un estudiante es actualmente Staff Logístico activo para un evento determinado
+ * Retorna la lista de eventos activos para los cuales el estudiante tiene permiso temporal de escaneo por cámara.
+ */
+export function getActiveStaffEventsForStudent(
+  studentId: string,
+  events: PFIEvent[],
+  attendances: EventAttendance[]
+): PFIEvent[] {
+  const staffEventIds = new Set(
+    attendances
+      .filter(
+        (a) =>
+          a.student_id === studentId &&
+          a.rol_participacion === 'staff_logistica' &&
+          (a.status === 'registrado' || a.status === 'asistio')
+      )
+      .map((a) => a.event_id)
+  );
+
+  return events.filter((e) => e.activo && staffEventIds.has(e.id));
+}
+
+/**
  * Calcula el progreso de puntos de beca de un estudiante becado (meta de 1000 puntos cuatrimestrales)
+ * Cada actividad otorga entre 10 y 100 puntos. Sin límite máximo de acumulación.
  */
 export function calculateStudentScholarshipProgress(
   student: UserProfile,
@@ -514,7 +542,8 @@ export function calculateStudentScholarshipProgress(
         }
       }
 
-      const finalPuntos = Math.min(500, Math.max(50, puntos || 100));
+      // Cada actividad otorga entre 10 y 100 puntos
+      const finalPuntos = Math.min(100, Math.max(10, puntos || 20));
       puntosBrutos += finalPuntos;
 
       if (event) {
@@ -532,7 +561,7 @@ export function calculateStudentScholarshipProgress(
   });
 
   const puntosTotales = Math.max(0, puntosBrutos - puntosPenalizaciones);
-  const porcentajeCumplimiento = Math.min(100, Math.round((puntosTotales / meta) * 100));
+  const porcentajeCumplimiento = Math.round((puntosTotales / meta) * 100);
 
   let estatus: import('./types').ScholarshipStatus = 'en_progreso';
   let estatusTexto = 'En Progreso hacia la Meta';

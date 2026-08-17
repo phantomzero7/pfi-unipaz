@@ -35,6 +35,11 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   maxTalleresLiderazgo: 1,
   penalizacionNoShowStaff: 5.0,
   puntosBecaMinimosCuatrimestre: 1000,
+  periodo_solicitud_becas_activo: true,
+  fecha_inicio_solicitud_becas: '2026-09-01',
+  fecha_fin_solicitud_becas: '2026-09-25',
+  informe_becario_habilitado: true,
+  estudio_socioeconomico_habilitado: true,
   categoriaHoras: {
     'Investigación': 100.00,
     'Club Anual': 33.34,
@@ -217,12 +222,28 @@ interface PFIContextType {
   ) => { success: boolean; message: string };
   revokeScholarship: (studentId: string) => { success: boolean; message: string };
   applyScholarshipPenalty: (attendanceId: string, puntosPenalizacion: number, motivo: string) => void;
+  
+  // Convocatorias, Formularios y Dictámenes de Beca (Admin y Estudiante)
+  toggleScholarshipApplicationPeriod: (active: boolean, fechaInicio?: string, fechaFin?: string) => void;
+  toggleBecarioReport: (enabled: boolean) => void;
+  toggleSocioeconomicStudy: (enabled: boolean) => void;
+  submitScholarshipApplication: (studentId: string, tipoBeca: string) => { success: boolean; message: string };
+  submitBecarioReport: (studentId: string) => { success: boolean; message: string };
+  submitSocioeconomicStudy: (studentId: string) => { success: boolean; message: string };
+  notifyScholarshipResolution: (
+    studentId: string,
+    aprobado: boolean,
+    tipoBeca?: string,
+    porcentaje?: number,
+    observaciones?: string
+  ) => { success: boolean; message: string };
+
   getStudentAttendances: (studentId?: string) => EventAttendance[];
   getEventById: (eventId: string) => PFIEvent | undefined;
   getStudentById: (studentId: string) => UserProfile | undefined;
   getStudentByQuery: (query: string) => UserProfile | undefined;
   
-  // Permiso de escaneo para estudiante staff
+  // Permiso de escaneo para estudiante staff y DEDU
   canUserScanEvent: (eventId: string, userId?: string) => boolean;
   
   // Theme Toggle
@@ -536,16 +557,6 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
 
     return calculateStudentPFIProgress(studentAtts, eventsMap);
-  };
-
-  const canUserScanEvent = (eventId: string, userId?: string): boolean => {
-    const uid = userId || currentUser.id;
-    const user = profiles.find((p) => p.id === uid);
-    if (!user) return false;
-    if (user.role === 'admin' || user.role === 'staff' || user.es_docente_colaborador) return true;
-
-    const att = attendances.find((a) => a.event_id === eventId && a.student_id === uid);
-    return att?.rol_participacion === 'staff_logistica' && att.status !== 'cancelado';
   };
 
   const applyForStaffRole = (eventId: string, studentId?: string, motivo?: string) => {
@@ -1425,6 +1436,171 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const canUserScanEvent = (eventId: string, userId?: string): boolean => {
+    const targetUserId = userId || currentUser.id;
+    const user = profiles.find((p) => p.id === targetUserId) || currentUser;
+
+    // Administradores y Dirección DEDU tienen acceso total y permanente para escanear
+    if (user.role === 'admin' || user.role === 'dedu') return true;
+
+    // Docente colaborador con rol activo
+    if (user.es_docente_colaborador) return true;
+
+    // Estudiante Staff Temporal: Únicamente si el evento está activo y tiene rol asignado de staff_logistica
+    const event = events.find((e) => e.id === eventId);
+    if (!event || !event.activo) return false;
+
+    const staffAtt = attendances.find(
+      (a) =>
+        a.event_id === eventId &&
+        a.student_id === targetUserId &&
+        a.rol_participacion === 'staff_logistica' &&
+        (a.status === 'registrado' || a.status === 'asistio')
+    );
+
+    return !!staffAtt;
+  };
+
+  const toggleScholarshipApplicationPeriod = (active: boolean, fechaInicio?: string, fechaFin?: string) => {
+    setPfiConfig((prev) => ({
+      ...prev,
+      periodo_solicitud_becas_activo: active,
+      fecha_inicio_solicitud_becas: fechaInicio || prev.fecha_inicio_solicitud_becas,
+      fecha_fin_solicitud_becas: fechaFin || prev.fecha_fin_solicitud_becas,
+    }));
+  };
+
+  const toggleBecarioReport = (enabled: boolean) => {
+    setPfiConfig((prev) => ({ ...prev, informe_becario_habilitado: enabled }));
+  };
+
+  const toggleSocioeconomicStudy = (enabled: boolean) => {
+    setPfiConfig((prev) => ({ ...prev, estudio_socioeconomico_habilitado: enabled }));
+  };
+
+  const submitScholarshipApplication = (studentId: string, tipoBeca: string) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              solicitud_beca_status: 'enviada',
+              tipo_beca_solicitada: tipoBeca,
+            }
+          : p
+      )
+    );
+
+    addNotification({
+      user_id: 'admin',
+      titulo: '📩 Nueva Solicitud de Beca Recibida',
+      mensaje: `${student.nombre} ${student.apellidos} (${student.matricula}) ha postulado para ${tipoBeca}.`,
+      tipo: 'info',
+    });
+
+    return {
+      success: true,
+      message: 'Tu solicitud de beca ha sido enviada con éxito al Comité de Becas UNIPAZ.',
+    };
+  };
+
+  const submitBecarioReport = (studentId: string) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              informe_becario_entregado: true,
+              fecha_informe_becario: new Date().toISOString().split('T')[0],
+            }
+          : p
+      )
+    );
+
+    return {
+      success: true,
+      message: 'Informe Cuatrimestral de Becario entregado satisfactoriamente.',
+    };
+  };
+
+  const submitSocioeconomicStudy = (studentId: string) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              estudio_socioeconomico_entregado: true,
+              fecha_estudio_socioeconomico: new Date().toISOString().split('T')[0],
+            }
+          : p
+      )
+    );
+
+    return {
+      success: true,
+      message: 'Formato de Estudio Socioeconómico registrado para dictamen del Comité de Becas.',
+    };
+  };
+
+  const notifyScholarshipResolution = (
+    studentId: string,
+    aprobado: boolean,
+    tipoBeca?: string,
+    porcentaje?: number,
+    observaciones?: string
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    if (aprobado) {
+      assignScholarshipToStudent(
+        studentId,
+        tipoBeca || student.tipo_beca_solicitada || 'Excelencia Académica (Promedio 9.6 - 10.0)',
+        porcentaje || 50,
+        student.promedio_academico || 9.0
+      );
+
+      addNotification({
+        user_id: studentId,
+        titulo: '🎉 ¡Resolución Favorable de Beca UNIPAZ!',
+        mensaje: `El Comité de Becas ha aprobado tu beneficio: ${tipoBeca || student.tipo_beca_solicitada} con ${porcentaje || 50}% de descuento. ${observaciones ? `Observaciones: ${observaciones}` : ''}`,
+        tipo: 'success',
+      });
+    } else {
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === studentId
+            ? {
+                ...p,
+                solicitud_beca_status: 'rechazada',
+              }
+            : p
+        )
+      );
+
+      addNotification({
+        user_id: studentId,
+        titulo: 'Resolución de Solicitud de Beca',
+        mensaje: `El Comité de Becas ha emitido resolución para tu solicitud. ${observaciones ? `Motivo: ${observaciones}` : 'No se cumplieron los requisitos normativos.'}`,
+        tipo: 'warning',
+      });
+    }
+
+    return {
+      success: true,
+      message: `Resolución notificada al estudiante ${student.nombre} ${student.apellidos}.`,
+    };
+  };
+
   const resetToDefaultData = () => {
     setProfiles(MOCK_PROFILES);
     setEvents(MOCK_EVENTS);
@@ -1482,6 +1658,13 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         assignScholarshipToStudent,
         revokeScholarship,
         applyScholarshipPenalty,
+        toggleScholarshipApplicationPeriod,
+        toggleBecarioReport,
+        toggleSocioeconomicStudy,
+        submitScholarshipApplication,
+        submitBecarioReport,
+        submitSocioeconomicStudy,
+        notifyScholarshipResolution,
         getStudentProgress,
         getStudentScholarshipProgress,
         getStudentAttendances,

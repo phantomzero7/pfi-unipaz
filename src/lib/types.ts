@@ -1,4 +1,4 @@
-export type UserRole = 'estudiante' | 'staff' | 'admin';
+export type UserRole = 'estudiante' | 'staff' | 'dedu' | 'admin';
 export type EventModality = 'presencial' | 'online' | 'hibrido';
 export type AttendanceStatus = 'registrado' | 'asistio' | 'incompleto' | 'cancelado' | 'lista_espera';
 export type ParticipantRole = 'asistente' | 'staff_logistica' | 'ponente' | 'moderador' | 'organizador';
@@ -97,6 +97,14 @@ export interface UserProfile {
   puntos_beca_penalizaciones?: number;
   promedio_academico?: number; // e.g. 9.5
   
+  // Formatos y Solicitudes de Becario
+  solicitud_beca_status?: 'ninguna' | 'enviada' | 'en_evaluacion' | 'aprobada' | 'rechazada';
+  tipo_beca_solicitada?: string;
+  informe_becario_entregado?: boolean;
+  estudio_socioeconomico_entregado?: boolean;
+  fecha_informe_becario?: string;
+  fecha_estudio_socioeconomico?: string;
+  
   created_at?: string;
 }
 
@@ -143,6 +151,14 @@ export interface PFIGlobalConfig {
   maxTalleresLiderazgo: number; // 1
   penalizacionNoShowStaff: number; // Horas descontadas si falta staff (ej. -5.0h)
   puntosBecaMinimosCuatrimestre: number; // 1000
+  
+  // Control de Convocatorias y Formularios de Beca (Solo Admin)
+  periodo_solicitud_becas_activo: boolean;
+  fecha_inicio_solicitud_becas?: string;
+  fecha_fin_solicitud_becas?: string;
+  informe_becario_habilitado: boolean;
+  estudio_socioeconomico_habilitado: boolean;
+  
   categoriaHoras: Record<EventCategory, number>;
   reglasCohortePVC: {
     pvc1Cuatrimestres: number[]; // [1, 2, 3]
