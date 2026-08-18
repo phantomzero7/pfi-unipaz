@@ -58,86 +58,79 @@ export async function readDataFromFile(file: File): Promise<Record<string, any>[
 }
 
 /* =========================================================================
-   1. PLANTILLAS DE DESCARGA (CSV & EXCEL)
+   1. PLANTILLAS DE DESCARGA OFICIALES (CSV & EXCEL)
    ========================================================================= */
 
 /**
- * Descarga plantilla para Estudiantes y Becas
+ * 🎓 PLANTILLA 1: Padrón General de Estudiantes & Becas
  */
 export function downloadStudentsTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
   const headers = [
     'Matricula',
     'Nombre',
-    'Apellidos',
+    'Apellido Paterno',
+    'Apellido Materno',
     'Programa Academico',
     'Cuatrimestre o Semestre',
     'Periodo Ingreso',
     'Email',
     'Sexo',
     'Tiene Beca (SI/NO)',
-    'Tipo de Beca',
-    'Porcentaje Beca',
     'Promedio Academico',
-    'Puntos Beca Meta',
-    'Es Becario Departamental (SI/NO)',
-    'Departamento Beca',
-    'Horas Departamentales Semanales',
   ];
 
   const sampleRows = [
     [
       '2023-0101',
       'Carlos Eduardo',
-      'Valenzuela Arce',
+      'Valenzuela',
+      'Arce',
       'LICENCIATURA EN DERECHO',
       '4',
       '2023-1',
       'carlos.valenzuela@unipaz.edu.mx',
       'Hombre',
       'SI',
-      'Excelencia Académica (Promedio 9.6 - 10.0)',
-      '50',
       '9.6',
-      '1000',
-      'NO',
-      '',
-      '',
     ],
     [
       '2023-0102',
       'Mariana Sofía',
-      'Navarro Castro',
+      'Navarro',
+      'Castro',
       'LICENCIATURA EN ENFERMERÍA',
       '6',
       '2023-1',
       'mariana.navarro@unipaz.edu.mx',
       'Mujer',
       'SI',
-      'Estudio Socioeconómico (desde 2° Cuatrimestre)',
-      '30',
       '8.9',
-      '1000',
-      'SI',
-      'Biblioteca',
-      '10',
     ],
     [
       '2024-0205',
       'Alejandro',
-      'Mendoza Cárdenas',
+      'Mendoza',
+      'Cárdenas',
       'LICENCIATURA EN MÉDICO CIRUJANO',
       '2',
       '2024-1',
       'alejandro.mendoza@unipaz.edu.mx',
       'Hombre',
       'NO',
-      '',
-      '',
       '8.5',
-      '',
-      'NO',
-      '',
-      '',
+    ],
+    [
+      '2022-0310',
+      'Brenda Paulina',
+      'Flores',
+      'Guzmán',
+      'LICENCIATURA EN PSICOLOGÍA',
+      '8',
+      '2022-2',
+      'brenda.flores@unipaz.edu.mx',
+      'Mujer',
+      'SI',
+      '9.8',
     ],
   ];
 
@@ -147,92 +140,78 @@ export function downloadStudentsTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `plantilla_carga_estudiantes_unipaz.csv`;
+    link.download = `plantilla_estudiantes_unipaz.csv`;
     link.click();
     URL.revokeObjectURL(url);
   } else {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-    // Set auto column width
-    ws['!cols'] = headers.map(() => ({ wch: 25 }));
+    ws['!cols'] = headers.map(() => ({ wch: 24 }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Estudiantes');
-    XLSX.writeFile(wb, `plantilla_carga_estudiantes_unipaz.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Padrón Estudiantes');
+    XLSX.writeFile(wb, `plantilla_estudiantes_unipaz.xlsx`);
   }
 }
 
 /**
- * Descarga plantilla para Eventos y Talleres Formativos
+ * 📅 PLANTILLA 2: Catálogo de Actividades Formativas Realizadas
  */
 export function downloadEventsTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
   const headers = [
-    'Codigo o ID',
-    'Titulo Evento',
+    'Numero de Actividad',
+    'Nombre de la Actividad',
     'Categoria',
-    'Descripcion',
-    'Fecha (YYYY-MM-DD)',
-    'Hora Inicio (HH:MM)',
-    'Hora Fin (HH:MM)',
-    'Lugar',
-    'Modalidad (presencial/virtual/hibrida)',
-    'Cupo Maximo',
-    'Horas PFI Acreditables',
-    'Puntos Beca Asistente',
-    'Puntos Beca Staff',
-    'Requiere Evidencia (SI/NO)',
-    'Link Virtual (opcional)',
+    'Fecha Inicio (YYYY-MM-DD)',
+    'Fecha Fin (YYYY-MM-DD)',
+    'Responsable de la Actividad',
+    'Horas PFI',
+    'Puntos Beca',
+    'Lugar o Modalidad',
   ];
 
   const sampleRows = [
     [
-      'EVT-SIMP-01',
-      'Simposio Nacional de Derecho Constitucional y Amparo 2026',
+      '1',
+      'Simposio Nacional de Derecho Constitucional y Amparo',
       'Simposio',
-      'Magno foro sobre las reformas en materia de derechos fundamentales.',
       '2026-09-15',
-      '09:00',
-      '14:00',
-      'Auditorio Rectoría UNIPAZ',
-      'presencial',
-      '150',
+      '2026-09-15',
+      'Dr. Roberto Silva Morales',
       '5.56',
       '80',
-      '120',
-      'NO',
-      '',
+      'Auditorio Rectoría UNIPAZ',
     ],
     [
-      'EVT-TALL-02',
+      '2',
       'Taller Extracurricular: Liderazgo y Oratoria Ejecutiva',
       'Taller Extracurricular',
-      'Taller práctico de técnicas de comunicación y expresión verbal.',
       '2026-09-20',
-      '16:00',
-      '19:00',
-      'Aula Magna B',
-      'presencial',
-      '40',
+      '2026-09-20',
+      'Mtra. Claudia Elena Ramos',
       '16.67',
       '90',
-      '100',
-      'SI',
-      '',
+      'Aula Magna B',
     ],
     [
-      'EVT-INV-03',
+      '3',
       'Jornada de Divulgación e Investigación Científica INDE',
       'Investigación',
-      'Presentación de avances de investigación y ponencias estudiantiles.',
       '2026-09-28',
-      '10:00',
-      '13:00',
-      'Sala Virtual Zoom',
-      'virtual',
-      '200',
+      '2026-09-28',
+      'Dirección de Investigación INDE',
       '100.00',
       '100',
-      '150',
-      'SI',
-      'https://meet.google.com/unipaz-inde-2026',
+      'Virtual Google Meet',
+    ],
+    [
+      '4',
+      'Programa de Voluntariado Comunitario (PVC I)',
+      'PVC',
+      '2026-10-05',
+      '2026-10-08',
+      'Coordinación de Formación Integral',
+      '25.00',
+      '100',
+      'Comunidades y Sedes Externas',
     ],
   ];
 
@@ -242,72 +221,37 @@ export function downloadEventsTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `plantilla_carga_eventos_pfi.csv`;
+    link.download = `plantilla_actividades_pfi.csv`;
     link.click();
     URL.revokeObjectURL(url);
   } else {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
     ws['!cols'] = headers.map(() => ({ wch: 25 }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Eventos');
-    XLSX.writeFile(wb, `plantilla_carga_eventos_pfi.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Catálogo Actividades');
+    XLSX.writeFile(wb, `plantilla_actividades_pfi.xlsx`);
   }
 }
 
 /**
- * Descarga plantilla para Asistencias y Acreditación Masiva de Horas / Puntos
+ * 📊 PLANTILLA 3: Registro de Participaciones / Asistencias con Horas PFI y Becas
  */
 export function downloadAttendancesTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
   const headers = [
-    'Matricula Estudiante',
-    'ID o Titulo Evento',
-    'Estatus Asistencia (asistio/incompleto/registrado/cancelado)',
-    'Rol (asistente/staff_logistica)',
-    'Horas PFI Acreditadas (Opcional - vacio toma estándar)',
-    'Puntos Beca Acreditados (Opcional - vacio toma estándar)',
-    'Penalizacion Horas PFI',
-    'Penalizacion Puntos Beca',
-    'Validado Por (Nombre o Departamento)',
+    'Matricula',
+    'Numero de Actividad',
+    'Estatus (asistio/incompleto/cancelado)',
+    'Rol (asistente/staff_logistica/ponente)',
+    'Horas PFI (Opcional - vacio toma estándar)',
+    'Puntos Beca (Opcional - vacio toma estándar)',
     'Observaciones',
   ];
 
   const sampleRows = [
-    [
-      '2023-0101',
-      'EVT-SIMP-01',
-      'asistio',
-      'asistente',
-      '5.56',
-      '80',
-      '0',
-      '0',
-      'Coordinación PFI DEDU',
-      'Asistencia completa y participación activa',
-    ],
-    [
-      '2023-0102',
-      'EVT-SIMP-01',
-      'asistio',
-      'staff_logistica',
-      '10.00',
-      '120',
-      '0',
-      '0',
-      'Jefatura de Staff UNIPAZ',
-      'Coordinación de acceso y escaneo de QR',
-    ],
-    [
-      '2024-0205',
-      'EVT-TALL-02',
-      'asistio',
-      'asistente',
-      '16.67',
-      '90',
-      '0',
-      '0',
-      'Instructor del Taller',
-      'Taller acreditado con entrega de proyecto final',
-    ],
+    ['2023-0101', '1', 'asistio', 'asistente', '', '', 'Asistencia completa y acreditada'],
+    ['2023-0102', '1', 'asistio', 'staff_logistica', '10.00', '120', 'Coordinación de registro de acceso'],
+    ['2024-0205', '2', 'asistio', 'asistente', '', '', 'Taller aprobado'],
+    ['2022-0310', '4', 'asistio', 'asistente', '25.00', '100', 'PVC completado satisfactoriamente'],
   ];
 
   if (format === 'csv') {
@@ -316,24 +260,24 @@ export function downloadAttendancesTemplate(format: 'csv' | 'xlsx' = 'xlsx') {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `plantilla_carga_asistencias_pfi_becas.csv`;
+    link.download = `plantilla_asistencias_pfi_becas.csv`;
     link.click();
     URL.revokeObjectURL(url);
   } else {
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
     ws['!cols'] = headers.map(() => ({ wch: 25 }));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Asistencias y Horas');
-    XLSX.writeFile(wb, `plantilla_carga_asistencias_pfi_becas.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Pases de Lista');
+    XLSX.writeFile(wb, `plantilla_asistencias_pfi_becas.xlsx`);
   }
 }
 
 /* =========================================================================
-   2. PARSERS INTELIGENTES CON VALIDACIÓN
+   2. PARSERS INTELIGENTES CON VALIDACIÓN RELACIONAL (3NF)
    ========================================================================= */
 
 /**
- * Parsea y valida el archivo de Estudiantes y Becas
+ * Parsea y valida el archivo de Estudiantes
  */
 export async function parseStudentsFile(file: File): Promise<ParseValidationResult<Partial<UserProfile>>> {
   const rows = await readDataFromFile(file);
@@ -341,7 +285,7 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
   const invalid: ParseValidationResult<Partial<UserProfile>>['invalid'] = [];
 
   rows.forEach((row, index) => {
-    const rowNum = index + 2; // Considerando fila 1 como cabecera
+    const rowNum = index + 2;
     const normalized: Record<string, any> = {};
 
     Object.entries(row).forEach(([k, v]) => {
@@ -350,27 +294,29 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
 
     const matricula = String(normalized.matricula || normalized.id || '').trim();
     const nombre = String(normalized.nombre || normalized.nombres || '').trim();
-    const apellidos = String(normalized.apellidos || normalized.apellido || '').trim();
+
+    // Soporte para Apellido Paterno + Materno o Apellidos en un solo campo
+    const paterno = String(normalized.apellidopaterno || normalized.paterno || '').trim();
+    const materno = String(normalized.apellidomaterno || normalized.materno || '').trim();
+    let apellidos = String(normalized.apellidos || '').trim();
+    if (!apellidos && (paterno || materno)) {
+      apellidos = `${paterno} ${materno}`.trim();
+    }
+
     const carreraRaw = String(normalized.programaacademico || normalized.carrera || normalized.programa || '').trim();
     const cuatrimestreRaw = normalized.cuatrimestreosemestre || normalized.cuatrimestre || normalized.semestre || normalized.grado || 1;
     const periodoIngreso = String(normalized.periodoingreso || normalized.cohorte || '2026-1').trim();
     const email = String(normalized.email || normalized.correo || '').trim() || `${matricula.toLowerCase()}@unipaz.edu.mx`;
     const sexo = String(normalized.sexo || 'Prefiero no decirlo').trim();
     const tieneBecaRaw = String(normalized.tienebecasino || normalized.tienebeca || normalized.beca || '').toUpperCase().trim();
-    const tipoBeca = String(normalized.tipodebeca || normalized.tipobeca || '').trim();
-    const porcentajeBecaRaw = Number(normalized.porcentajebeca || normalized.descuento || 0);
     const promedioRaw = Number(normalized.promedioacademico || normalized.promedio || 9.0);
-    const metaBecaRaw = Number(normalized.puntosbecameta || 1000);
-    const esBecarioDeptRaw = String(normalized.esbecariodepartamentalsino || normalized.esbecariodepartamental || '').toUpperCase().trim();
-    const departamentoBeca = String(normalized.departamentobeca || normalized.departamento || '').trim();
-    const horasDeptRaw = Number(normalized.horasdepartamentalessemanales || normalized.horasdepartamentales || 10);
 
     const errors: string[] = [];
 
     if (!matricula) errors.push('La matrícula es obligatoria.');
     if (!nombre) errors.push('El nombre es obligatorio.');
 
-    // Búsqueda difusa o asignación de Programa Académico
+    // Búsqueda inteligente de Programa Académico
     let programaAcademico = carreraRaw;
     if (!programaAcademico) {
       programaAcademico = 'LICENCIATURA EN ADMINISTRACIÓN';
@@ -381,7 +327,22 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
 
     const cuatrimestre = Number(cuatrimestreRaw) || 1;
     const tieneBeca = tieneBecaRaw === 'SI' || tieneBecaRaw === 'SÍ' || tieneBecaRaw === 'TRUE' || tieneBecaRaw === '1';
-    const esBecarioDept = esBecarioDeptRaw === 'SI' || esBecarioDeptRaw === 'SÍ' || esBecarioDeptRaw === 'TRUE' || esBecarioDeptRaw === '1';
+
+    // Determinar modalidad de beca sugerida por promedio
+    let tipoBeca: string | undefined = undefined;
+    let porcentajeBeca: number | undefined = undefined;
+    if (tieneBeca) {
+      if (promedioRaw >= 9.6) {
+        tipoBeca = 'Excelencia Académica (Promedio 9.6 - 10.0)';
+        porcentajeBeca = 50;
+      } else if (promedioRaw >= 9.0) {
+        tipoBeca = 'Mérito Académico';
+        porcentajeBeca = 40;
+      } else {
+        tipoBeca = 'Estudio Socioeconómico (desde 2° Cuatrimestre)';
+        porcentajeBeca = 30;
+      }
+    }
 
     if (errors.length > 0) {
       invalid.push({ row: rowNum, raw: row, errors });
@@ -399,13 +360,10 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
         sexo,
         role: 'estudiante',
         tiene_beca: tieneBeca,
-        tipo_beca: tieneBeca ? (tipoBeca as any || 'Excelencia Académica (Promedio 9.6 - 10.0)') : undefined,
-        porcentaje_beca: tieneBeca ? (porcentajeBecaRaw || 50) : undefined,
+        tipo_beca: tipoBeca as any,
+        porcentaje_beca: porcentajeBeca,
         promedio_academico: promedioRaw,
-        puntos_beca_meta_cuatrimestral: tieneBeca ? metaBecaRaw : undefined,
-        es_becario_departamental: esBecarioDept,
-        departamento_beca: esBecarioDept ? (departamentoBeca || 'Biblioteca') : undefined,
-        horas_departamentales_semanales: esBecarioDept ? horasDeptRaw : undefined,
+        puntos_beca_meta_cuatrimestral: tieneBeca ? 1000 : undefined,
         qr_secret: `SEC-UNIPAZ-${matricula}`,
       });
     }
@@ -415,7 +373,7 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
 }
 
 /**
- * Parsea y valida el archivo de Eventos y Talleres Formativos
+ * Parsea y valida el archivo de Actividades Formativas
  */
 export async function parseEventsFile(file: File): Promise<ParseValidationResult<Partial<PFIEvent>>> {
   const rows = await readDataFromFile(file);
@@ -435,6 +393,20 @@ export async function parseEventsFile(file: File): Promise<ParseValidationResult
     'Campaña',
   ];
 
+  // Tabulador Oficial UNIPAZ
+  const TABULADOR_DEFAULT: Record<EventCategory, number> = {
+    'Investigación': 100.00,
+    'Club Anual': 33.34,
+    'PVC': 25.00,
+    'Taller Extracurricular': 16.67,
+    'Taller Liderazgo': 10.00,
+    'Simposio': 5.56,
+    'Jornada Social': 5.00,
+    'Cine Club': 2.50,
+    'Foro': 2.00,
+    'Campaña': 1.00,
+  };
+
   rows.forEach((row, index) => {
     const rowNum = index + 2;
     const normalized: Record<string, any> = {};
@@ -443,41 +415,56 @@ export async function parseEventsFile(file: File): Promise<ParseValidationResult
       normalized[normalizeKey(k)] = v;
     });
 
-    const codigo = String(normalized.codigooidevento || normalized.codigo || normalized.id || `EVT-${Date.now()}-${index}`).trim();
-    const titulo = String(normalized.tituloevento || normalized.titulo || normalized.nombre || '').trim();
-    const categoriaRaw = String(normalized.categoria || normalized.tipo || 'Taller Extracurricular').trim();
-    const descripcion = String(normalized.descripcion || '').trim();
-    const fecha = String(normalized.fechayyyymmdd || normalized.fecha || new Date().toISOString().split('T')[0]).trim();
-    const horaInicio = String(normalized.horainiciohhmm || normalized.horainicio || '10:00').trim();
-    const horaFin = String(normalized.horafinhhmm || normalized.horafin || '12:00').trim();
-    const lugar = String(normalized.lugar || normalized.ubicacion || 'Campus Central UNIPAZ').trim();
-    const modalidadRaw = String(normalized.modalidad || 'presencial').toLowerCase().trim();
-    const cupoMaximo = Number(normalized.cupomaximo || normalized.cupo || 50);
-    const horasPFIRaw = Number(normalized.horaspfiacreditables || normalized.horaspfi || 0);
-    const puntosBecaAsistente = Number(normalized.puntosbecaasistente || normalized.puntosbeca || 50);
-    const puntosBecaStaff = Number(normalized.puntosbecastaff || 80);
-    const requiereEvidenciaRaw = String(normalized.requiereevidenciasino || normalized.requiereevidencia || '').toUpperCase().trim();
-    const linkVirtual = String(normalized.linkvirtual || normalized.link || '').trim();
+    const numeroActividad = String(
+      normalized.numerodeactividad || normalized.numero || normalized.codigo || normalized.id || index + 1
+    ).trim();
+    const codigo = numeroActividad.startsWith('EVT-') ? numeroActividad : `EVT-${numeroActividad}`;
+    const titulo = String(
+      normalized.nombredelaactividad || normalized.nombreactividad || normalized.titulo || normalized.nombre || ''
+    ).trim();
+    const categoriaRaw = String(normalized.categoria || normalized.tipo || '').trim();
+    const fechaInicio = String(normalized.fechainicio || normalized.fechainicioyyyymmdd || normalized.fecha || '').trim();
+    const fechaFin = String(normalized.fechafin || normalized.fechafinyyyymmdd || fechaInicio).trim();
+    const responsable = String(normalized.responsabledelaactividad || normalized.responsable || normalized.instructor || '').trim();
+    const horasPfiRaw = normalized.horaspfi !== '' ? Number(normalized.horaspfi) : null;
+    const puntosBecaRaw = normalized.puntosbeca !== '' ? Number(normalized.puntosbeca) : null;
+    const lugarOModalidad = String(normalized.lugaromodalidad || normalized.lugar || normalized.modalidad || 'Campus Central UNIPAZ').trim();
 
     const errors: string[] = [];
 
-    if (!titulo) errors.push('El título del evento es obligatorio.');
-    if (!fecha) errors.push('La fecha del evento es obligatoria.');
+    if (!titulo) errors.push('El nombre de la actividad es obligatorio.');
+    if (!fechaInicio) errors.push('La fecha de la actividad es obligatoria.');
 
-    // Validar categoría
+    // Inferir o validar categoría
     let categoria: EventCategory = 'Taller Extracurricular';
-    const catMatch = CATEGORIAS_VALIDAS.find((c) => c.toLowerCase() === categoriaRaw.toLowerCase());
-    if (catMatch) {
-      categoria = catMatch;
+    if (categoriaRaw) {
+      const match = CATEGORIAS_VALIDAS.find((c) => c.toLowerCase() === categoriaRaw.toLowerCase());
+      if (match) categoria = match;
     } else {
-      errors.push(`Categoría inválida ("${categoriaRaw}"). Opciones: ${CATEGORIAS_VALIDAS.join(', ')}`);
+      // Inferencia por palabra clave en título
+      const t = titulo.toLowerCase();
+      if (t.includes('pvc') || t.includes('voluntariado')) categoria = 'PVC';
+      else if (t.includes('investiga') || t.includes('inde') || t.includes('coloquio')) categoria = 'Investigación';
+      else if (t.includes('liderazgo')) categoria = 'Taller Liderazgo';
+      else if (t.includes('simposio')) categoria = 'Simposio';
+      else if (t.includes('cine')) categoria = 'Cine Club';
+      else if (t.includes('foro')) categoria = 'Foro';
+      else if (t.includes('campaña') || t.includes('campana')) categoria = 'Campaña';
+      else if (t.includes('jornada') || t.includes('social')) categoria = 'Jornada Social';
+      else if (t.includes('club')) categoria = 'Club Anual';
     }
 
+    // Modalidad
     let modalidad: EventModality = 'presencial';
-    if (modalidadRaw.includes('virt') || modalidadRaw.includes('onlin')) modalidad = 'online';
-    else if (modalidadRaw.includes('hibr') || modalidadRaw.includes('híbr')) modalidad = 'hibrido';
+    const lm = lugarOModalidad.toLowerCase();
+    if (lm.includes('virt') || lm.includes('online') || lm.includes('meet') || lm.includes('zoom')) {
+      modalidad = 'online';
+    } else if (lm.includes('hibr')) {
+      modalidad = 'hibrido';
+    }
 
-    const requiereEvidencia = requiereEvidenciaRaw === 'SI' || requiereEvidenciaRaw === 'SÍ' || requiereEvidenciaRaw === 'TRUE';
+    const horasPFI = horasPfiRaw !== null && !isNaN(horasPfiRaw) && horasPfiRaw > 0 ? horasPfiRaw : TABULADOR_DEFAULT[categoria] || 2.0;
+    const puntosBeca = puntosBecaRaw !== null && !isNaN(puntosBecaRaw) && puntosBecaRaw > 0 ? puntosBecaRaw : categoria === 'PVC' || categoria === 'Investigación' ? 100 : 80;
 
     if (errors.length > 0) {
       invalid.push({ row: rowNum, raw: row, errors });
@@ -486,17 +473,17 @@ export async function parseEventsFile(file: File): Promise<ParseValidationResult
         id: codigo,
         titulo,
         categoria,
-        descripcion,
-        fecha_evento: fecha,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        ubicacion: lugar,
+        descripcion: `Actividad institucional a cargo de ${responsable || 'Coordinación PFI'}.`,
+        fecha_evento: fechaInicio,
+        hora_inicio: '10:00',
+        hora_fin: '14:00',
+        ubicacion: lugarOModalidad,
         modalidad,
-        cupo_maximo: cupoMaximo,
-        horas_pfi: horasPFIRaw || 2.0,
-        puntos_beca: puntosBecaAsistente,
-        puntos_beca_staff: puntosBecaStaff,
-        enlace_virtual: linkVirtual || undefined,
+        cupo_maximo: 60,
+        horas_pfi: horasPFI,
+        puntos_beca: puntosBeca,
+        puntos_beca_staff: Math.min(150, puntosBeca + 40),
+        instructor_titular: responsable,
         activo: true,
       });
     }
@@ -506,7 +493,7 @@ export async function parseEventsFile(file: File): Promise<ParseValidationResult
 }
 
 /**
- * Parsea y valida el archivo de Asistencias y Acreditaciones Masivas de Horas / Puntos
+ * Parsea y valida el archivo de Asistencias (Relación Estudiante <-> Actividad)
  */
 export async function parseAttendancesFile(
   file: File,
@@ -525,20 +512,19 @@ export async function parseAttendancesFile(
       normalized[normalizeKey(k)] = v;
     });
 
-    const matriculaRaw = String(normalized.matriculaestudiante || normalized.matricula || normalized.id || '').trim();
-    const eventoQuery = String(normalized.idotituloevento || normalized.evento || normalized.codigoevento || '').trim();
-    const statusRaw = String(normalized.estatusasistencia || normalized.estatus || normalized.status || 'asistio').toLowerCase().trim();
+    const matriculaRaw = String(normalized.matricula || normalized.matriculaestudiante || normalized.id || '').trim();
+    const numActividadRaw = String(
+      normalized.numerodeactividad || normalized.numeroactividad || normalized.actividad || normalized.evento || ''
+    ).trim();
+    const statusRaw = String(normalized.estatus || normalized.estatusasistencia || normalized.status || 'asistio').toLowerCase().trim();
     const rolRaw = String(normalized.rol || normalized.rolparticipacion || 'asistente').toLowerCase().trim();
-    const horasPfiRaw = normalized.horaspfiacreditadas !== '' ? Number(normalized.horaspfiacreditadas) : null;
-    const puntosBecaRaw = normalized.puntosbecaacreditados !== '' ? Number(normalized.puntosbecaacreditados) : null;
-    const penHoras = Number(normalized.penalizacionhoraspfi || 0);
-    const penPuntos = Number(normalized.penalizacionpuntosbeca || 0);
-    const validadoPor = String(normalized.validadopor || 'Coordinación PFI / DEDU').trim();
+    const horasPfiRaw = normalized.horaspfi !== '' && normalized.horaspfi !== undefined ? Number(normalized.horaspfi) : null;
+    const puntosBecaRaw = normalized.puntosbeca !== '' && normalized.puntosbeca !== undefined ? Number(normalized.puntosbeca) : null;
     const observaciones = String(normalized.observaciones || '').trim();
 
     const errors: string[] = [];
 
-    // Buscar estudiante por matrícula
+    // Buscar estudiante
     const student = existingStudents.find(
       (s) => s.matricula.toLowerCase() === matriculaRaw.toLowerCase() || s.id.toLowerCase() === matriculaRaw.toLowerCase()
     );
@@ -546,18 +532,22 @@ export async function parseAttendancesFile(
       errors.push(`Estudiante con matrícula "${matriculaRaw}" no encontrado en el sistema.`);
     }
 
-    // Buscar evento por ID o por coincidencia en título
+    // Buscar evento por número de actividad, código EVT- o coincidencia en título
     const event = existingEvents.find(
-      (e) => e.id.toLowerCase() === eventoQuery.toLowerCase() || e.titulo.toLowerCase().includes(eventoQuery.toLowerCase())
+      (e) =>
+        e.id.toLowerCase() === numActividadRaw.toLowerCase() ||
+        e.id.toLowerCase() === `evt-${numActividadRaw}`.toLowerCase() ||
+        e.id.toLowerCase() === `evt-${numActividadRaw.replace(/[^0-9]/g, '')}`.toLowerCase() ||
+        e.titulo.toLowerCase().includes(numActividadRaw.toLowerCase())
     );
     if (!event) {
-      errors.push(`Evento con ID o Título "${eventoQuery}" no encontrado en el catálogo.`);
+      errors.push(`Actividad con número o código "${numActividadRaw}" no encontrada en el catálogo.`);
     }
 
     // Normalizar estatus
     let status: AttendanceStatus = 'asistio';
     if (statusRaw.includes('incomp') || statusRaw.includes('retard')) status = 'incompleto';
-    else if (statusRaw.includes('cancel') || statusRaw.includes('no_asistio') || statusRaw.includes('falta')) status = 'cancelado';
+    else if (statusRaw.includes('cancel') || statusRaw.includes('no_asis') || statusRaw.includes('falta')) status = 'cancelado';
     else if (statusRaw.includes('espera') || statusRaw.includes('wait')) status = 'lista_espera';
     else if (statusRaw.includes('regis')) status = 'registrado';
 
@@ -571,9 +561,8 @@ export async function parseAttendancesFile(
     if (errors.length > 0) {
       invalid.push({ row: rowNum, raw: row, errors });
     } else if (student && event) {
-      // Calcular horas automáticas si no fueron provistas
-      let horasCalculadas = horasPfiRaw !== null && !isNaN(horasPfiRaw) ? horasPfiRaw : event.horas_pfi || 0;
-      let puntosCalculados = puntosBecaRaw !== null && !isNaN(puntosBecaRaw)
+      const horasCalculadas = horasPfiRaw !== null && !isNaN(horasPfiRaw) && horasPfiRaw > 0 ? horasPfiRaw : event.horas_pfi || 2.0;
+      const puntosCalculados = puntosBecaRaw !== null && !isNaN(puntosBecaRaw) && puntosBecaRaw > 0
         ? puntosBecaRaw
         : rol === 'staff_logistica' && event.puntos_beca_staff
         ? event.puntos_beca_staff
@@ -587,11 +576,11 @@ export async function parseAttendancesFile(
         titulo_evento: event.titulo,
         status,
         rol_participacion: rol,
-        horas_acreditadas: Math.max(0, horasCalculadas - penHoras),
-        puntos_beca_acreditados: Math.max(0, puntosCalculados - penPuntos),
-        penalizacion_horas_pfi: penHoras,
-        penalizacion_puntos_beca: penPuntos,
-        validado_por: validadoPor,
+        horas_acreditadas: horasCalculadas,
+        puntos_beca_acreditados: puntosCalculados,
+        penalizacion_horas_pfi: 0,
+        penalizacion_puntos_beca: 0,
+        validado_por: event.instructor_titular || 'Coordinación PFI',
         observaciones: observaciones || undefined,
       });
     }

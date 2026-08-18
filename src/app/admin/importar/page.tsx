@@ -289,17 +289,17 @@ export default function AdminImportarPage() {
               </div>
               {activeTab === 'estudiantes' && (
                 <div>
-                  • Matrícula, Nombre, Apellidos, Programa Académico, Grado (Cuatrimestre o Semestre), Periodo Ingreso, Correo, Beca (Sí/No), Tipo de Beca, %, Promedio, Becario Depto.
+                  • Matrícula, Nombre, Apellido Paterno, Apellido Materno, Programa Académico, Cuatrimestre o Semestre, Periodo Ingreso, Email, Sexo, Tiene Beca (SI/NO), Promedio Académico.
                 </div>
               )}
               {activeTab === 'eventos' && (
                 <div>
-                  • Código/ID, Título, Categoría (PVC, Talleres, Simposios, etc.), Fecha, Horarios, Modalidad, Cupo, Horas PFI Acreditables, Puntos Beca Asistente y Staff.
+                  • Número de Actividad, Nombre de la Actividad, Categoría, Fecha Inicio, Fecha Fin, Responsable de la Actividad, Horas PFI, Puntos Beca, Lugar o Modalidad.
                 </div>
               )}
               {activeTab === 'asistencias' && (
                 <div>
-                  • Matrícula Alumno, Código/Título Evento, Estatus (asistió/retardo/justificada), Rol (asistente/staff), Horas PFI otorgadas, Puntos Beca acreditados, Validado Por.
+                  • Matrícula, Número de Actividad, Estatus (asistió/incompleto/cancelado), Rol (asistente/staff), Horas PFI, Puntos Beca, Observaciones.
                 </div>
               )}
             </div>
