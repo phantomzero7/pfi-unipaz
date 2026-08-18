@@ -187,6 +187,8 @@ export interface UserProfile {
   cumple_pagos_al_corriente?: boolean;
   cumple_sin_sanciones?: boolean;
   esta_inscrito_proximo_ciclo?: boolean;
+  carga_materias_actual?: 'normal' | 'minima'; // Carga normal vs mínima (mitad de materias/colegiatura)
+  proxima_carga_materias?: 'normal' | 'minima'; // Proyección para el periodo por venir
   reprobo_materia_ordinario?: boolean;
   presento_extraordinario?: boolean;
   habia_tenido_beca_condicionada?: boolean; // Historial previo de condición

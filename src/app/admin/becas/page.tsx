@@ -125,6 +125,7 @@ export default function AdminBecasConfigPage() {
     solicitud_a_tiempo: true,
     sin_sanciones: true,
     esta_inscrito_proximo_ciclo: true,
+    proxima_carga_materias: 'normal' as 'normal' | 'minima',
     cumple_puntos_1000: true,
     visto_bueno_reincidencia: false,
     motivo_visto_bueno: '',
@@ -242,6 +243,7 @@ export default function AdminBecasConfigPage() {
       solicitud_a_tiempo: student.informe_becario_entregado !== undefined ? student.informe_becario_entregado : true,
       sin_sanciones: student.cumple_sin_sanciones !== undefined ? student.cumple_sin_sanciones : true,
       esta_inscrito_proximo_ciclo: student.esta_inscrito_proximo_ciclo !== undefined ? student.esta_inscrito_proximo_ciclo : true,
+      proxima_carga_materias: (student.proxima_carga_materias || student.carga_materias_actual || 'normal') as 'normal' | 'minima',
       cumple_puntos_1000: prog.puntosTotales >= 1000,
       visto_bueno_reincidencia: student.visto_bueno_reincidencia_comite || false,
       motivo_visto_bueno: '',
@@ -256,7 +258,13 @@ export default function AdminBecasConfigPage() {
   const handleSaveEvaluation = (resolution: 'aprobada' | 'condicionada' | 'rechazada') => {
     if (!evaluatingStudent) return;
 
-    // 1. Reprobación en ordinario siempre es baja definitiva
+    // 1. Carga Mínima de Materias: Exclusión directa de beca institucional
+    if ((resolution === 'aprobada' || resolution === 'condicionada') && evalData.proxima_carga_materias === 'minima') {
+      alert('🚫 NO APLICA BECA INSTITUCIONAL: El estudiante llevará Carga Mínima de materias en el ciclo por venir y pagará la mitad de colegiatura correspondiente. Por reglamento institucional, no es acreedor a beca ni ratificación.');
+      return;
+    }
+
+    // 2. Reprobación en ordinario siempre es baja definitiva
     if ((resolution === 'aprobada' || resolution === 'condicionada') && !evalData.sin_reprobadas) {
       alert('⚠️ BAJA DIRECTA REGLAMENTARIA: No es posible ratificar ni condicionar la beca si el alumno reprobó una materia en ordinario (incluso si aprobó examen extraordinario). Debe dictaminarse como Rechazar / Baja de Beca.');
       return;
@@ -274,10 +282,11 @@ export default function AdminBecasConfigPage() {
       evalData.solicitud_a_tiempo &&
       evalData.sin_sanciones &&
       evalData.esta_inscrito_proximo_ciclo &&
+      evalData.proxima_carga_materias === 'normal' &&
       evalData.cumple_puntos_1000
     );
 
-    // 2. Control de Reincidencia: si ya era condicionada y volvió a incumplir
+    // 3. Control de Reincidencia: si ya era condicionada y volvió a incumplir
     if (hadPreviousCondition && !cumpleTodo) {
       if ((resolution === 'condicionada' || resolution === 'aprobada') && !evalData.visto_bueno_reincidencia) {
         alert('⚠️ CANCELACIÓN POR REINCIDENCIA: El estudiante ya contaba con estatus de Beca Condicionada en el ciclo previo y ha vuelto a presentar incumplimientos. Por normativa institucional, la reincidencia conlleva a la CANCELACIÓN DE LA BECA, a menos que el Comité de Becas active el Visto Bueno Extraordinario.');
@@ -758,8 +767,13 @@ export default function AdminBecasConfigPage() {
                           <div className="font-bold text-unipaz-navy dark:text-white">
                             {b.nombre} {b.apellidos}
                           </div>
-                          <div className="text-[10px] font-mono text-slate-400 font-bold">
-                            {b.matricula} · Prom: {b.promedio_academico || 9.0}
+                          <div className="text-[10px] font-mono text-slate-400 font-bold flex items-center gap-1.5 mt-0.5">
+                            <span>{b.matricula} · Prom: {b.promedio_academico || 9.0}</span>
+                            {(b.proxima_carga_materias === 'minima' || b.carga_materias_actual === 'minima') && (
+                              <span className="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 font-black text-[9px] uppercase">
+                                🚫 Carga Mínima
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
@@ -1251,7 +1265,20 @@ export default function AdminBecasConfigPage() {
               </div>
             )}
 
-            {/* Checklist de los 6 Criterios Normativos */}
+            {/* ALERTA DE EXCLUSIÓN POR CARGA MÍNIMA */}
+            {evalData.proxima_carga_materias === 'minima' && (
+              <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-500/40 text-purple-950 dark:text-purple-200 space-y-1 animate-fadeIn">
+                <div className="flex items-center gap-2 font-black text-xs text-purple-900 dark:text-purple-300">
+                  <AlertCircle className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                  <span>🚫 Exclusión Normativa: Carga Mínima de Materias</span>
+                </div>
+                <p className="text-[11px] leading-relaxed pl-6">
+                  Al cursar la mitad de materias, el estudiante cubre el 50% de la colegiatura normal. Por reglamento institucional, los alumnos con <strong>Carga Mínima</strong> no pueden ser acreedores a becas ni refrendos mientras mantengan dicho esquema.
+                </p>
+              </div>
+            )}
+
+            {/* Checklist de Criterios Normativos */}
             <div className="space-y-2.5">
               <span className="font-black text-xs text-slate-700 dark:text-slate-300 block uppercase tracking-wider">
                 Verificación de Criterios del Comité:
@@ -1280,10 +1307,33 @@ export default function AdminBecasConfigPage() {
                 </button>
               </div>
 
-              {/* 2. Pagos de Colegiatura e Inscripción */}
+              {/* 2. Carga Académica de Materias (Normal vs Mínima) */}
+              <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                evalData.proxima_carga_materias === 'normal'
+                  ? 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/10'
+                  : 'bg-purple-50 dark:bg-purple-950/30 border-purple-300 dark:border-purple-500/30'
+              }`}>
+                <div>
+                  <h4 className="font-bold text-xs">2. Carga Académica para el Próximo Ciclo</h4>
+                  <p className="text-[11px] text-slate-500">Carga completa de materias vs Carga Mínima (50% colegiatura - No Aplica Beca).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEvalData((p) => ({ ...p, proxima_carga_materias: p.proxima_carga_materias === 'normal' ? 'minima' : 'normal' }))}
+                  className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
+                    evalData.proxima_carga_materias === 'normal'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-purple-600 text-white shadow-sm'
+                  }`}
+                >
+                  {evalData.proxima_carga_materias === 'normal' ? '✓ Carga Regular (Aplica Beca)' : '🚫 Carga Mínima (No Aplica Beca)'}
+                </button>
+              </div>
+
+              {/* 3. Pagos de Colegiatura e Inscripción */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">2. Pagos de Colegiatura e Inscripción</h4>
+                  <h4 className="font-bold text-xs">3. Pagos de Colegiatura e Inscripción</h4>
                   <p className="text-[11px] text-slate-500">Pagos al corriente en tiempo o con autorización de tolerancia.</p>
                 </div>
                 <button
@@ -1299,10 +1349,10 @@ export default function AdminBecasConfigPage() {
                 </button>
               </div>
 
-              {/* 3. Entrega de Informe de Becario */}
+              {/* 4. Entrega de Informe de Becario */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">3. Entrega de Informe de Becario</h4>
+                  <h4 className="font-bold text-xs">4. Entrega de Informe de Becario</h4>
                   <p className="text-[11px] text-slate-500">Entregó su informe cuatrimestral dentro del plazo.</p>
                 </div>
                 <button
@@ -1318,10 +1368,10 @@ export default function AdminBecasConfigPage() {
                 </button>
               </div>
 
-              {/* 4. Inscripción al Periodo por Venir */}
+              {/* 5. Inscripción al Periodo por Venir */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">4. Inscripción para el Próximo Periodo</h4>
+                  <h4 className="font-bold text-xs">5. Inscripción para el Próximo Periodo</h4>
                   <p className="text-[11px] text-slate-500">Las becas se ratifican para el cuatrimestre por venir.</p>
                 </div>
                 <button
@@ -1337,10 +1387,10 @@ export default function AdminBecasConfigPage() {
                 </button>
               </div>
 
-              {/* 5. Historial Disciplinario */}
+              {/* 6. Historial Disciplinario */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">5. Historial Disciplinario</h4>
+                  <h4 className="font-bold text-xs">6. Historial Disciplinario</h4>
                   <p className="text-[11px] text-slate-500">Sin sanciones graves ni actas administrativas.</p>
                 </div>
                 <button
@@ -1433,14 +1483,20 @@ export default function AdminBecasConfigPage() {
                 className="py-3 px-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
               >
                 <XCircle className="w-4 h-4" />
-                Rechazar / Baja de Beca
+                {evalData.proxima_carga_materias === 'minima' ? 'No Aplica (Carga Mínima)' : 'Rechazar / Baja de Beca'}
               </button>
 
               {/* Botón 2: Beca Condicionada (Amarillo) */}
               <button
                 type="button"
                 onClick={() => handleSaveEvaluation('condicionada')}
-                className="py-3 px-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
+                disabled={evalData.proxima_carga_materias === 'minima'}
+                className={`py-3 px-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
+                  evalData.proxima_carga_materias !== 'minima'
+                    ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 hover:scale-102'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                }`}
+                title={evalData.proxima_carga_materias === 'minima' ? 'No aplica beca por carga mínima' : 'Beca Condicionada'}
               >
                 <AlertTriangle className="w-4 h-4" />
                 Beca Condicionada
@@ -1450,13 +1506,19 @@ export default function AdminBecasConfigPage() {
               <button
                 type="button"
                 onClick={() => handleSaveEvaluation('aprobada')}
-                disabled={!evalData.sin_reprobadas}
+                disabled={!evalData.sin_reprobadas || evalData.proxima_carga_materias === 'minima'}
                 className={`py-3 px-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
-                  evalData.sin_reprobadas
+                  evalData.sin_reprobadas && evalData.proxima_carga_materias !== 'minima'
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-102'
                     : 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
-                title={!evalData.sin_reprobadas ? 'No permitido por reglamento si reprobó materias' : 'Ratificar beca'}
+                title={
+                  evalData.proxima_carga_materias === 'minima'
+                    ? 'No aplica beca por cursar carga mínima de materias'
+                    : !evalData.sin_reprobadas
+                    ? 'No permitido por reglamento si reprobó materias'
+                    : 'Ratificar beca'
+                }
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Ratificar y Aprobar
