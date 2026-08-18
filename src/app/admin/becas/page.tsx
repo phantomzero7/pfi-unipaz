@@ -126,6 +126,8 @@ export default function AdminBecasConfigPage() {
     sin_sanciones: true,
     esta_inscrito_proximo_ciclo: true,
     cumple_puntos_1000: true,
+    visto_bueno_reincidencia: false,
+    motivo_visto_bueno: '',
     condiciones: '',
     tipo_beca: '',
     porcentaje_beca: 50,
@@ -232,7 +234,7 @@ export default function AdminBecasConfigPage() {
   const openEvaluationModal = (student: UserProfile) => {
     setEvaluatingStudent(student);
     const prog = getStudentScholarshipProgress(student.id);
-    const isCond = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin;
+    const isCond = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin || student.habia_tenido_beca_condicionada;
     
     setEvalData({
       pagos_al_corriente: student.cumple_pagos_al_corriente !== undefined ? student.cumple_pagos_al_corriente : true,
@@ -241,6 +243,8 @@ export default function AdminBecasConfigPage() {
       sin_sanciones: student.cumple_sin_sanciones !== undefined ? student.cumple_sin_sanciones : true,
       esta_inscrito_proximo_ciclo: student.esta_inscrito_proximo_ciclo !== undefined ? student.esta_inscrito_proximo_ciclo : true,
       cumple_puntos_1000: prog.puntosTotales >= 1000,
+      visto_bueno_reincidencia: student.visto_bueno_reincidencia_comite || false,
+      motivo_visto_bueno: '',
       condiciones: student.condiciones_ratificacion_beca || (isCond ? student.resolucion_refrendo_observaciones || '' : ''),
       tipo_beca: student.tipo_beca || modalidadesBeca[0],
       porcentaje_beca: student.porcentaje_beca || 50,
@@ -252,9 +256,33 @@ export default function AdminBecasConfigPage() {
   const handleSaveEvaluation = (resolution: 'aprobada' | 'condicionada' | 'rechazada') => {
     if (!evaluatingStudent) return;
 
-    if (resolution === 'aprobada' && !evalData.sin_reprobadas) {
-      alert('⚠️ BAJA REGLAMENTARIA: No es posible ratificar la beca si el alumno reprobó una materia en ordinario (aun habiendo presentado examen extraordinario). Debe dictaminarse como Rechazar / Baja de Beca.');
+    // 1. Reprobación en ordinario siempre es baja definitiva
+    if ((resolution === 'aprobada' || resolution === 'condicionada') && !evalData.sin_reprobadas) {
+      alert('⚠️ BAJA DIRECTA REGLAMENTARIA: No es posible ratificar ni condicionar la beca si el alumno reprobó una materia en ordinario (incluso si aprobó examen extraordinario). Debe dictaminarse como Rechazar / Baja de Beca.');
       return;
+    }
+
+    const hadPreviousCondition = Boolean(
+      evaluatingStudent.estatus_ratificacion_beca === 'condicionada' ||
+      evaluatingStudent.refrendo_beca_condicionado_admin ||
+      evaluatingStudent.habia_tenido_beca_condicionada
+    );
+
+    const cumpleTodo = Boolean(
+      evalData.sin_reprobadas &&
+      evalData.pagos_al_corriente &&
+      evalData.solicitud_a_tiempo &&
+      evalData.sin_sanciones &&
+      evalData.esta_inscrito_proximo_ciclo &&
+      evalData.cumple_puntos_1000
+    );
+
+    // 2. Control de Reincidencia: si ya era condicionada y volvió a incumplir
+    if (hadPreviousCondition && !cumpleTodo) {
+      if ((resolution === 'condicionada' || resolution === 'aprobada') && !evalData.visto_bueno_reincidencia) {
+        alert('⚠️ CANCELACIÓN POR REINCIDENCIA: El estudiante ya contaba con estatus de Beca Condicionada en el ciclo previo y ha vuelto a presentar incumplimientos. Por normativa institucional, la reincidencia conlleva a la CANCELACIÓN DE LA BECA, a menos que el Comité de Becas active el Visto Bueno Extraordinario.');
+        return;
+      }
     }
 
     let finalCond = evalData.condiciones.trim();
@@ -266,20 +294,34 @@ export default function AdminBecasConfigPage() {
       else finalCond = 'Beca otorgada bajo acuerdo y condición especial del Comité de Becas.';
     }
 
+    if (evalData.visto_bueno_reincidencia && evalData.motivo_visto_bueno.trim()) {
+      finalCond = `${finalCond ? `${finalCond} - ` : ''}Visto Bueno Extraordinario Comité: ${evalData.motivo_visto_bueno.trim()}`;
+    }
+
     notifyScholarshipResolution(
       evaluatingStudent.id,
       resolution,
       evalData.tipo_beca as any,
       evalData.porcentaje_beca,
-      evalData.observaciones || (resolution === 'aprobada' ? 'Beca ratificada satisfactoriamente.' : resolution === 'condicionada' ? `Beca condicionada: ${finalCond}` : 'Baja reglamentaria.'),
+      evalData.observaciones || (
+        resolution === 'aprobada'
+          ? (hadPreviousCondition && cumpleTodo
+              ? 'Estatus condicionado superado con éxito. Beca ratificada regular en estatus APROBADA.'
+              : 'Beca ratificada satisfactoriamente.')
+          : resolution === 'condicionada'
+          ? `Beca condicionada: ${finalCond}`
+          : 'Baja reglamentaria.'
+      ),
       finalCond
     );
 
     alert(
       resolution === 'aprobada'
-        ? `✓ Beca ratificada para ${evaluatingStudent.nombre}`
+        ? (hadPreviousCondition && cumpleTodo
+            ? `🎉 ¡Beca ratificada y APROBADA en VERDE para ${evaluatingStudent.nombre}! (Condición previa superada exitosamente)`
+            : `✓ Beca ratificada para ${evaluatingStudent.nombre}`)
         : resolution === 'condicionada'
-        ? `⚠️ Beca CONDICIONADA registrada para ${evaluatingStudent.nombre}`
+        ? `⚠️ Beca CONDICIONADA registrada para ${evaluatingStudent.nombre} ${evalData.visto_bueno_reincidencia ? '(Con Visto Bueno por Reincidencia)' : ''}`
         : `✕ Baja de beca registrada para ${evaluatingStudent.nombre}`
     );
     setEvaluatingStudent(null);
@@ -1140,6 +1182,61 @@ export default function AdminBecasConfigPage() {
                 Promedio: {evaluatingStudent.promedio_academico || 9.0}
               </span>
             </div>
+
+            {/* CONTROL DE ANTECEDENTE CONDICIONADO / REINCIDENCIA */}
+            {(evaluatingStudent.estatus_ratificacion_beca === 'condicionada' || evaluatingStudent.refrendo_beca_condicionado_admin || evaluatingStudent.habia_tenido_beca_condicionada) && (
+              evalData.sin_reprobadas && evalData.pagos_al_corriente && evalData.solicitud_a_tiempo && evalData.sin_sanciones && evalData.esta_inscrito_proximo_ciclo && evalData.cumple_puntos_1000 ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 text-emerald-900 dark:text-emerald-200 space-y-1 animate-fadeIn">
+                  <div className="flex items-center gap-2 font-black text-xs">
+                    <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <span>🌟 Regularización Completa de Beca</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed pl-6">
+                    El estudiante superó su condición previa al cumplir con el <strong>100% de los requisitos reglamentarios</strong> en este periodo. Al hacer clic en <strong>"Ratificar y Aprobar"</strong>, su estatus cambiará formalmente a <strong>APROBADA (limpia en verde)</strong>.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/40 text-amber-950 dark:text-amber-200 space-y-2.5 animate-fadeIn">
+                  <div className="flex items-center gap-2 font-black text-xs text-amber-900 dark:text-amber-300">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>⚠️ Alerta Normativa de Reincidencia en Beca Condicionada</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    El alumno ya contaba con estatus de <strong>Beca Condicionada</strong> el periodo previo y ha vuelto a presentar incumplimiento parcial. Por normativa institucional, la reincidencia amerita la <strong>CANCELACIÓN / BAJA DE LA BECA</strong>, salvo que el Comité emita un <strong>Visto Bueno Extraordinario</strong>.
+                  </p>
+
+                  {/* Switch de Visto Bueno Extraordinario del Comité */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-amber-950 dark:text-amber-200">
+                        ¿Otorgar Visto Bueno Extraordinario del Comité de Becas?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEvalData((p) => ({ ...p, visto_bueno_reincidencia: !p.visto_bueno_reincidencia }))}
+                        className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
+                          evalData.visto_bueno_reincidencia
+                            ? 'bg-amber-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {evalData.visto_bueno_reincidencia ? '✓ Visto Bueno Autorizado' : '✕ Sin Visto Bueno (Baja)'}
+                      </button>
+                    </div>
+
+                    {evalData.visto_bueno_reincidencia && (
+                      <input
+                        type="text"
+                        placeholder="Justificación o número de acuerdo extraordinario del Comité..."
+                        value={evalData.motivo_visto_bueno}
+                        onChange={(e) => setEvalData((p) => ({ ...p, motivo_visto_bueno: e.target.value }))}
+                        className="w-full bg-amber-50/50 dark:bg-slate-950 border border-amber-300 dark:border-amber-500/30 rounded-lg p-1.5 text-xs text-slate-900 dark:text-white"
+                      />
+                    )}
+                  </div>
+                </div>
+              )
+            )}
 
             {/* ALERTA DE BAJA DIRECTA SI REPROBÓ MATERIAS */}
             {!evalData.sin_reprobadas && (

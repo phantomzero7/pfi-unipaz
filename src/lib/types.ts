@@ -189,6 +189,8 @@ export interface UserProfile {
   esta_inscrito_proximo_ciclo?: boolean;
   reprobo_materia_ordinario?: boolean;
   presento_extraordinario?: boolean;
+  habia_tenido_beca_condicionada?: boolean; // Historial previo de condición
+  visto_bueno_reincidencia_comite?: boolean; // Excepción autorizada por Comité
   informe_becario_entregado?: boolean;
   estudio_socioeconomico_entregado?: boolean;
   fecha_informe_becario?: string;

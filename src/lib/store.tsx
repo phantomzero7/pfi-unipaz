@@ -1810,6 +1810,8 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const bPct = porcentaje !== undefined ? porcentaje : student.porcentaje_beca || 50;
 
     if (resKey === 'aprobada') {
+      const eraCondicionada = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin || student.habia_tenido_beca_condicionada;
+
       setProfiles((prev) =>
         prev.map((p) =>
           p.id === studentId
@@ -1822,11 +1824,15 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 estatus_ratificacion_beca: 'ratificada',
                 refrendo_beca_aprobado_admin: true,
                 refrendo_beca_condicionado_admin: false,
+                condiciones_ratificacion_beca: undefined,
+                habia_tenido_beca_condicionada: false,
+                visto_bueno_reincidencia_comite: false,
                 fecha_resolucion_refrendo: todayStr,
-                resolucion_refrendo_observaciones: observaciones || 'Requisitos normativos verificados y ratificados con éxito por el Comité de Becas.',
+                resolucion_refrendo_observaciones: observaciones || (eraCondicionada ? 'Estatus condicionado superado con éxito. Beca ratificada regular.' : 'Requisitos normativos verificados y ratificados con éxito por el Comité de Becas.'),
                 cumple_cero_reprobaciones: true,
                 cumple_pagos_al_corriente: true,
                 cumple_sin_sanciones: true,
+                esta_inscrito_proximo_ciclo: true,
               }
             : p
         )
@@ -1834,14 +1840,16 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       addNotification({
         user_id: studentId,
-        titulo: '🎉 ¡Resolución Favorable de Ratificación de Beca!',
-        mensaje: `El Comité de Becas UNIPAZ ha ratificado tu beca: ${bType} con ${bPct}% de descuento para el siguiente ciclo. Se verificó tu cumplimiento de 1,000 puntos cuatrimestrales, promedio sin reprobaciones y pagos al corriente.`,
+        titulo: '🎉 ¡Resolución Favorable: Beca Ratificada Oficialmente!',
+        mensaje: eraCondicionada
+          ? `El Comité de Becas constató tu cumplimiento cabal de todos los requisitos reglamentarios, superando tu condición previa. Tu beca (${bType} al ${bPct}%) ha sido ratificada formalmente en estatus APROBADA.`
+          : `El Comité de Becas UNIPAZ ha ratificado tu beca: ${bType} con ${bPct}% de descuento para el siguiente ciclo. Se verificó tu cumplimiento de 1,000 puntos cuatrimestrales, promedio sin reprobaciones y pagos al corriente.`,
         tipo: 'success',
       });
 
       return {
         success: true,
-        message: `Beca ratificada satisfactoriamente para ${student.nombre} ${student.apellidos}.`,
+        message: `Beca ratificada en estatus APROBADA para ${student.nombre} ${student.apellidos}.`,
       };
     } else if (resKey === 'condicionada') {
       const condTexto = condiciones || observaciones || 'Beca ratificada en condición especial por dictamen del Comité de Becas (entrega extemporánea / pagos tardíos / regularización de créditos).';
@@ -1858,6 +1866,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 estatus_ratificacion_beca: 'condicionada',
                 refrendo_beca_aprobado_admin: true,
                 refrendo_beca_condicionado_admin: true,
+                habia_tenido_beca_condicionada: true,
                 condiciones_ratificacion_beca: condTexto,
                 fecha_resolucion_refrendo: todayStr,
                 resolucion_refrendo_observaciones: condTexto,
@@ -1869,7 +1878,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addNotification({
         user_id: studentId,
         titulo: '⚠️ Dictamen: Beca Condicionada para el Próximo Periodo',
-        mensaje: `El Comité de Becas ha acordado otorgarte la beca (${bType} al ${bPct}%) de forma CONDICIONADA. Motivo / Compromiso: ${condTexto}. Deberás regularizarte en el ciclo por venir.`,
+        mensaje: `El Comité de Becas ha acordado otorgarte la beca (${bType} al ${bPct}%) de forma CONDICIONADA. Motivo / Compromiso: ${condTexto}. Deberás regularizarte en el ciclo por venir para evitar la cancelación.`,
         tipo: 'warning',
       });
 
