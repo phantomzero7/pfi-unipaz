@@ -13,6 +13,7 @@ import {
   Clock,
   Compass,
   DollarSign,
+  Download,
   Edit3,
   ExternalLink,
   FileCheck,
@@ -41,6 +42,8 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import jsPDF from 'jspdf';
 import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewalDictamenModal';
 import { calculateStudentScholarshipProgress } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
@@ -230,6 +233,239 @@ export default function AdminBecasConfigPage() {
 
   const handleRemoveDepartamento = (dept: string) => {
     setDepartamentosDisponibles((prev) => prev.filter((d) => d !== dept));
+  };
+
+  const handleDownloadManualPdf = () => {
+    confetti({
+      particleCount: 70,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#002855', '#FF6600', '#FFB81C'],
+    });
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    // PÁGINA 1
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, 210, 297, 'F');
+    doc.setDrawColor(0, 40, 85);
+    doc.setLineWidth(1.2);
+    doc.rect(10, 10, 190, 277);
+    doc.setDrawColor(255, 102, 0);
+    doc.setLineWidth(0.5);
+    doc.rect(12, 12, 186, 273);
+
+    // Encabezado
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0, 40, 85);
+    doc.text('UNIVERSIDAD INTERNACIONAL DE LA PAZ', 105, 22, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor(255, 102, 0);
+    doc.text('COMISIÓN GENERAL DE BECAS, ESTÍMULOS Y APOYOS UNIVERSITARIOS', 105, 27, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 100, 100);
+    doc.text('MANUAL OFICIAL DE POLÍTICAS, SUPUESTOS NORMATIVOS Y DIAGRAMA DE DECISIÓN DE BECAS', 105, 32, { align: 'center' });
+
+    // Cuadro Informativo de Periodos
+    doc.setFillColor(248, 250, 252);
+    doc.rect(18, 38, 174, 16, 'F');
+    doc.setDrawColor(200, 210, 220);
+    doc.rect(18, 38, 174, 16);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(0, 40, 85);
+    doc.text('CALENDARIO DE PERIODOS OFICIALES:', 22, 43);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text('• Cuatrimestral (Licenciaturas y Posgrados): Periodo 187 (Mayo-Ago) evalúa para Periodo 188 (Sep-Dic).', 22, 48);
+    doc.text('• Semestral (Médico Cirujano): Periodo 902 (Feb-Jul) evalúa para Periodo 903 (Ago-Ene).', 22, 52);
+
+    // Título Matriz de Supuestos
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(0, 40, 85);
+    doc.text('MATRIZ DE SUPUESTOS NORMATIVOS Y RESOLUCIONES:', 18, 62);
+
+    const supuestos = [
+      {
+        num: '1',
+        title: 'Ratificación Ordinaria Favorable (Verde)',
+        desc: '0 reprobadas en ordinario, colegiaturas al corriente, informe a tiempo, >=1,000 pts e inscrito.',
+        res: 'APROBADA (100% Ratificada)',
+        color: [16, 185, 129]
+      },
+      {
+        num: '2',
+        title: 'Superación de Condición Previa (Verde)',
+        desc: 'Tenía Beca Condicionada el ciclo previo y en este periodo cumplió el 100% de requisitos.',
+        res: 'APROBADA (Condición superada)',
+        color: [16, 185, 129]
+      },
+      {
+        num: '3',
+        title: 'Beca Condicionada (Amarillo - 1ª Vez)',
+        desc: 'Sin reprobadas pero incurrió en: pagos tardíos, informe fuera de tiempo, <1000 pts o reinscripción.',
+        res: 'CONDICIONADA (Compromiso)',
+        color: [245, 158, 11]
+      },
+      {
+        num: '4',
+        title: 'Reincidencia sin Visto Bueno (Rojo)',
+        desc: 'Ya tenía Beca Condicionada en el periodo previo y volvió a incumplir en algún criterio normativo.',
+        res: 'CANCELACIÓN / BAJA REGLAMENTARIA',
+        color: [225, 29, 72]
+      },
+      {
+        num: '5',
+        title: 'Reincidencia con Visto Bueno Extraordinario (Amarillo)',
+        desc: 'Reincide pero el Comité de Becas emite acuerdo y visto bueno extraordinario motivado.',
+        res: 'CONDICIONADA C/ VISTO BUENO',
+        color: [245, 158, 11]
+      },
+      {
+        num: '6',
+        title: 'Reprobación en Periodo Ordinario (Rojo)',
+        desc: 'Reprobó 1 o más materias en ordinario. No negociable (incluso si aprobó extraordinario).',
+        res: 'BAJA DIRECTA NO NEGOCIABLE',
+        color: [225, 29, 72]
+      },
+      {
+        num: '7',
+        title: 'Carga Mínima de Materias (Exclusión)',
+        desc: 'Cursa la mitad de materias (paga 50% colegiatura). Incompatible con beca institucional.',
+        res: 'NO APLICA BECA / SUSPENSIÓN',
+        color: [147, 51, 234]
+      },
+      {
+        num: '8',
+        title: 'Beca Departamental (10 hrs/sem)',
+        desc: 'Asignado a Biblioteca, INDE, DEDU, Cómputo o Clínica. Acredita 10 hrs semanales.',
+        res: 'LIBERACIÓN DE 1,000 PTS',
+        color: [37, 99, 235]
+      },
+    ];
+
+    let y = 68;
+    supuestos.forEach((s) => {
+      doc.setFillColor(250, 250, 252);
+      doc.rect(18, y, 174, 18, 'F');
+      doc.setDrawColor(220, 225, 230);
+      doc.rect(18, y, 174, 18);
+
+      doc.setFillColor(s.color[0], s.color[1], s.color[2]);
+      doc.rect(18, y, 3.5, 18, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(0, 40, 85);
+      doc.text(`${s.num}. ${s.title}`, 24, y + 5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(70, 70, 70);
+      doc.text(s.desc, 24, y + 10, { maxWidth: 110 });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+      doc.text(`[${s.res}]`, 188, y + 9, { align: 'right' });
+
+      y += 21;
+    });
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(120, 120, 120);
+    doc.text('DOCUMENTO NORMATIVO INSTITUCIONAL · UNIVERSIDAD INTERNACIONAL DE LA PAZ · PÁGINA 1 DE 2', 105, 282, { align: 'center' });
+
+    // PÁGINA 2
+    doc.addPage();
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, 210, 297, 'F');
+    doc.setDrawColor(0, 40, 85);
+    doc.setLineWidth(1.2);
+    doc.rect(10, 10, 190, 277);
+    doc.setDrawColor(255, 102, 0);
+    doc.setLineWidth(0.5);
+    doc.rect(12, 12, 186, 273);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(0, 40, 85);
+    doc.text('ESTRUCTURA DEL ÁRBOL DE DECISIÓN DE BECAS', 105, 24, { align: 'center' });
+
+    doc.setFillColor(245, 248, 252);
+    doc.rect(18, 32, 174, 160, 'F');
+    doc.setDrawColor(200, 215, 230);
+    doc.rect(18, 32, 174, 160);
+
+    const steps = [
+      'PASO 1: IDENTIFICACIÓN DEL ESTUDIANTE',
+      '  ├─ Aspirante Sin Beca ➔ Evalúa Carga (Regular vs Mínima) y Promedio/Estudio Socioeconómico.',
+      '  └─ Becario Activo ➔ Pasa al Filtro de Carga Académica para el ciclo por venir.',
+      '',
+      'PASO 2: FILTRO PREVIO 1 - CARGA ACADÉMICA A INSCRIBIR',
+      '  ├─ Carga Mínima (50% materias / 50% colegiatura) ➔ 🚫 NO APLICA BECA / SUSPENSIÓN.',
+      '  └─ Carga Regular Completa ➔ Pasa al Filtro de Reprobaciones.',
+      '',
+      'PASO 3: FILTRO PREVIO 2 - CERO REPROBADAS EN ORDINARIO',
+      '  ├─ Reprobó materia en ordinario (aun si pasó extraordinario) ➔ 🔴 BAJA DIRECTA REGLAMENTARIA.',
+      '  └─ Sin reprobaciones en ordinario ➔ Pasa a la Auditoría de Criterios Integrales.',
+      '',
+      'PASO 4: AUDITORÍA DE CRITERIOS (Pagos, Informe, 1,000 Pts, Reinscripción, Disciplina)',
+      '  ├─ Cumple 100% Cabalmente:',
+      '  │    ├─ Si era Beca Regular ➔ 🟢 RATIFICAR Y APROBAR (Verde).',
+      '  │    └─ Si tenía Beca Condicionada Previa ➔ 🌟 SUPERADA / CAMBIA A APROBADA (Verde).',
+      '  │',
+      '  └─ Incumplimiento Parcial (Pagos tardíos, informe tarde, <1,000 pts o reinscripción pendiente):',
+      '       ├─ Primera vez que incumple ➔ 🟡 BECA CONDICIONADA (Amarillo con compromiso registrado).',
+      '       └─ Reincidente (Ya era condicionada) ➔',
+      '            ├─ Sin Visto Bueno del Comité ➔ 🔴 CANCELACIÓN DEFINITIVA POR REINCIDENCIA.',
+      '            └─ Con Visto Bueno Extraordinario ➔ 🟡 BECA CONDICIONADA EXTRAORDINARIA.'
+    ];
+
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(7.2);
+    doc.setTextColor(30, 30, 30);
+    let sy = 40;
+    steps.forEach((st) => {
+      doc.text(st, 22, sy);
+      sy += 6;
+    });
+
+    const fY = 220;
+    doc.setDrawColor(150, 150, 150);
+    doc.line(25, fY, 75, fY);
+    doc.line(85, fY, 135, fY);
+    doc.line(145, fY, 195, fY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(0, 40, 85);
+    doc.text('Comité de Becas y Estímulos', 50, fY + 4, { align: 'center' });
+    doc.text('Dirección de Finanzas', 110, fY + 4, { align: 'center' });
+    doc.text('Dirección de Control Escolar', 170, fY + 4, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Dra. Paulina Velázquez R.', 50, fY + 8, { align: 'center' });
+    doc.text('Mtro. Ricardo Domínguez V.', 110, fY + 8, { align: 'center' });
+    doc.text('Lic. Patricia Morales S.', 170, fY + 8, { align: 'center' });
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(120, 120, 120);
+    doc.text('DOCUMENTO NORMATIVO INSTITUCIONAL · UNIVERSIDAD INTERNACIONAL DE LA PAZ · PÁGINA 2 DE 2', 105, 282, { align: 'center' });
+
+    doc.save('Manual_y_Diagrama_Becas_UNIPAZ.pdf');
   };
 
   const openEvaluationModal = (student: UserProfile) => {
@@ -1102,48 +1338,177 @@ export default function AdminBecasConfigPage() {
         </div>
       )}
 
-      {/* TAB 5: REGLAMENTO */}
+      {/* TAB 5: REGLAMENTO & MANUAL DE SUPUESTOS */}
       {activeTab === 'reglamento' && (
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4 text-xs">
-          <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
-            <BookOpen className="w-5 h-5 text-unipaz-orange" />
-            Normativa Institucional para Becarios UNIPAZ
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-6 text-xs animate-fadeIn">
+          {/* Header con botón de descarga */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+            <div>
+              <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
+                <BookOpen className="w-5 h-5 text-unipaz-orange" />
+                <span>Manual Oficial de Políticas, Supuestos y Diagrama de Becas UNIPAZ</span>
+              </div>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Marco normativo institucional para asignación, ratificación ordinaria, beca condicionada y bajas reglamentarias.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadManualPdf}
+              className="py-2.5 px-5 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105"
+            >
+              <Download className="w-4 h-4 text-unipaz-orange" />
+              <span>Descargar Manual & Diagrama PDF</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+          {/* Matriz de los 8 Supuestos Normativos */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Matriz de Supuestos Normativos y Resoluciones en Sistema:
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Supuesto 1 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-emerald-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-unipaz-navy dark:text-white">
+                    1. Ratificación Ordinaria Favorable
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-black">
+                    🟢 APROBADA
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  0 reprobadas en ordinario, colegiaturas al corriente, informe de becario entregado en tiempo, $\ge 1,000$ puntos e inscripción formal.
+                </p>
+              </div>
+
+              {/* Supuesto 2 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-emerald-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-unipaz-navy dark:text-white">
+                    2. Superación de Condición Previa
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-black">
+                    🌟 APROBADA (Limpia)
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  El estudiante venía con Beca Condicionada el ciclo previo y en este periodo cumplió el 100% de los requisitos. Se elimina la condición.
+                </p>
+              </div>
+
+              {/* Supuesto 3 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-amber-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-amber-950 dark:text-amber-300">
+                    3. Beca Condicionada (Primera Vez)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-black">
+                    🟡 CONDICIONADA
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  Sin reprobadas pero incurrió en: pagos tardíos, informe fuera de tiempo, puntaje formativo cercano o pendiente de reinscripción. Se registra compromiso.
+                </p>
+              </div>
+
+              {/* Supuesto 4 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-rose-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-rose-950 dark:text-rose-300">
+                    4. Reincidencia sin Visto Bueno
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 text-[10px] font-black">
+                    🔴 CANCELACIÓN / BAJA
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  El estudiante ya tenía Beca Condicionada el periodo previo y volvió a incumplir en algún criterio. Conlleva la cancelación reglamentaria de la beca.
+                </p>
+              </div>
+
+              {/* Supuesto 5 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-amber-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-amber-950 dark:text-amber-300">
+                    5. Reincidencia con Visto Bueno del Comité
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-black">
+                    🟡 CONDICIONADA C/ V.B.
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  Reincide pero el Comité de Becas emite una resolución motivada y visto bueno extraordinario formal con acuerdo registrado.
+                </p>
+              </div>
+
+              {/* Supuesto 6 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-rose-600 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-rose-950 dark:text-rose-300">
+                    6. Reprobación en Periodo Ordinario
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black">
+                    🔴 BAJA DIRECTA REGLAMENTARIA
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  Reprobar una materia en ordinario amerita baja directa no negociable (el reglamento UNIPAZ no permite conservar beca con exámenes extraordinarios).
+                </p>
+              </div>
+
+              {/* Supuesto 7 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-purple-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-purple-950 dark:text-purple-300">
+                    7. Carga Mínima de Materias
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[10px] font-black">
+                    🚫 NO APLICA BECA
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  Al cursar la mitad de materias se paga la mitad de colegiatura. Este esquema es incompatible por reglamento con el otorgamiento o refrendo de beca.
+                </p>
+              </div>
+
+              {/* Supuesto 8 */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 border-l-4 border-l-blue-500 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-xs text-blue-950 dark:text-blue-300">
+                    8. Beca Departamental (10 hrs/sem)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 text-[10px] font-black">
+                    🏢 1,000 PTS LIBERADOS
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
+                  Asignado a Biblioteca, INDE, DEDU, Cómputo o Clínica Universitaria. Al validar el cumplimiento de sus horas se le liberan los 1,000 puntos cuatrimestrales.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Políticas Fundamentales */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-white/10">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
               <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                1. Regla de Puntos Cuatrimestrales
+                • Periodos Cuatrimestrales y Semestrales:
               </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                Todo alumno con beca debe acumular obligatoriamente un mínimo de <strong>1,000 puntos cuatrimestrales</strong> en actividades formativas a nombre de UNIPAZ.
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Cuatrimestral: Periodo 187 (Mayo-Ago) evalúa para Periodo 188 (Sep-Dic). Semestral (Médico Cirujano): Periodo 902 (Feb-Jul) evalúa para Periodo 903 (Ago-Ene).
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
               <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                2. Escala de Puntos por Actividad
+                • Validez y Verificación Digital:
               </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                El mínimo por actividad son <strong>50 puntos</strong> y se asignan en <strong>múltiplos de 10</strong> (50, 60, 70, 80, 90, 100 pts).
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
-              <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                3. Promedio Académico y Cero Reprobaciones
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                Beca de Excelencia: Promedio $\ge 9.0$. Beca Regular o Convenio: Promedio $\ge 8.0$. Es requisito indispensable no haber reprobado ninguna materia ni presentado extraordinarios.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
-              <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                4. Refrendo Cuatrimestral vs Estudio Socioeconómico
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                Para el refrendo ordinario continuo, el alumno becado únicamente entrega su <strong>Informe de Becario</strong>. El Estudio Socioeconómico solo es requerido para nueva postulación o recuperación por pérdida previa.
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Todos los dictámenes oficiales de ratificación cuentan con Folio Institucional Único, código hash criptográfico y firmas de las comisiones correspondientes.
               </p>
             </div>
           </div>
