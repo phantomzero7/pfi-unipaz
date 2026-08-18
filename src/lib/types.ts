@@ -58,6 +58,49 @@ export interface Badge {
   fecha_obtenida?: string;
 }
 
+export interface CatalogoBeca {
+  clave: string;
+  porcentaje: number;
+  descripcion: string;
+}
+
+export const CATALOGO_BECAS: CatalogoBeca[] = [
+  { clave: 'T1', porcentaje: 20, descripcion: 'Beca 20%' },
+  { clave: 'BA', porcentaje: 25, descripcion: 'Beca 25%' },
+  { clave: 'BB', porcentaje: 30, descripcion: 'Beca 30%' },
+  { clave: 'BU', porcentaje: 50, descripcion: 'Beca Especial Grupo Violeta' },
+  { clave: 'B2', porcentaje: 50, descripcion: 'Beca 50%' },
+  { clave: 'BG', porcentaje: 60, descripcion: 'Beca 60%' },
+  { clave: '8B', porcentaje: 80, descripcion: 'Beca 80%' },
+  { clave: 'B1', porcentaje: 100, descripcion: 'Beca 100%' },
+];
+
+export interface CatalogoProgramaAcademico {
+  clave: string;
+  nombre: string;
+}
+
+export const CATALOGO_PROGRAMAS_ACADEMICOS: CatalogoProgramaAcademico[] = [
+  { clave: 'AD', nombre: 'LICENCIATURA EN ADMINISTRACIÓN' },
+  { clave: 'AH', nombre: 'LICENCIATURA EN ADMINISTRACIÓN DE HOTELES Y RESTAURANTES' },
+  { clave: 'NI', nombre: 'LICENCIATURA EN ADMINISTRACIÓN DE NEGOCIOS INTERNACIONALES' },
+  { clave: 'CO', nombre: 'LICENCIATURA EN COMUNICACIÓN' },
+  { clave: 'CT', nombre: 'LICENCIATURA EN CONTADURÍA PÚBLICA' },
+  { clave: 'DE', nombre: 'LICENCIATURA EN DERECHO' },
+  { clave: 'TU', nombre: 'LICENCIATURA EN DESARROLLO TURÍSTICO' },
+  { clave: 'DG', nombre: 'LICENCIATURA EN DISEÑO GRÁFICO' },
+  { clave: 'MK', nombre: 'LICENCIATURA EN MERCADOTECNIA INTERNACIONAL' },
+  { clave: 'PS', nombre: 'LICENCIATURA EN PSICOLOGÍA' },
+  { clave: 'TS', nombre: 'LICENCIATURA EN TRABAJO SOCIAL' },
+  { clave: 'LM', nombre: 'LICENCIATURA EN MÉDICO CIRUJANO' },
+  { clave: 'EN', nombre: 'LICENCIATURA EN ENFERMERÍA' },
+  { clave: 'MD', nombre: 'MAESTRÍA  ADMINISTRACIÓN' },
+  { clave: 'PA', nombre: 'MAESTRÍA  ADMINISTRACIÓN PÚBLICA' },
+  { clave: 'ME', nombre: 'MAESTRÍA  EDUCACIÓN' },
+  { clave: 'MT', nombre: 'MAESTRÍA EN TERAPIA SISTÉMICA FAMILIAR Y DE PAREJA CON PERSPECTIVA DE GÉNERO' },
+  { clave: 'MI', nombre: 'MAESTRÍA INCLUSIÓN SOCIAL, GÉNERO Y DERECHOS HUMANOS' },
+];
+
 export const PROGRAMAS_ACADEMICOS = [
   'LICENCIATURA EN ADMINISTRACIÓN',
   'LICENCIATURA EN ADMINISTRACIÓN DE HOTELES Y RESTAURANTES',
@@ -67,20 +110,29 @@ export const PROGRAMAS_ACADEMICOS = [
   'LICENCIATURA EN DERECHO',
   'LICENCIATURA EN DESARROLLO TURÍSTICO',
   'LICENCIATURA EN DISEÑO GRÁFICO',
-  'LICENCIATURA EN ENFERMERÍA',
-  'LICENCIATURA EN MÉDICO CIRUJANO',
   'LICENCIATURA EN MERCADOTECNIA INTERNACIONAL',
   'LICENCIATURA EN PSICOLOGÍA',
   'LICENCIATURA EN TRABAJO SOCIAL',
+  'LICENCIATURA EN MÉDICO CIRUJANO',
+  'LICENCIATURA EN ENFERMERÍA',
   'MAESTRÍA  ADMINISTRACIÓN',
   'MAESTRÍA  ADMINISTRACIÓN PÚBLICA',
   'MAESTRÍA  EDUCACIÓN',
-  'MAESTRÍA CIENCIAS DEL DERECHO CON ÉNFASIS EN CONSTITUCIONAL Y AMPARO',
   'MAESTRÍA EN TERAPIA SISTÉMICA FAMILIAR Y DE PAREJA CON PERSPECTIVA DE GÉNERO',
   'MAESTRÍA INCLUSIÓN SOCIAL, GÉNERO Y DERECHOS HUMANOS',
 ] as const;
 
 export type ProgramaAcademico = typeof PROGRAMAS_ACADEMICOS[number] | string;
+
+export function getProgramaByClave(clave: string): CatalogoProgramaAcademico | undefined {
+  if (!clave) return undefined;
+  return CATALOGO_PROGRAMAS_ACADEMICOS.find(p => p.clave.toUpperCase() === clave.trim().toUpperCase());
+}
+
+export function getBecaByClave(clave: string): CatalogoBeca | undefined {
+  if (!clave) return undefined;
+  return CATALOGO_BECAS.find(b => b.clave.toUpperCase() === clave.trim().toUpperCase());
+}
 
 export const OPCIONES_SEXO = [
   'Hombre',

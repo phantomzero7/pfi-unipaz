@@ -47,7 +47,13 @@ import jsPDF from 'jspdf';
 import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewalDictamenModal';
 import { calculateStudentScholarshipProgress } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { formatGradoAcademico, PROGRAMAS_ACADEMICOS, UserProfile } from '@/lib/types';
+import {
+  CATALOGO_BECAS,
+  CATALOGO_PROGRAMAS_ACADEMICOS,
+  formatGradoAcademico,
+  PROGRAMAS_ACADEMICOS,
+  UserProfile,
+} from '@/lib/types';
 
 export default function AdminBecasConfigPage() {
   const {
@@ -78,6 +84,14 @@ export default function AdminBecasConfigPage() {
 
   // Catálogo Dinámico de Modalidades de Beca
   const [modalidadesBeca, setModalidadesBeca] = useState<string[]>([
+    'T1 - Beca 20%',
+    'BA - Beca 25%',
+    'BB - Beca 30%',
+    'BU - Beca Especial Grupo Violeta (50%)',
+    'B2 - Beca 50%',
+    'BG - Beca 60%',
+    '8B - Beca 80%',
+    'B1 - Beca 100%',
     'Excelencia Académica (Promedio 9.6 - 10.0)',
     'Mérito Académico',
     'Estudio Socioeconómico (desde 2° Cuatrimestre)',
@@ -88,9 +102,6 @@ export default function AdminBecasConfigPage() {
     'Deportiva (Garzas UNIPAZ)',
     'Cultural y Artística',
     'Investigación y Publicaciones',
-    'Madres Solteras / Jefas de Familia',
-    'Inclusión y Discapacidad',
-    'Intercultural / Pueblos Originarios',
   ]);
   const [nuevaModalidad, setNuevaModalidad] = useState('');
 
@@ -107,7 +118,7 @@ export default function AdminBecasConfigPage() {
 
   // Form State para Asignación de Beca Regular (SOLO ALUMNOS SIN BECA)
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
-  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>('Excelencia Académica (Promedio 9.6 - 10.0)');
+  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>('B2 - Beca 50%');
   const [selectedPorcentaje, setSelectedPorcentaje] = useState<number>(50);
   const [promedioAsignado, setPromedioAsignado] = useState<number>(9.5);
   const [asignacionMsg, setAsignacionMsg] = useState<string | null>(null);
@@ -929,15 +940,11 @@ export default function AdminBecasConfigPage() {
                       onChange={(e) => setSelectedPorcentaje(Number(e.target.value))}
                       className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-mono font-bold text-xs text-slate-900 dark:text-white"
                     >
-                      <option value="20">20%</option>
-                      <option value="25">25%</option>
-                      <option value="30">30%</option>
-                      <option value="40">40%</option>
-                      <option value="50">50%</option>
-                      <option value="60">60%</option>
-                      <option value="75">75%</option>
-                      <option value="80">80%</option>
-                      <option value="100">100%</option>
+                      {CATALOGO_BECAS.map((b) => (
+                        <option key={`asig-${b.clave}-${b.porcentaje}`} value={b.porcentaje}>
+                          {b.clave} · {b.porcentaje}% ({b.descripcion})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1798,15 +1805,11 @@ export default function AdminBecasConfigPage() {
                   onChange={(e) => setEvalData((p) => ({ ...p, porcentaje_beca: Number(e.target.value) }))}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-mono font-bold text-xs text-slate-900 dark:text-white"
                 >
-                  <option value="20">20%</option>
-                  <option value="25">25%</option>
-                  <option value="30">30%</option>
-                  <option value="40">40%</option>
-                  <option value="50">50%</option>
-                  <option value="60">60%</option>
-                  <option value="75">75%</option>
-                  <option value="80">80%</option>
-                  <option value="100">100%</option>
+                  {CATALOGO_BECAS.map((b) => (
+                    <option key={`eval-${b.clave}-${b.porcentaje}`} value={b.porcentaje}>
+                      {b.clave} · {b.porcentaje}% ({b.descripcion})
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

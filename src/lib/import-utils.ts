@@ -1,8 +1,12 @@
 import * as XLSX from 'xlsx';
 import {
   AttendanceStatus,
+  CATALOGO_BECAS,
+  CATALOGO_PROGRAMAS_ACADEMICOS,
   EventCategory,
   EventModality,
+  getBecaByClave,
+  getProgramaByClave,
   ParticipantRole,
   PFIEvent,
   PROGRAMAS_ACADEMICOS,
@@ -316,31 +320,80 @@ export async function parseStudentsFile(file: File): Promise<ParseValidationResu
     if (!matricula) errors.push('La matrícula es obligatoria.');
     if (!nombre) errors.push('El nombre es obligatorio.');
 
-    // Búsqueda inteligente de Programa Académico
+    // Búsqueda inteligente de Programa Académico por Clave (ej. AD, LM, TS, etc.) o Nombre
     let programaAcademico = carreraRaw;
+    let claveCarrera: string | undefined = undefined;
     if (!programaAcademico) {
       programaAcademico = 'LICENCIATURA EN ADMINISTRACIÓN';
+      claveCarrera = 'AD';
     } else {
-      const match = PROGRAMAS_ACADEMICOS.find((p) => p.toLowerCase().includes(programaAcademico.toLowerCase()));
-      if (match) programaAcademico = match;
+      const matchByClave = getProgramaByClave(programaAcademico);
+      if (matchByClave) {
+        programaAcademico = matchByClave.nombre;
+        claveCarrera = matchByClave.clave;
+      } else {
+        const match = CATALOGO_PROGRAMAS_ACADEMICOS.find(
+          (p) =>
+            p.nombre.toLowerCase().includes(programaAcademico.toLowerCase()) ||
+            programaAcademico.toLowerCase().includes(p.nombre.toLowerCase())
+        );
+        if (match) {
+          programaAcademico = match.nombre;
+          claveCarrera = match.clave;
+        }
+      }
     }
 
     const cuatrimestre = Number(cuatrimestreRaw) || 1;
-    const tieneBeca = tieneBecaRaw === 'SI' || tieneBecaRaw === 'SÍ' || tieneBecaRaw === 'TRUE' || tieneBecaRaw === '1';
 
-    // Determinar modalidad de beca sugerida por promedio
+    // Reconocimiento de Beca por Clave oficial (T1, BA, BB, BU, B2, BG, 8B, B1) o Porcentaje
+    const claveBecaRaw = String(normalized.clavebeca || normalized.clave_beca || normalized.clave || '').toUpperCase().trim();
+    const becaCat = getBecaByClave(claveBecaRaw) || getBecaByClave(tieneBecaRaw);
+
+    const tieneBeca = Boolean(
+      becaCat ||
+      tieneBecaRaw === 'SI' ||
+      tieneBecaRaw === 'SÍ' ||
+      tieneBecaRaw === 'TRUE' ||
+      tieneBecaRaw === '1' ||
+      tieneBecaRaw.includes('BECA')
+    );
+
     let tipoBeca: string | undefined = undefined;
     let porcentajeBeca: number | undefined = undefined;
+    let claveBeca: string | undefined = undefined;
+
     if (tieneBeca) {
-      if (promedioRaw >= 9.6) {
-        tipoBeca = 'Excelencia Académica (Promedio 9.6 - 10.0)';
-        porcentajeBeca = 50;
-      } else if (promedioRaw >= 9.0) {
-        tipoBeca = 'Mérito Académico';
-        porcentajeBeca = 40;
+      if (becaCat) {
+        claveBeca = becaCat.clave;
+        porcentajeBeca = becaCat.porcentaje;
+        tipoBeca = `${becaCat.clave} - ${becaCat.descripcion}`;
+      } else if (normalized.porcentajebeca || normalized.porcentaje) {
+        const pNum = Number(normalized.porcentajebeca || normalized.porcentaje);
+        const matchByPct = CATALOGO_BECAS.find((b) => b.porcentaje === pNum);
+        if (matchByPct) {
+          claveBeca = matchByPct.clave;
+          porcentajeBeca = matchByPct.porcentaje;
+          tipoBeca = `${matchByPct.clave} - ${matchByPct.descripcion}`;
+        } else {
+          porcentajeBeca = pNum || 50;
+          tipoBeca = `Beca ${porcentajeBeca}%`;
+        }
       } else {
-        tipoBeca = 'Estudio Socioeconómico (desde 2° Cuatrimestre)';
-        porcentajeBeca = 30;
+        // Porcentaje y clave sugerida por catálogo según promedio
+        if (promedioRaw >= 9.6) {
+          claveBeca = 'B2';
+          porcentajeBeca = 50;
+          tipoBeca = 'B2 - Beca 50%';
+        } else if (promedioRaw >= 9.0) {
+          claveBeca = 'BB';
+          porcentajeBeca = 30;
+          tipoBeca = 'BB - Beca 30%';
+        } else {
+          claveBeca = 'BA';
+          porcentajeBeca = 25;
+          tipoBeca = 'BA - Beca 25%';
+        }
       }
     }
 
