@@ -174,20 +174,38 @@ export interface UserProfile {
   puntos_departamentales_otorgados?: number; // 1,000 pts al término
   
   // Formatos y Solicitudes de Becario / Refrendo Cuatrimestral
-  solicitud_beca_status?: 'ninguna' | 'enviada' | 'en_evaluacion' | 'aprobada' | 'rechazada';
+  solicitud_beca_status?: 'ninguna' | 'enviada' | 'en_evaluacion' | 'aprobada' | 'condicionada' | 'rechazada';
+  estatus_ratificacion_beca?: 'ratificada' | 'condicionada' | 'suspendida' | 'pendiente';
+  condiciones_ratificacion_beca?: string; // Motivo o condición acordada por el Comité
+  motivo_rechazo_beca?: string;
   tipo_beca_solicitada?: string;
   refrendo_beca_aprobado_admin?: boolean;
+  refrendo_beca_condicionado_admin?: boolean;
   fecha_resolucion_refrendo?: string;
   resolucion_refrendo_observaciones?: string;
   cumple_cero_reprobaciones?: boolean;
   cumple_pagos_al_corriente?: boolean;
   cumple_sin_sanciones?: boolean;
+  esta_inscrito_proximo_ciclo?: boolean;
+  reprobo_materia_ordinario?: boolean;
+  presento_extraordinario?: boolean;
   informe_becario_entregado?: boolean;
   estudio_socioeconomico_entregado?: boolean;
   fecha_informe_becario?: string;
   fecha_estudio_socioeconomico?: string;
   
   created_at?: string;
+}
+
+export interface AcademicPeriod {
+  id: string;
+  codigo: string; // ej. "187", "902", "188", "903"
+  nombre: string; // ej. "Mayo - Agosto 2026", "Febrero - Julio 2026"
+  tipo: 'cuatrimestral' | 'semestral';
+  fecha_inicio: string; // YYYY-MM-DD
+  fecha_fin: string; // YYYY-MM-DD
+  es_actual?: boolean;
+  descripcion?: string;
 }
 
 export type EventCategory = 
@@ -234,6 +252,11 @@ export interface PFIGlobalConfig {
   penalizacionNoShowStaff: number; // Horas descontadas si falta staff (ej. -5.0h)
   puntosBecaMinimosCuatrimestre: number; // 1000
   
+  // Periodos Académicos Cuatrimestrales y Semestrales
+  periodosAcademicos?: AcademicPeriod[];
+  periodoCuatrimestralActualId?: string;
+  periodoSemestralActualId?: string;
+
   // Control de Convocatorias y Formularios de Beca (Solo Admin)
   periodo_solicitud_becas_activo: boolean;
   fecha_inicio_solicitud_becas?: string;
@@ -420,6 +443,9 @@ export interface ScholarshipRenewalDictamenData {
   porcentajeCumplimiento: number;
   fechaEmision: string;
   hashVerificacion: string;
+  estatusRatificacion?: 'ratificada' | 'condicionada' | 'suspendida';
+  condiciones?: string;
+  periodoAcademico?: string;
   actividades: Array<{
     titulo: string;
     categoria: string;

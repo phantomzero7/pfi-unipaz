@@ -35,6 +35,53 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   maxTalleresLiderazgo: 1,
   penalizacionNoShowStaff: 5.0,
   puntosBecaMinimosCuatrimestre: 1000,
+  
+  // Periodos Académicos
+  periodosAcademicos: [
+    {
+      id: 'per-187',
+      codigo: '187',
+      nombre: 'Mayo - Agosto 2026',
+      tipo: 'cuatrimestral',
+      fecha_inicio: '2026-05-01',
+      fecha_fin: '2026-08-31',
+      es_actual: true,
+      descripcion: 'Periodo cuatrimestral ordinario vigente para Licenciaturas y Posgrados UNIPAZ',
+    },
+    {
+      id: 'per-902',
+      codigo: '902',
+      nombre: 'Febrero - Julio 2026',
+      tipo: 'semestral',
+      fecha_inicio: '2026-02-01',
+      fecha_fin: '2026-07-31',
+      es_actual: true,
+      descripcion: 'Periodo semestral ordinario vigente para Licenciatura en Médico Cirujano',
+    },
+    {
+      id: 'per-188',
+      codigo: '188',
+      nombre: 'Septiembre - Diciembre 2026',
+      tipo: 'cuatrimestral',
+      fecha_inicio: '2026-09-01',
+      fecha_fin: '2026-12-31',
+      es_actual: false,
+      descripcion: 'Próximo periodo cuatrimestral a ratificar',
+    },
+    {
+      id: 'per-903',
+      codigo: '903',
+      nombre: 'Agosto 2026 - Enero 2027',
+      tipo: 'semestral',
+      fecha_inicio: '2026-08-01',
+      fecha_fin: '2027-01-31',
+      es_actual: false,
+      descripcion: 'Próximo periodo semestral para Médico Cirujano',
+    },
+  ],
+  periodoCuatrimestralActualId: 'per-187',
+  periodoSemestralActualId: 'per-902',
+
   periodo_solicitud_becas_activo: true,
   fecha_inicio_solicitud_becas: '2026-09-01',
   fecha_fin_solicitud_becas: '2026-09-25',
@@ -235,6 +282,13 @@ interface PFIContextType {
   revokeScholarship: (studentId: string) => { success: boolean; message: string };
   applyScholarshipPenalty: (attendanceId: string, puntosPenalizacion: number, motivo: string) => void;
   
+  // Periodos Académicos Cuatrimestrales y Semestrales
+  addAcademicPeriod: (period: Omit<import('./types').AcademicPeriod, 'id'>) => { success: boolean; message: string };
+  updateAcademicPeriod: (id: string, data: Partial<import('./types').AcademicPeriod>) => { success: boolean; message: string };
+  deleteAcademicPeriod: (id: string) => { success: boolean; message: string };
+  setCurrentAcademicPeriod: (id: string, tipo: 'cuatrimestral' | 'semestral') => void;
+  getActivePeriodForStudent: (carreraOrPrograma?: string) => import('./types').AcademicPeriod | undefined;
+
   // Convocatorias, Formularios y Dictámenes de Beca (Admin y Estudiante)
   toggleScholarshipApplicationPeriod: (active: boolean, fechaInicio?: string, fechaFin?: string) => void;
   toggleBecarioReport: (enabled: boolean) => void;
@@ -244,10 +298,11 @@ interface PFIContextType {
   submitSocioeconomicStudy: (studentId: string) => { success: boolean; message: string };
   notifyScholarshipResolution: (
     studentId: string,
-    aprobado: boolean,
+    resolution: boolean | 'aprobada' | 'condicionada' | 'rechazada',
     tipoBeca?: string,
     porcentaje?: number,
-    observaciones?: string
+    observaciones?: string,
+    condiciones?: string
   ) => { success: boolean; message: string };
 
   getStudentAttendances: (studentId?: string) => EventAttendance[];
@@ -1669,22 +1724,92 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  // Periodos Académicos Cuatrimestrales y Semestrales
+  const addAcademicPeriod = (period: Omit<import('./types').AcademicPeriod, 'id'>) => {
+    const newId = `per-${period.codigo || Date.now()}`;
+    const newPeriod: import('./types').AcademicPeriod = {
+      id: newId,
+      ...period,
+    };
+
+    setPfiConfig((prev) => {
+      const list = prev.periodosAcademicos || [];
+      return {
+        ...prev,
+        periodosAcademicos: [...list, newPeriod],
+      };
+    });
+
+    return { success: true, message: `Periodo ${period.codigo} (${period.nombre}) agregado exitosamente.` };
+  };
+
+  const updateAcademicPeriod = (id: string, data: Partial<import('./types').AcademicPeriod>) => {
+    setPfiConfig((prev) => {
+      const list = prev.periodosAcademicos || [];
+      return {
+        ...prev,
+        periodosAcademicos: list.map((p) => (p.id === id ? { ...p, ...data } : p)),
+      };
+    });
+    return { success: true, message: 'Periodo académico actualizado.' };
+  };
+
+  const deleteAcademicPeriod = (id: string) => {
+    setPfiConfig((prev) => {
+      const list = prev.periodosAcademicos || [];
+      return {
+        ...prev,
+        periodosAcademicos: list.filter((p) => p.id !== id),
+      };
+    });
+    return { success: true, message: 'Periodo académico eliminado.' };
+  };
+
+  const setCurrentAcademicPeriod = (id: string, tipo: 'cuatrimestral' | 'semestral') => {
+    setPfiConfig((prev) => {
+      const list = (prev.periodosAcademicos || []).map((p) => {
+        if (p.tipo === tipo) {
+          return { ...p, es_actual: p.id === id };
+        }
+        return p;
+      });
+
+      return {
+        ...prev,
+        periodosAcademicos: list,
+        ...(tipo === 'cuatrimestral'
+          ? { periodoCuatrimestralActualId: id }
+          : { periodoSemestralActualId: id }),
+      };
+    });
+  };
+
+  const getActivePeriodForStudent = (carreraOrPrograma?: string): import('./types').AcademicPeriod | undefined => {
+    const isSem = carreraOrPrograma
+      ? carreraOrPrograma.toUpperCase().includes('MÉDICO CIRUJANO') || carreraOrPrograma.toUpperCase().includes('MEDICO CIRUJANO')
+      : false;
+    const targetType = isSem ? 'semestral' : 'cuatrimestral';
+    const list = pfiConfig.periodosAcademicos || [];
+    return list.find((p) => p.tipo === targetType && p.es_actual) || list.find((p) => p.tipo === targetType);
+  };
+
   const notifyScholarshipResolution = (
     studentId: string,
-    aprobado: boolean,
+    resolution: boolean | 'aprobada' | 'condicionada' | 'rechazada',
     tipoBeca?: string,
     porcentaje?: number,
-    observaciones?: string
+    observaciones?: string,
+    condiciones?: string
   ) => {
     const student = profiles.find((p) => p.id === studentId);
     if (!student) return { success: false, message: 'Estudiante no encontrado.' };
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const resKey = typeof resolution === 'boolean' ? (resolution ? 'aprobada' : 'rechazada') : resolution;
+    const bType = tipoBeca || student.tipo_beca || 'Excelencia Académica (Promedio 9.6 - 10.0)';
+    const bPct = porcentaje !== undefined ? porcentaje : student.porcentaje_beca || 50;
 
-    if (aprobado) {
-      const bType = tipoBeca || student.tipo_beca_solicitada || 'Excelencia Académica (Promedio 9.6 - 10.0)';
-      const bPct = porcentaje || 50;
-
+    if (resKey === 'aprobada') {
       setProfiles((prev) =>
         prev.map((p) =>
           p.id === studentId
@@ -1694,9 +1819,11 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 tipo_beca: bType,
                 porcentaje_beca: bPct,
                 solicitud_beca_status: 'aprobada',
+                estatus_ratificacion_beca: 'ratificada',
                 refrendo_beca_aprobado_admin: true,
+                refrendo_beca_condicionado_admin: false,
                 fecha_resolucion_refrendo: todayStr,
-                resolucion_refrendo_observaciones: observaciones || 'Requisitos normativos cuatrimestrales verificados y aprobados por Administración.',
+                resolucion_refrendo_observaciones: observaciones || 'Requisitos normativos verificados y ratificados con éxito por el Comité de Becas.',
                 cumple_cero_reprobaciones: true,
                 cumple_pagos_al_corriente: true,
                 cumple_sin_sanciones: true,
@@ -1707,14 +1834,48 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       addNotification({
         user_id: studentId,
-        titulo: '🎉 ¡Resolución Favorable de Renovación de Beca!',
-        mensaje: `La Administración y el Comité de Becas han aprobado tu renovación: ${bType} con ${bPct}% de descuento para el siguiente periodo. Se constató tu cumplimiento de 1,000 puntos cuatrimestrales, promedio sin reprobaciones y pagos al corriente.`,
+        titulo: '🎉 ¡Resolución Favorable de Ratificación de Beca!',
+        mensaje: `El Comité de Becas UNIPAZ ha ratificado tu beca: ${bType} con ${bPct}% de descuento para el siguiente ciclo. Se verificó tu cumplimiento de 1,000 puntos cuatrimestrales, promedio sin reprobaciones y pagos al corriente.`,
         tipo: 'success',
       });
 
       return {
         success: true,
-        message: `Resolución aprobatoria y refrendo cuatrimestral emitido con éxito para ${student.nombre} ${student.apellidos}.`,
+        message: `Beca ratificada satisfactoriamente para ${student.nombre} ${student.apellidos}.`,
+      };
+    } else if (resKey === 'condicionada') {
+      const condTexto = condiciones || observaciones || 'Beca ratificada en condición especial por dictamen del Comité de Becas (entrega extemporánea / pagos tardíos / regularización de créditos).';
+
+      setProfiles((prev) =>
+        prev.map((p) =>
+          p.id === studentId
+            ? {
+                ...p,
+                tiene_beca: true,
+                tipo_beca: bType,
+                porcentaje_beca: bPct,
+                solicitud_beca_status: 'condicionada',
+                estatus_ratificacion_beca: 'condicionada',
+                refrendo_beca_aprobado_admin: true,
+                refrendo_beca_condicionado_admin: true,
+                condiciones_ratificacion_beca: condTexto,
+                fecha_resolucion_refrendo: todayStr,
+                resolucion_refrendo_observaciones: condTexto,
+              }
+            : p
+        )
+      );
+
+      addNotification({
+        user_id: studentId,
+        titulo: '⚠️ Dictamen: Beca Condicionada para el Próximo Periodo',
+        mensaje: `El Comité de Becas ha acordado otorgarte la beca (${bType} al ${bPct}%) de forma CONDICIONADA. Motivo / Compromiso: ${condTexto}. Deberás regularizarte en el ciclo por venir.`,
+        tipo: 'warning',
+      });
+
+      return {
+        success: true,
+        message: `Beca CONDICIONADA registrada para ${student.nombre} ${student.apellidos}.`,
       };
     } else {
       setProfiles((prev) =>
@@ -1722,10 +1883,14 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           p.id === studentId
             ? {
                 ...p,
+                tiene_beca: false,
                 solicitud_beca_status: 'rechazada',
+                estatus_ratificacion_beca: 'suspendida',
                 refrendo_beca_aprobado_admin: false,
+                refrendo_beca_condicionado_admin: false,
+                motivo_rechazo_beca: observaciones || 'No cumple con los requisitos normativos (Baja por reprobación ordinaria/extraordinario o falta de renovación).',
                 fecha_resolucion_refrendo: todayStr,
-                resolucion_refrendo_observaciones: observaciones || 'No cumple con alguno de los criterios normativos cuatrimestrales.',
+                resolucion_refrendo_observaciones: observaciones || 'Baja de beca por incumplimiento reglamentario.',
               }
             : p
         )
@@ -1734,13 +1899,13 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addNotification({
         user_id: studentId,
         titulo: 'Notificación de Dictamen de Beca',
-        mensaje: `La Administración ha emitido una resolución no aprobatoria sobre tu solicitud/refrendo de beca. ${observaciones ? `Motivo: ${observaciones}` : 'Acude a la Dirección de Extensión y Difusión para aclaraciones.'}`,
-        tipo: 'warning',
+        mensaje: `El Comité de Becas ha emitido una resolución no aprobatoria sobre tu refrendo de beca. ${observaciones ? `Motivo: ${observaciones}` : 'Acude a la Coordinación para cualquier orientación.'}`,
+        tipo: 'error',
       });
 
       return {
         success: true,
-        message: `Resolución no favorable registrada para ${student.nombre} ${student.apellidos}.`,
+        message: `Resolución no favorable / Baja registrada para ${student.nombre} ${student.apellidos}.`,
       };
     }
   };
@@ -1975,6 +2140,11 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitBecarioReport,
         submitSocioeconomicStudy,
         notifyScholarshipResolution,
+        addAcademicPeriod,
+        updateAcademicPeriod,
+        deleteAcademicPeriod,
+        setCurrentAcademicPeriod,
+        getActivePeriodForStudent,
         getStudentProgress,
         getStudentScholarshipProgress,
         getStudentAttendances,

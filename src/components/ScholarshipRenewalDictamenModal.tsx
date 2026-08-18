@@ -6,7 +6,9 @@ import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import {
+  AlertTriangle,
   Award,
+  Calendar,
   CheckCircle2,
   Download,
   FileCheck,
@@ -51,7 +53,13 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
     (student.matricula + scholarshipProgress.puntosTotales).split('').reduce((acc, c) => acc * 31 + c.charCodeAt(0), 7)
   ).toString(16).toUpperCase()}`;
 
-  const isRenovada = scholarshipProgress.puntosTotales >= (student.puntos_beca_meta_cuatrimestral || 1000);
+  const isCondicionada = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin;
+  const isRatificada = student.estatus_ratificacion_beca === 'ratificada' || (student.refrendo_beca_aprobado_admin && !isCondicionada);
+  const isSuspendida = student.estatus_ratificacion_beca === 'suspendida' || student.solicitud_beca_status === 'rechazada';
+
+  const isSemestral = student.carrera?.toUpperCase().includes('MÉDICO CIRUJANO') || student.carrera?.toUpperCase().includes('MEDICO CIRUJANO');
+  const periodoActual = isSemestral ? 'Periodo Semestral 902 (Febrero - Julio 2026)' : 'Periodo Cuatrimestral 187 (Mayo - Agosto 2026)';
+  const periodoSiguiente = isSemestral ? 'Periodo Semestral 903 (Agosto 2026 - Enero 2027)' : 'Periodo Cuatrimestral 188 (Septiembre - Diciembre 2026)';
 
   const handleDownloadPdf = async () => {
     setGenerating(true);
@@ -101,11 +109,11 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       doc.setTextColor(0, 40, 85);
-      doc.text('DICTAMEN OFICIAL DE EVALUACIÓN Y RENOVACIÓN DE BECA', 105, 47, { align: 'center' });
+      doc.text('DICTAMEN OFICIAL DE EVALUACIÓN Y RATIFICACIÓN DE BECA', 105, 47, { align: 'center' });
 
       doc.setFontSize(8.5);
       doc.setTextColor(120, 120, 120);
-      doc.text(`CICLO EVALUATIVO CUATRIMESTRAL ${new Date().getFullYear()}`, 105, 52, { align: 'center' });
+      doc.text(`EVALUACIÓN DE ${periodoActual.toUpperCase()} PARA RATIFICAR ${periodoSiguiente.toUpperCase()}`, 105, 52, { align: 'center' });
 
       // Cuadro de Datos del Alumno y Beca
       doc.setFillColor(248, 250, 252);
@@ -124,8 +132,8 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
       doc.text(`Nombre Completo: ${student.nombre} ${student.apellidos}`, 22, 70);
       doc.text(`Matrícula: ${student.matricula}`, 22, 75);
       doc.text(`Programa Académico: ${student.carrera}`, 22, 80);
-      doc.text(`Grado: ${student.cuatrimestre ? `${student.cuatrimestre}° Cuatrimestre` : 'Activo'}`, 22, 85);
-      doc.text(`Promedio Académico: ${scholarshipProgress.promedioAcademico.toFixed(2)}`, 22, 90);
+      doc.text(`Grado: ${student.cuatrimestre ? `${student.cuatrimestre}° ${isSemestral ? 'Semestre' : 'Cuatrimestre'}` : 'Activo'}`, 22, 85);
+      doc.text(`Promedio Académico: ${scholarshipProgress.promedioAcademico.toFixed(2)} (Sin reprobaciones en ordinario)`, 22, 90);
 
       // Columna derecha datos beca
       doc.setFont('helvetica', 'bold');
@@ -133,9 +141,9 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
       doc.setFont('helvetica', 'normal');
       doc.text(`Tipo de Beca: ${scholarshipProgress.tipoBeca}`, 115, 70);
       doc.text(`Porcentaje Asignado: ${scholarshipProgress.porcentajeBeca}% de Descuento`, 115, 75);
-      doc.text(`Meta Cuatrimestral: ${scholarshipProgress.puntosMeta} Puntos`, 115, 80);
+      doc.text(`Meta Formativa: ${scholarshipProgress.puntosMeta} Puntos`, 115, 80);
       doc.text(`Puntos Obtenidos: ${scholarshipProgress.puntosTotales} Puntos`, 115, 85);
-      doc.text(`Estatus: ${scholarshipProgress.estatusTexto}`, 115, 90);
+      doc.text(`Estatus Dictamen: ${isCondicionada ? 'CONDICIONADA' : isRatificada ? 'RATIFICADA' : isSuspendida ? 'SUSPENDIDA' : 'EN EVALUACIÓN'}`, 115, 90);
 
       // Tabla de Desglose de Actividades Formativas Becadas
       doc.setFont('helvetica', 'bold');
@@ -191,29 +199,39 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
 
       // Dictamen Resolutivo
       currentY += 12;
-      doc.setFillColor(isRenovada ? 236 : 254, isRenovada ? 253 : 242, isRenovada ? 245 : 242);
-      doc.rect(18, currentY, 174, 24, 'F');
-      doc.setDrawColor(isRenovada ? 16 : 244, isRenovada ? 185 : 63, isRenovada ? 129 : 94);
-      doc.rect(18, currentY, 174, 24);
+      const isBoxGreen = isRatificada;
+      const isBoxAmber = isCondicionada;
+
+      doc.setFillColor(isBoxGreen ? 236 : isBoxAmber ? 254 : 254, isBoxGreen ? 253 : isBoxAmber ? 243 : 242, isBoxGreen ? 245 : isBoxAmber ? 199 : 242);
+      doc.rect(18, currentY, 174, 26, 'F');
+      doc.setDrawColor(isBoxGreen ? 16 : isBoxAmber ? 245 : 244, isBoxGreen ? 185 : isBoxAmber ? 158 : 63, isBoxGreen ? 129 : isBoxAmber ? 11 : 94);
+      doc.rect(18, currentY, 174, 26);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
-      doc.setTextColor(isRenovada ? 6 : 153, isRenovada ? 95 : 27, isRenovada ? 70 : 27);
-      doc.text('RESOLUCIÓN DE LA COMISIÓN DE BECAS:', 22, currentY + 6);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setTextColor(isBoxGreen ? 6 : isBoxAmber ? 146 : 153, isBoxGreen ? 95 : isBoxAmber ? 64 : 27, isBoxGreen ? 70 : isBoxAmber ? 14 : 27);
       doc.text(
-        isRenovada
-          ? `Habiendo acreditado el mínimo reglamentario de 1,000 puntos cuatrimestrales y manteniendo el promedio académico requerido, SE AUTORIZA Y RATIFICA LA RENOVACIÓN de la ${scholarshipProgress.tipoBeca.toUpperCase()} (${scholarshipProgress.porcentajeBeca}%) para el siguiente ciclo escolar.`
-          : `El estudiante cuenta con ${scholarshipProgress.puntosTotales} puntos de los 1,000 requeridos (${scholarshipProgress.porcentajeCumplimiento}%). Debe completar las actividades formativas pendientes antes del cierre de actas para evitar la suspensión del beneficio.`,
+        isCondicionada
+          ? 'RESOLUCIÓN: BECA CONDICIONADA POR EL COMITÉ DE BECAS'
+          : isRatificada
+          ? 'RESOLUCIÓN: BECA RATIFICADA Y APROBADA'
+          : 'RESOLUCIÓN: BECA SUSPENDIDA / NO RATIFICADA',
         22,
-        currentY + 12,
-        { maxWidth: 166 }
+        currentY + 6
       );
 
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.8);
+      const dictamenBody = isCondicionada
+        ? `El Comité de Becas ha acordado otorgar la beca (${scholarshipProgress.tipoBeca} al ${scholarshipProgress.porcentajeBeca}%) de forma CONDICIONADA para el ${periodoSiguiente}. Condición / Compromiso: ${student.condiciones_ratificacion_beca || 'Entrega extemporánea de reporte / regularización de pagos / reinscripción'}.`
+        : isRatificada
+        ? `Habiendo acreditado los 1,000 puntos cuatrimestrales, promedio sin reprobaciones en ordinario y pagos al corriente, SE AUTORIZA Y RATIFICA la ${scholarshipProgress.tipoBeca.toUpperCase()} (${scholarshipProgress.porcentajeBeca}%) para el ${periodoSiguiente}.`
+        : `El estudiante no cumple con los requisitos normativos indispensables (reprobó materia en periodo ordinario o no realizó renovación). Se determina la suspensión del beneficio de beca.`;
+
+      doc.text(dictamenBody, 22, currentY + 12, { maxWidth: 166 });
+
       // Firmas Oficiales
-      currentY += 42;
+      currentY += 44;
       doc.setDrawColor(150, 150, 150);
       doc.line(25, currentY, 75, currentY);
       doc.line(85, currentY, 135, currentY);
@@ -259,12 +277,12 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-black text-base text-unipaz-navy dark:text-white">
-                Dictamen Oficial de Cumplimiento y Renovación de Beca
+              <span className="text-[10px] font-black uppercase tracking-widest text-unipaz-orange">
+                Comisión General de Becas UNIPAZ
+              </span>
+              <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
+                Dictamen Oficial de Ratificación de Beca
               </h3>
-              <p className="text-xs text-slate-500">
-                Folio: <span className="font-mono font-bold text-unipaz-orange">{folio}</span>
-              </p>
             </div>
           </div>
 
@@ -272,50 +290,48 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
             <button
               onClick={handleDownloadPdf}
               disabled={generating}
-              className="py-2.5 px-4 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+              className="py-2.5 px-4 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
             >
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              Descargar Dictamen PDF
+              {generating ? <Loader2 className="w-4 h-4 animate-spin text-unipaz-orange" /> : <Download className="w-4 h-4 text-unipaz-orange" />}
+              <span>Descargar Dictamen PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+              className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* VISTA PREVIA DEL DOCUMENTO OFICIAL */}
-        <div className="bg-slate-50 dark:bg-slate-950 p-6 sm:p-10 rounded-2xl border border-slate-200 dark:border-white/10 space-y-6 relative overflow-hidden text-xs">
-          {/* Encabezado */}
-          <div className="text-center space-y-1 border-b border-slate-200 dark:border-white/10 pb-4">
-            <div className="relative w-14 h-14 mx-auto mb-1">
-              <Image src="/logo-unipaz.png" alt="UNIPAZ" fill className="object-contain" />
+        {/* Vista previa del documento */}
+        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-2xl p-6 space-y-6 text-xs">
+          {/* Banner de Periodos */}
+          <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-bold">
+              <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span>Evaluación de {periodoActual} · Ratificación para {periodoSiguiente}</span>
             </div>
-            <h2 className="text-lg font-black text-unipaz-navy dark:text-white uppercase">
-              Universidad Internacional de La Paz
-            </h2>
-            <p className="text-[11px] font-bold text-unipaz-orange uppercase">
-              Comisión General de Becas, Estímulos y Apoyos Universitarios
-            </p>
-            <p className="text-[10px] text-slate-500">
-              Dirección de Administración, Finanzas y Control Escolar
-            </p>
+            <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-blue-300">
+              Folio: {folio}
+            </span>
           </div>
 
-          {/* Tarjeta de Datos del Becario */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm">
+          {/* Datos del Becario */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10">
             <div className="space-y-1">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Estudiante Becario:</span>
               <div className="font-black text-sm text-unipaz-navy dark:text-white">
                 {student.nombre} {student.apellidos}
               </div>
-              <div className="text-slate-500 font-mono">
-                Matrícula: {student.matricula} · {student.carrera}
+              <div className="text-slate-600 dark:text-slate-300">
+                Matrícula: <strong className="font-mono text-unipaz-orange">{student.matricula}</strong>
               </div>
-              <div className="text-slate-500">
-                Grado: {student.cuatrimestre ? `${student.cuatrimestre}° Cuatrimestre` : 'Activo'} · Promedio: <strong className="text-unipaz-navy dark:text-white">{scholarshipProgress.promedioAcademico.toFixed(2)}</strong>
+              <div className="text-slate-600 dark:text-slate-300">
+                Programa: <strong>{student.carrera}</strong>
+              </div>
+              <div className="text-slate-600 dark:text-slate-300">
+                Grado: <strong>{student.cuatrimestre ? `${student.cuatrimestre}° ${isSemestral ? 'Semestre' : 'Cuatrimestre'}` : 'Activo'}</strong>
               </div>
             </div>
 
@@ -325,10 +341,13 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
                 {scholarshipProgress.tipoBeca} ({scholarshipProgress.porcentajeBeca}% Descuento)
               </div>
               <div className="text-slate-600 dark:text-slate-300">
-                Meta Cuatrimestral: <strong className="font-mono text-unipaz-orange">{scholarshipProgress.puntosMeta} pts</strong>
+                Meta Formativa: <strong className="font-mono text-unipaz-orange">{scholarshipProgress.puntosMeta} pts</strong>
               </div>
               <div className="text-slate-600 dark:text-slate-300">
                 Puntos Acumulados: <strong className="font-mono text-emerald-600 dark:text-emerald-400">+{scholarshipProgress.puntosTotales} pts</strong> ({scholarshipProgress.porcentajeCumplimiento}%)
+              </div>
+              <div className="text-slate-600 dark:text-slate-300">
+                Promedio: <strong className="font-mono">{scholarshipProgress.promedioAcademico.toFixed(2)}</strong> (0 Reprobadas en ordinario)
               </div>
             </div>
           </div>
@@ -374,89 +393,38 @@ export const ScholarshipRenewalDictamenModal: React.FC<ScholarshipRenewalDictame
             </div>
           </div>
 
-          {/* Criterios Normativos de Validación */}
-          <div className="space-y-2">
-            <h4 className="font-bold text-slate-700 dark:text-slate-300 uppercase text-[11px]">
-              Verificación de Requisitos Reglamentarios para Refrendo Cuatrimestral:
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] p-3 rounded-xl bg-slate-100/70 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10">
-              <div className="flex items-center gap-2">
-                <span className={scholarshipProgress.puntosTotales >= 1000 ? 'text-emerald-600 font-bold' : 'text-amber-500 font-bold'}>
-                  {scholarshipProgress.puntosTotales >= 1000 ? '✓' : '○'}
-                </span>
-                <span>Puntos Cuatrimestrales: <strong>{scholarshipProgress.puntosTotales} / 1,000 pts</strong></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
-                <span>Promedio: <strong>{scholarshipProgress.promedioAcademico.toFixed(2)}</strong> (0 Reprobaciones / 0 Extraordinarios)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-bold">✓</span>
-                <span>Estado Financiero: <strong>Colegiaturas al Corriente</strong></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={student.informe_becario_entregado ? 'text-emerald-600 font-bold' : 'text-amber-500 font-bold'}>
-                  {student.informe_becario_entregado ? '✓' : '○'}
-                </span>
-                <span>Refrendo Cuatrimestral e Informe: <strong>{student.informe_becario_entregado ? 'Entregado' : 'En proceso'}</strong></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Veredicto de Renovación */}
+          {/* Veredicto y Dictamen Oficial */}
           <div
             className={`p-4 rounded-2xl border flex items-start gap-3 ${
-              student.refrendo_beca_aprobado_admin
+              isCondicionada
+                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
+                : isRatificada
                 ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
-                : scholarshipProgress.puntosTotales >= 1000
-                ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-500/30 text-blue-900 dark:text-blue-200'
-                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200'
+                : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-200'
             }`}
           >
-            {student.refrendo_beca_aprobado_admin ? (
+            {isCondicionada ? (
+              <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            ) : isRatificada ? (
               <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
-            ) : scholarshipProgress.puntosTotales >= 1000 ? (
-              <ShieldCheck className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
             ) : (
-              <TrendingUp className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <XCircle className="w-6 h-6 text-rose-600 flex-shrink-0 mt-0.5" />
             )}
-            <div>
+            <div className="space-y-1">
               <span className="font-black block text-xs uppercase">
-                {student.refrendo_beca_aprobado_admin
-                  ? 'Dictamen Favorable de Renovación (Aprobado por Administración)'
-                  : scholarshipProgress.puntosTotales >= 1000
-                  ? 'Puntos Cuatrimestrales Completados (Expediente en Revisión Administrativa)'
-                  : 'Proceso de Acumulación de Puntos Cuatrimestrales en Curso'}
+                {isCondicionada
+                  ? 'DICTAMEN: BECA CONDICIONADA (Autorización Especial del Comité)'
+                  : isRatificada
+                  ? 'DICTAMEN: BECA RATIFICADA Y APROBADA (Refrendo Cuatrimestral Oficial)'
+                  : 'DICTAMEN: BECA SUSPENDIDA / BAJA DEFINITIVA'}
               </span>
-              <p className="text-[11px] mt-0.5 leading-relaxed">
-                {student.refrendo_beca_aprobado_admin
-                  ? `La Administración ha verificado el cumplimiento total de los requisitos: 1,000 puntos cuatrimestrales, promedio reglamentario sin reprobaciones, pagos en tiempo y forma y entrega de informe. Se ratifica el ${scholarshipProgress.porcentajeBeca}% de descuento en colegiatura para el siguiente ciclo escolar.`
-                  : scholarshipProgress.puntosTotales >= 1000
-                  ? `El estudiante ha alcanzado los 1,000 puntos cuatrimestrales. Su expediente se encuentra en proceso de revisión por la Administración al término del ciclo para constatar que no existan reprobaciones, adeudos ni sanciones antes de liberar el dictamen definitivo.`
-                  : `El estudiante acumula ${scholarshipProgress.puntosTotales} de 1,000 puntos cuatrimestrales requeridos (${scholarshipProgress.porcentajeCumplimiento}%). Le restan ${scholarshipProgress.puntosMeta - scholarshipProgress.puntosTotales} puntos para cumplir con el eje formativo de becas.`}
+              <p className="text-[11px] leading-relaxed">
+                {isCondicionada
+                  ? `El Comité de Becas ha acordado otorgar la beca (${scholarshipProgress.tipoBeca} al ${scholarshipProgress.porcentajeBeca}%) de forma CONDICIONADA para el ${periodoSiguiente}. Condición acordada: ${student.condiciones_ratificacion_beca || 'Entrega extemporánea / regularización de pagos / reinscripción'}.`
+                  : isRatificada
+                  ? `Se constató el cumplimiento de los 1,000 puntos cuatrimestrales, promedio sin materias reprobadas en ordinario, colegiaturas al corriente y entrega oportuna. Se ratifica el ${scholarshipProgress.porcentajeBeca}% de descuento para el ${periodoSiguiente}.`
+                  : `El estudiante causó baja reglamentaria por incumplimiento de requisitos (reprobar materia en ordinario / falta de renovación).`}
               </p>
-            </div>
-          </div>
-
-          {/* Firmas */}
-          <div className="pt-8 border-t border-slate-200 dark:border-white/10 grid grid-cols-3 gap-4 text-center text-[10px]">
-            <div className="space-y-1">
-              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 dark:text-slate-200">
-                Comité de Becas
-              </div>
-              <div className="text-slate-400">Dra. Paulina Velázquez R.</div>
-            </div>
-            <div className="space-y-1">
-              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 dark:text-slate-200">
-                Dirección de Finanzas
-              </div>
-              <div className="text-slate-400">Mtro. Ricardo Domínguez V.</div>
-            </div>
-            <div className="space-y-1">
-              <div className="border-t border-slate-400 pt-1 font-bold text-slate-800 dark:text-slate-200">
-                Control Escolar
-              </div>
-              <div className="text-slate-400">Lic. Patricia Morales S.</div>
             </div>
           </div>
         </div>

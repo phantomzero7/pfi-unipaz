@@ -124,6 +124,9 @@ export default function AdminBecasConfigPage() {
     sin_reprobadas: true,
     solicitud_a_tiempo: true,
     sin_sanciones: true,
+    esta_inscrito_proximo_ciclo: true,
+    cumple_puntos_1000: true,
+    condiciones: '',
     tipo_beca: '',
     porcentaje_beca: 50,
     promedio_academico: 9.0,
@@ -228,32 +231,57 @@ export default function AdminBecasConfigPage() {
 
   const openEvaluationModal = (student: UserProfile) => {
     setEvaluatingStudent(student);
+    const prog = getStudentScholarshipProgress(student.id);
+    const isCond = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin;
+    
     setEvalData({
-      pagos_al_corriente: true,
-      sin_reprobadas: true,
-      solicitud_a_tiempo: true,
-      sin_sanciones: true,
+      pagos_al_corriente: student.cumple_pagos_al_corriente !== undefined ? student.cumple_pagos_al_corriente : true,
+      sin_reprobadas: student.cumple_cero_reprobaciones !== undefined ? student.cumple_cero_reprobaciones : true,
+      solicitud_a_tiempo: student.informe_becario_entregado !== undefined ? student.informe_becario_entregado : true,
+      sin_sanciones: student.cumple_sin_sanciones !== undefined ? student.cumple_sin_sanciones : true,
+      esta_inscrito_proximo_ciclo: student.esta_inscrito_proximo_ciclo !== undefined ? student.esta_inscrito_proximo_ciclo : true,
+      cumple_puntos_1000: prog.puntosTotales >= 1000,
+      condiciones: student.condiciones_ratificacion_beca || (isCond ? student.resolucion_refrendo_observaciones || '' : ''),
       tipo_beca: student.tipo_beca || modalidadesBeca[0],
       porcentaje_beca: student.porcentaje_beca || 50,
       promedio_academico: student.promedio_academico || 9.0,
-      observaciones: student.refrendo_beca_aprobado_admin
-        ? 'Cumple con los 5 requisitos reglamentarios para ratificación cuatrimestral.'
-        : '',
+      observaciones: student.resolucion_refrendo_observaciones || '',
     });
   };
 
-  const handleSaveEvaluation = (aprobado: boolean) => {
+  const handleSaveEvaluation = (resolution: 'aprobada' | 'condicionada' | 'rechazada') => {
     if (!evaluatingStudent) return;
+
+    if (resolution === 'aprobada' && !evalData.sin_reprobadas) {
+      alert('⚠️ BAJA REGLAMENTARIA: No es posible ratificar la beca si el alumno reprobó una materia en ordinario (aun habiendo presentado examen extraordinario). Debe dictaminarse como Rechazar / Baja de Beca.');
+      return;
+    }
+
+    let finalCond = evalData.condiciones.trim();
+    if (resolution === 'condicionada' && !finalCond) {
+      if (!evalData.pagos_al_corriente) finalCond = 'Regularización de pagos tardíos de colegiatura.';
+      else if (!evalData.solicitud_a_tiempo) finalCond = 'Entrega extemporánea de informe de becario autorizada por el Comité.';
+      else if (!evalData.esta_inscrito_proximo_ciclo) finalCond = 'Condicionada a completar la reinscripción al próximo periodo.';
+      else if (!evalData.cumple_puntos_1000) finalCond = 'Autorización especial de puntos formativos cuatrimestrales.';
+      else finalCond = 'Beca otorgada bajo acuerdo y condición especial del Comité de Becas.';
+    }
 
     notifyScholarshipResolution(
       evaluatingStudent.id,
-      aprobado,
+      resolution,
       evalData.tipo_beca as any,
       evalData.porcentaje_beca,
-      evalData.observaciones || (aprobado ? 'Beca ratificada satisfactoriamente.' : 'No cumple con los requisitos normativos.')
+      evalData.observaciones || (resolution === 'aprobada' ? 'Beca ratificada satisfactoriamente.' : resolution === 'condicionada' ? `Beca condicionada: ${finalCond}` : 'Baja reglamentaria.'),
+      finalCond
     );
 
-    alert(aprobado ? `✓ Beca ratificada para ${evaluatingStudent.nombre}` : `✕ Beca no ratificada para ${evaluatingStudent.nombre}`);
+    alert(
+      resolution === 'aprobada'
+        ? `✓ Beca ratificada para ${evaluatingStudent.nombre}`
+        : resolution === 'condicionada'
+        ? `⚠️ Beca CONDICIONADA registrada para ${evaluatingStudent.nombre}`
+        : `✕ Baja de beca registrada para ${evaluatingStudent.nombre}`
+    );
     setEvaluatingStudent(null);
   };
 
@@ -716,13 +744,24 @@ export default function AdminBecasConfigPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          {b.refrendo_beca_aprobado_admin ? (
-                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
-                              ✓ Ratificada Oficial
+                          {b.estatus_ratificacion_beca === 'ratificada' || (b.refrendo_beca_aprobado_admin && !b.refrendo_beca_condicionado_admin) ? (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-black inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Ratificada
+                            </span>
+                          ) : b.estatus_ratificacion_beca === 'condicionada' || b.refrendo_beca_condicionado_admin ? (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-black inline-flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              Condicionada
+                            </span>
+                          ) : b.estatus_ratificacion_beca === 'suspendida' || b.solicitud_beca_status === 'rechazada' || !b.tiene_beca ? (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 text-[10px] font-black inline-flex items-center gap-1">
+                              <XCircle className="w-3 h-3" />
+                              Baja / Suspendida
                             </span>
                           ) : (
-                            <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200 text-[10px] font-bold">
-                              Pendiente Auditoría
+                            <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
+                              ⏳ Pendiente
                             </span>
                           )}
                         </td>
@@ -1072,47 +1111,64 @@ export default function AdminBecasConfigPage() {
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-unipaz-orange">
-                  Comité de Becas · Auditoría de Requisitos
+                  Comité de Becas · Auditoría Reglamentaria
                 </span>
                 <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
                   Ratificación de Beca: {evaluatingStudent.nombre} {evaluatingStudent.apellidos}
                 </h3>
-                <p className="text-[11px] text-slate-500">
-                  {evaluatingStudent.matricula} · {evaluatingStudent.carrera} · {formatGradoAcademico(evaluatingStudent)}
-                </p>
+                <div className="text-[11px] text-slate-500 flex flex-wrap gap-2 mt-0.5">
+                  <span>{evaluatingStudent.matricula}</span>
+                  <span>·</span>
+                  <span>{evaluatingStudent.carrera}</span>
+                  <span>·</span>
+                  <span className="font-bold text-unipaz-navy dark:text-slate-200">{formatGradoAcademico(evaluatingStudent)}</span>
+                </div>
               </div>
             </div>
 
-            {/* Checklist de los 5 Criterios */}
-            <div className="space-y-3">
+            {/* Banner de Periodo Académico */}
+            <div className="p-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-500/20 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-2 text-blue-900 dark:text-blue-200 font-semibold">
+                <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span>
+                  {evaluatingStudent.carrera?.toUpperCase().includes('MÉDICO CIRUJANO') || evaluatingStudent.carrera?.toUpperCase().includes('MEDICO CIRUJANO')
+                    ? 'Programa Semestral: Evaluando ciclo 902 (Febrero-Julio) para ratificar ciclo 903'
+                    : 'Programa Cuatrimestral: Evaluando ciclo 187 (Mayo-Agosto) para ratificar ciclo 188'}
+                </span>
+              </div>
+              <span className="font-mono font-bold text-blue-700 dark:text-blue-300">
+                Promedio: {evaluatingStudent.promedio_academico || 9.0}
+              </span>
+            </div>
+
+            {/* ALERTA DE BAJA DIRECTA SI REPROBÓ MATERIAS */}
+            {!evalData.sin_reprobadas && (
+              <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-500/40 text-rose-900 dark:text-rose-200 space-y-1 animate-fadeIn">
+                <div className="flex items-center gap-2 font-black text-xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <span>⚠️ Criterio No Negociable de Baja Reglamentaria</span>
+                </div>
+                <p className="text-[11px] leading-relaxed pl-6">
+                  El reglamento de becas UNIPAZ estipula que haber reprobado una materia en periodo ordinario amerita la <strong>baja directa de la beca</strong>, aun si el alumno aprobó la materia posteriormente mediante examen extraordinario.
+                </p>
+              </div>
+            )}
+
+            {/* Checklist de los 6 Criterios Normativos */}
+            <div className="space-y-2.5">
               <span className="font-black text-xs text-slate-700 dark:text-slate-300 block uppercase tracking-wider">
-                Verificación de Requisitos Normativos:
+                Verificación de Criterios del Comité:
               </span>
 
-              {/* 1. Pagos */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+              {/* 1. Cero Reprobadas (Baja Directa si falla) */}
+              <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between ${
+                evalData.sin_reprobadas
+                  ? 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-white/10'
+                  : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/30'
+              }`}>
                 <div>
-                  <h4 className="font-bold text-xs">1. Pagos de Colegiatura e Inscripción</h4>
-                  <p className="text-[11px] text-slate-500">Pagos al corriente y sin adeudos extemporáneos.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEvalData((p) => ({ ...p, pagos_al_corriente: !p.pagos_al_corriente }))}
-                  className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
-                    evalData.pagos_al_corriente
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
-                  }`}
-                >
-                  {evalData.pagos_al_corriente ? '✓ Al Corriente' : '✕ Con Adeudo'}
-                </button>
-              </div>
-
-              {/* 2. Materias Reprobadas / Extraordinarios */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-xs">2. Historial de Acreditación (Sin Extraordinarios)</h4>
-                  <p className="text-[11px] text-slate-500">No haber reprobado ninguna materia en el cuatrimestre.</p>
+                  <h4 className="font-bold text-xs">1. Historial de Acreditación (Cero Reprobadas)</h4>
+                  <p className="text-[11px] text-slate-500">Sin materias reprobadas en ordinario ni extraordinarios.</p>
                 </div>
                 <button
                   type="button"
@@ -1120,18 +1176,37 @@ export default function AdminBecasConfigPage() {
                   className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
                     evalData.sin_reprobadas
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                      : 'bg-rose-600 text-white shadow-sm'
                   }`}
                 >
-                  {evalData.sin_reprobadas ? '✓ Sin Reprobadas' : '✕ Presentó Extraordinario'}
+                  {evalData.sin_reprobadas ? '✓ Sin Reprobadas' : '🔴 Reprobó Materia (Baja Directa)'}
                 </button>
               </div>
 
-              {/* 3. Entrega a Tiempo */}
+              {/* 2. Pagos de Colegiatura e Inscripción */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">3. Entrega de Solicitud / Informe de Becario</h4>
-                  <p className="text-[11px] text-slate-500">Entregó su informe cuatrimestral en tiempo y forma.</p>
+                  <h4 className="font-bold text-xs">2. Pagos de Colegiatura e Inscripción</h4>
+                  <p className="text-[11px] text-slate-500">Pagos al corriente en tiempo o con autorización de tolerancia.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEvalData((p) => ({ ...p, pagos_al_corriente: !p.pagos_al_corriente }))}
+                  className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
+                    evalData.pagos_al_corriente
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200'
+                  }`}
+                >
+                  {evalData.pagos_al_corriente ? '✓ Al Corriente' : '🟡 Pagos Tardíos (Condicionante)'}
+                </button>
+              </div>
+
+              {/* 3. Entrega de Informe de Becario */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs">3. Entrega de Informe de Becario</h4>
+                  <p className="text-[11px] text-slate-500">Entregó su informe cuatrimestral dentro del plazo.</p>
                 </div>
                 <button
                   type="button"
@@ -1139,18 +1214,37 @@ export default function AdminBecasConfigPage() {
                   className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
                     evalData.solicitud_a_tiempo
                       ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                      : 'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200'
                   }`}
                 >
-                  {evalData.solicitud_a_tiempo ? '✓ En Tiempo' : '✕ Fuera de Tiempo'}
+                  {evalData.solicitud_a_tiempo ? '✓ En Tiempo' : '🟡 Fuera de Tiempo (Condicionante)'}
                 </button>
               </div>
 
-              {/* 4. Sanciones */}
+              {/* 4. Inscripción al Periodo por Venir */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div>
-                  <h4 className="font-bold text-xs">4. Historial Disciplinario</h4>
-                  <p className="text-[11px] text-slate-500">Sin sanciones ni reportes académicos.</p>
+                  <h4 className="font-bold text-xs">4. Inscripción para el Próximo Periodo</h4>
+                  <p className="text-[11px] text-slate-500">Las becas se ratifican para el cuatrimestre por venir.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEvalData((p) => ({ ...p, esta_inscrito_proximo_ciclo: !p.esta_inscrito_proximo_ciclo }))}
+                  className={`py-1 px-3 rounded-full text-[11px] font-black transition-all ${
+                    evalData.esta_inscrito_proximo_ciclo
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200'
+                  }`}
+                >
+                  {evalData.esta_inscrito_proximo_ciclo ? '✓ Inscrito al Siguiente Ciclo' : '🟡 Pendiente Reinscripción (Condicionante)'}
+                </button>
+              </div>
+
+              {/* 5. Historial Disciplinario */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs">5. Historial Disciplinario</h4>
+                  <p className="text-[11px] text-slate-500">Sin sanciones graves ni actas administrativas.</p>
                 </div>
                 <button
                   type="button"
@@ -1170,7 +1264,7 @@ export default function AdminBecasConfigPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10">
               <div>
                 <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Modalidad de Beca Ratificada:
+                  Modalidad de Beca:
                 </label>
                 <select
                   value={evalData.tipo_beca}
@@ -1205,36 +1299,70 @@ export default function AdminBecasConfigPage() {
               </div>
             </div>
 
+            {/* Campo de Condiciones para Beca Condicionada */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 space-y-1.5">
+              <label className="block font-bold text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                Condición / Compromiso del Alumno (Para "Beca Condicionada"):
+              </label>
+              <input
+                type="text"
+                value={evalData.condiciones}
+                onChange={(e) => setEvalData((p) => ({ ...p, condiciones: e.target.value }))}
+                placeholder="ej. Entregó informe fuera de tiempo / Pagos tardíos / Pendiente inscripción..."
+                className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/30 rounded-xl p-2 text-xs text-slate-900 dark:text-white font-medium"
+              />
+            </div>
+
             <div>
               <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
-                Observaciones del Comité de Becas:
+                Observaciones Generales del Dictamen:
               </label>
               <textarea
                 rows={2}
                 value={evalData.observaciones}
                 onChange={(e) => setEvalData((p) => ({ ...p, observaciones: e.target.value }))}
-                placeholder="Indica motivos de resolución o condiciones..."
+                placeholder="Notas adicionales para el expediente..."
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
               />
             </div>
 
-            {/* Acciones Finales */}
-            <div className="flex gap-3 pt-2">
+            {/* ACCIONES FINALES: 3 RESOLUCIONES NORMATIVAS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200 dark:border-white/10">
+              {/* Botón 1: Rechazar / Baja */}
               <button
                 type="button"
-                onClick={() => handleSaveEvaluation(false)}
-                className="flex-1 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
+                onClick={() => handleSaveEvaluation('rechazada')}
+                className="py-3 px-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
               >
                 <XCircle className="w-4 h-4" />
-                Rechazar / Suspender Beca
+                Rechazar / Baja de Beca
               </button>
+
+              {/* Botón 2: Beca Condicionada (Amarillo) */}
               <button
                 type="button"
-                onClick={() => handleSaveEvaluation(true)}
-                className="flex-1 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
+                onClick={() => handleSaveEvaluation('condicionada')}
+                className="py-3 px-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Beca Condicionada
+              </button>
+
+              {/* Botón 3: Ratificar y Aprobar Beca (Verde) */}
+              <button
+                type="button"
+                onClick={() => handleSaveEvaluation('aprobada')}
+                disabled={!evalData.sin_reprobadas}
+                className={`py-3 px-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
+                  evalData.sin_reprobadas
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-102'
+                    : 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
+                }`}
+                title={!evalData.sin_reprobadas ? 'No permitido por reglamento si reprobó materias' : 'Ratificar beca'}
               >
                 <CheckCircle2 className="w-4 h-4" />
-                Ratificar y Aprobar Beca
+                Ratificar y Aprobar
               </button>
             </div>
           </div>
