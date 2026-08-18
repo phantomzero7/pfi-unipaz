@@ -278,6 +278,13 @@ export default function AdminBecasConfigPage() {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link
+            href="/admin/importar"
+            className="py-2.5 px-4 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-unipaz-orange" />
+            <span>Carga Masiva (Excel / CSV)</span>
+          </Link>
+          <Link
             href="/admin/configuracion"
             className="py-2.5 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-2 transition-all shadow-sm"
           >

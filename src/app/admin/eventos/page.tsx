@@ -30,6 +30,7 @@ import {
   Sparkles,
   Square,
   Trash2,
+  Upload,
   UserCheck,
   UserPlus,
   Users,
@@ -37,6 +38,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
+import { BatchImportModal } from '@/components/BatchImportModal';
 import { GoogleMeetAttendanceModal } from '@/components/GoogleMeetAttendanceModal';
 import { KioskProjectorModal } from '@/components/KioskProjectorModal';
 import { SpeakerCertificatePdfModal } from '@/components/SpeakerCertificatePdfModal';
@@ -142,6 +144,7 @@ export default function AdminEventosManagerPage() {
     'Campaña',
   ];
 
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const students = profiles.filter((p) => p.role === 'estudiante');
 
   // Obtener lista única de licenciaturas disponibles
@@ -415,13 +418,24 @@ export default function AdminEventosManagerPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="py-3 px-5 rounded-full bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Crear Nueva Actividad
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsBatchImportOpen(true)}
+            className="py-3 px-5 rounded-full bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+            title="Importar catálogo de eventos o asistencias desde Excel o CSV"
+          >
+            <Upload className="w-4 h-4 text-unipaz-orange" />
+            Carga Masiva (Excel / CSV)
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            className="py-3 px-5 rounded-full bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+          >
+            <Plus className="w-4 h-4" />
+            Crear Nueva Actividad
+          </button>
+        </div>
       </div>
 
       {/* Barra de Búsqueda */}
@@ -1335,6 +1349,13 @@ export default function AdminEventosManagerPage() {
           event={selectedMeetEvent}
         />
       )}
+
+      {/* MODAL DE CARGA MASIVA */}
+      <BatchImportModal
+        isOpen={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        defaultType="eventos"
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   Compass,
   Download,
   FileCheck,
+  FileSpreadsheet,
   FileText,
   Filter,
   Plus,
@@ -23,6 +24,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Upload,
   User,
   UserCheck,
   Users,
@@ -30,6 +32,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { AttendanceJustificationModal } from '@/components/AttendanceJustificationModal';
+import { BatchImportModal } from '@/components/BatchImportModal';
 import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewalDictamenModal';
 import { exportStudentsToCsv, exportStudentsToExcel } from '@/lib/export-utils';
 import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
@@ -66,6 +69,9 @@ export default function AdminEstudiantesDirectoryPage() {
   const [assignEventId, setAssignEventId] = useState<string>(events[0]?.id || '');
   const [isSpecialCase, setIsSpecialCase] = useState(false);
   const [assignFeedback, setAssignFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Modal para carga masiva
+  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
 
   // Modal para asignación / gestión de becas
   const [showScholarshipModal, setShowScholarshipModal] = useState(false);
@@ -181,6 +187,14 @@ export default function AdminEstudiantesDirectoryPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsBatchImportOpen(true)}
+            className="py-3 px-4 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
+            title="Importar alumnos y becas de forma masiva desde Excel o CSV"
+          >
+            <Upload className="w-4 h-4 text-unipaz-orange" />
+            Carga Masiva (Excel / CSV)
+          </button>
           <button
             onClick={() => exportStudentsToExcel(students, getStudentProgress, getStudentScholarshipProgress)}
             className="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all hover:scale-105"
@@ -1145,6 +1159,13 @@ export default function AdminEstudiantesDirectoryPage() {
           scholarshipProgress={getStudentScholarshipProgress(selectedStudent.id)}
         />
       )}
+
+      {/* MODAL DE CARGA MASIVA */}
+      <BatchImportModal
+        isOpen={isBatchImportOpen}
+        onClose={() => setIsBatchImportOpen(false)}
+        defaultType="estudiantes"
+      />
     </div>
   );
 }

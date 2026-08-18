@@ -257,6 +257,11 @@ interface PFIContextType {
   
   // Permiso de escaneo para estudiante staff y DEDU
   canUserScanEvent: (eventId: string, userId?: string) => boolean;
+
+  // Carga Masiva de Datos e Importaciones
+  batchImportStudents: (studentsData: Partial<UserProfile>[]) => { added: number; updated: number; message: string };
+  batchImportEvents: (eventsData: Partial<PFIEvent>[]) => { added: number; updated: number; message: string };
+  batchImportAttendances: (records: import('./import-utils').ParsedAttendanceRecord[]) => { imported: number; updated: number; message: string };
   
   // Theme Toggle
   theme: 'light' | 'dark';
@@ -1740,6 +1745,170 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const batchImportStudents = (studentsData: Partial<UserProfile>[]) => {
+    let added = 0;
+    let updated = 0;
+
+    setProfiles((prev) => {
+      const next = [...prev];
+      studentsData.forEach((st) => {
+        if (!st.matricula) return;
+        const existingIdx = next.findIndex(
+          (p) => p.matricula.toLowerCase() === st.matricula?.toLowerCase() || (st.id && p.id === st.id)
+        );
+
+        if (existingIdx >= 0) {
+          next[existingIdx] = {
+            ...next[existingIdx],
+            ...st,
+            role: 'estudiante',
+          };
+          updated++;
+        } else {
+          const newStudent: UserProfile = {
+            id: st.id || `usr-${st.matricula.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
+            matricula: st.matricula,
+            nombre: st.nombre || 'Estudiante',
+            apellidos: st.apellidos || '',
+            carrera: st.carrera || 'LICENCIATURA EN ADMINISTRACIÓN',
+            programa_academico: st.carrera || 'LICENCIATURA EN ADMINISTRACIÓN',
+            periodo_ingreso: st.periodo_ingreso || '2026-1',
+            cuatrimestre: st.cuatrimestre || 1,
+            email: st.email || `${st.matricula.toLowerCase()}@unipaz.edu.mx`,
+            role: 'estudiante',
+            sexo: st.sexo || 'Prefiero no decirlo',
+            qr_secret: `SEC-UNIPAZ-${st.matricula}`,
+            tiene_beca: !!st.tiene_beca,
+            tipo_beca: st.tipo_beca,
+            porcentaje_beca: st.porcentaje_beca,
+            promedio_academico: st.promedio_academico || 9.0,
+            puntos_beca_meta_cuatrimestral: st.puntos_beca_meta_cuatrimestral || 1000,
+            es_becario_departamental: !!st.es_becario_departamental,
+            departamento_beca: st.departamento_beca,
+            horas_departamentales_semanales: st.horas_departamentales_semanales,
+            cumplimiento_departamental_acreditado: false,
+          };
+          next.push(newStudent);
+          added++;
+        }
+      });
+      return next;
+    });
+
+    return {
+      added,
+      updated,
+      message: `Proceso completado: ${added} estudiantes agregados, ${updated} actualizados.`,
+    };
+  };
+
+  const batchImportEvents = (eventsData: Partial<PFIEvent>[]) => {
+    let added = 0;
+    let updated = 0;
+
+    setEvents((prev) => {
+      const next = [...prev];
+      eventsData.forEach((ev) => {
+        if (!ev.titulo) return;
+        const existingIdx = next.findIndex(
+          (e) => (ev.id && e.id === ev.id) || e.titulo.toLowerCase() === ev.titulo?.toLowerCase()
+        );
+
+        const defaultHours = ev.categoria ? getStandardHoursForCategory(ev.categoria) : 2.0;
+
+        if (existingIdx >= 0) {
+          next[existingIdx] = {
+            ...next[existingIdx],
+            ...ev,
+            horas_pfi: ev.horas_pfi !== undefined ? ev.horas_pfi : next[existingIdx].horas_pfi,
+          };
+          updated++;
+        } else {
+          const newEvent: PFIEvent = {
+            id: ev.id || `evt-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            titulo: ev.titulo,
+            categoria: ev.categoria || 'Taller Extracurricular',
+            descripcion: ev.descripcion || '',
+            fecha_evento: ev.fecha_evento || new Date().toISOString().split('T')[0],
+            hora_inicio: ev.hora_inicio || '10:00',
+            hora_fin: ev.hora_fin || '12:00',
+            ubicacion: ev.ubicacion || 'Campus Central UNIPAZ',
+            modalidad: ev.modalidad || 'presencial',
+            cupo_maximo: ev.cupo_maximo || 50,
+            horas_pfi: ev.horas_pfi !== undefined ? ev.horas_pfi : defaultHours,
+            puntos_beca: ev.puntos_beca || 50,
+            puntos_beca_staff: ev.puntos_beca_staff || 80,
+            enlace_virtual: ev.enlace_virtual,
+            activo: true,
+          };
+          next.push(newEvent);
+          added++;
+        }
+      });
+      return next;
+    });
+
+    return {
+      added,
+      updated,
+      message: `Proceso completado: ${added} eventos agregados al catálogo, ${updated} actualizados.`,
+    };
+  };
+
+  const batchImportAttendances = (records: import('./import-utils').ParsedAttendanceRecord[]) => {
+    let imported = 0;
+    let updated = 0;
+
+    setAttendances((prev) => {
+      const next = [...prev];
+      records.forEach((rec) => {
+        const existingIdx = next.findIndex(
+          (a) => a.student_id === rec.student_id && a.event_id === rec.event_id
+        );
+
+        if (existingIdx >= 0) {
+          next[existingIdx] = {
+            ...next[existingIdx],
+            status: rec.status,
+            rol_participacion: rec.rol_participacion,
+            horas_acreditadas: rec.horas_acreditadas,
+            puntos_beca_acreditados: rec.puntos_beca_acreditados,
+            penalizacion_horas: rec.penalizacion_horas_pfi,
+            penalizacion_puntos_beca: rec.penalizacion_puntos_beca,
+            validado_por: rec.validado_por,
+            notes: rec.observaciones,
+            created_at: new Date().toISOString(),
+          };
+          updated++;
+        } else {
+          const newAtt: EventAttendance = {
+            id: `att-imp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            event_id: rec.event_id,
+            student_id: rec.student_id,
+            status: rec.status,
+            rol_participacion: rec.rol_participacion,
+            horas_acreditadas: rec.horas_acreditadas,
+            puntos_beca_acreditados: rec.puntos_beca_acreditados,
+            penalizacion_horas: rec.penalizacion_horas_pfi,
+            penalizacion_puntos_beca: rec.penalizacion_puntos_beca,
+            validado_por: rec.validado_por,
+            notes: rec.observaciones,
+            created_at: new Date().toISOString(),
+          };
+          next.push(newAtt);
+          imported++;
+        }
+      });
+      return next;
+    });
+
+    return {
+      imported,
+      updated,
+      message: `Proceso completado: ${imported} asistencias registradas, ${updated} actualizadas con sus horas PFI y puntos de beca.`,
+    };
+  };
+
   const resetToDefaultData = () => {
     setProfiles(MOCK_PROFILES);
     setEvents(MOCK_EVENTS);
@@ -1813,6 +1982,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getStudentById,
         getStudentByQuery,
         canUserScanEvent,
+        batchImportStudents,
+        batchImportEvents,
+        batchImportAttendances,
         theme,
         toggleTheme,
         setTheme,
