@@ -10,12 +10,15 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  Compass,
   FileCheck,
+  FileSpreadsheet,
   GraduationCap,
   Layers,
   Plus,
   QrCode,
   ScanLine,
+  Settings,
   Shield,
   Sparkles,
   TrendingUp,
@@ -24,20 +27,37 @@ import {
 } from 'lucide-react';
 import { QrScannerModal } from '@/components/QrScannerModal';
 import { usePFI } from '@/lib/store';
-import { calculateStudentPFIProgress } from '@/lib/pfi-rules';
+import { calculateStudentPFIProgress, calculateStudentScholarshipProgress } from '@/lib/pfi-rules';
 import { PFIEvent } from '@/lib/types';
 
 export default function AdminDashboardPage() {
-  const { profiles, events, attendances, currentUser } = usePFI();
+  const { profiles, events, attendances, currentUser, pfiConfig, getStudentScholarshipProgress } = usePFI();
   const [showScanner, setShowScanner] = useState(false);
 
   const students = profiles.filter((p) => p.role === 'estudiante');
+  const becados = students.filter((p) => p.tiene_beca);
   const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
+
+  // Periodos vigentes
+  const activeCuatri =
+    pfiConfig.periodosAcademicos?.find((p) => p.tipo === 'cuatrimestral' && p.es_actual) ||
+    pfiConfig.periodosAcademicos?.find((p) => p.tipo === 'cuatrimestral') || {
+      codigo: '187',
+      nombre: 'Mayo - Agosto 2026',
+    };
+
+  const activeSemestral =
+    pfiConfig.periodosAcademicos?.find((p) => p.tipo === 'semestral' && p.es_actual) ||
+    pfiConfig.periodosAcademicos?.find((p) => p.tipo === 'semestral') || {
+      codigo: '902',
+      nombre: 'Febrero - Julio 2026',
+    };
 
   // Calcular métricas institucionales
   let totalHoursAccredited = 0;
   let studentsAcreditados = 0;
   let studentsSobresaliente = 0;
+  let becadosCumplidos = 0;
 
   const studentProgressList = students.map((std) => {
     const studentAtts = attendances.filter((a) => a.student_id === std.id);
@@ -45,6 +65,12 @@ export default function AdminDashboardPage() {
     totalHoursAccredited += prog.horasTotales;
     if (prog.isAcreditado) studentsAcreditados++;
     if (prog.escala === 'Sobresaliente') studentsSobresaliente++;
+
+    if (std.tiene_beca) {
+      const sch = getStudentScholarshipProgress(std.id);
+      if (sch.isAcreditadoBeca) becadosCumplidos++;
+    }
+
     return {
       student: std,
       progress: prog,
@@ -53,6 +79,7 @@ export default function AdminDashboardPage() {
 
   const avgHours = students.length > 0 ? (totalHoursAccredited / students.length).toFixed(1) : '0';
   const accreditationRate = students.length > 0 ? Math.round((studentsAcreditados / students.length) * 100) : 0;
+  const becasRate = becados.length > 0 ? Math.round((becadosCumplidos / becados.length) * 100) : 0;
 
   return (
     <div className="space-y-8 animate-fadeIn">
@@ -71,8 +98,22 @@ export default function AdminDashboardPage() {
             Gestión y Analíticas Institucionales
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-            Supervisión de acreditaciones, regla de permanencia (80%), control de asistencias QR y eventos.
+            Supervisión de acreditaciones, regla de permanencia (80%), control de asistencias QR, becas y eventos.
           </p>
+
+          {/* Periodos Activos */}
+          <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-slate-200/70 dark:border-white/10 text-xs">
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 px-3 py-1 rounded-xl">
+              <Clock className="w-3.5 h-3.5 text-unipaz-orange" />
+              <span className="text-slate-500">Cuatrimestral Vigente:</span>
+              <strong className="text-unipaz-navy dark:text-white">Periodo {activeCuatri.codigo} ({activeCuatri.nombre})</strong>
+            </div>
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/60 px-3 py-1 rounded-xl">
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-slate-500">Semestral Vigente:</span>
+              <strong className="text-unipaz-navy dark:text-white">Periodo {activeSemestral.codigo} ({activeSemestral.nombre})</strong>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -129,12 +170,87 @@ export default function AdminDashboardPage() {
 
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-blue-950/5 space-y-2">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Eventos Activos</span>
-            <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span>Becarios con 1,000 pts</span>
+            <Award className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-3xl font-black text-unipaz-navy dark:text-white">{events.length}</div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Talleres, PVC, Foros y Congresos</p>
+          <div className="text-3xl font-black text-amber-600 dark:text-amber-400">{becasRate}%</div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{becadosCumplidos} de {becados.length} becarios acreditados</p>
         </div>
+      </div>
+
+      {/* Grid de Acceso Rápido a Módulos Administrativos */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Link
+          href="/admin/becas"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-orange-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange flex items-center justify-center">
+            <Award className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-unipaz-orange">
+            Gestión de Becas
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/estudiantes"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-blue-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-blue-600">
+            Directorio Alumnos
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/eventos"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-600 flex items-center justify-center">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-purple-600">
+            Eventos PFI
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/importar"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-emerald-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
+            <FileSpreadsheet className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-emerald-600">
+            Carga Masiva 3NF
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/scanner"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 flex items-center justify-center">
+            <ScanLine className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-amber-600">
+            Escáner QR
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/configuracion"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+            <Settings className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-slate-900">
+            Configuración PFI
+          </span>
+        </Link>
       </div>
 
       {/* Grid: Lista de Estudiantes & Expedientes */}

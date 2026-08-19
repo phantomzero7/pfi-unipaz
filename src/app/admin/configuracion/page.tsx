@@ -51,6 +51,7 @@ export default function AdminConfiguracionPage() {
   });
   const [minHours, setMinHours] = useState<number>(pfiConfig.horasMinimasTitulacion);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<'periodos' | 'horas' | 'firmas' | 'pvc'>('periodos');
 
   // Estados para Periodos Académicos
   const [newPeriodCodigo, setNewPeriodCodigo] = useState('');
@@ -172,12 +173,68 @@ export default function AdminConfiguracionPage() {
           Configuración Global PFI & Emisión de Constancias
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-3xl">
-          Configura quién firma las constancias oficiales (General, PVC, Talleres o Actividades), define los valores de horas oficiales por categoría y asigna actividades por cohorte.
+          Configura quién firma las constancias oficiales (General, PVC, Talleres o Actividades), gestiona los periodos académicos cuatrimestrales y semestrales, define los valores de horas oficiales por categoría y asigna módulos formativos.
         </p>
       </div>
 
+      {/* Pestañas de Navegación de Configuración */}
+      <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setActiveTab('periodos')}
+          className={`py-2.5 px-4 rounded-xl font-black text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'periodos'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          Periodos Académicos
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('horas')}
+          className={`py-2.5 px-4 rounded-xl font-black text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'horas'
+              ? 'bg-unipaz-orange text-white shadow-md shadow-orange-500/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          Horas PFI & Titulación
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('firmas')}
+          className={`py-2.5 px-4 rounded-xl font-black text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'firmas'
+              ? 'bg-unipaz-navy dark:bg-slate-800 text-white shadow-md shadow-slate-900/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <PenTool className="w-4 h-4" />
+          Firmantes de Constancias
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('pvc')}
+          className={`py-2.5 px-4 rounded-xl font-black text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'pvc'
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          Asignador de PVC
+        </button>
+      </div>
+
       {/* SECCIÓN 1: CONFIGURADOR DE FIRMAS INSTITUCIONALES EN CONSTANCIAS */}
-      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
+      {activeTab === 'firmas' && (
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6 animate-fadeIn">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
             <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
@@ -534,9 +591,11 @@ export default function AdminConfiguracionPage() {
           </div>
         </form>
       </section>
+      )}
 
       {/* SECCIÓN 2: CALENDARIO DE PERIODOS ACADÉMICOS (CUATRIMESTRALES & SEMESTRALES) */}
-      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
+      {activeTab === 'periodos' && (
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6 animate-fadeIn">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -806,8 +865,11 @@ export default function AdminConfiguracionPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* SECCIÓN 3: ASIGNACIÓN PROGRAMADA / AUTOMÁTICA DE PVC POR COHORTE */}
+      {activeTab === 'pvc' && (
+      <div className="space-y-8 animate-fadeIn">
       <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
@@ -991,14 +1053,17 @@ export default function AdminConfiguracionPage() {
           </div>
         </form>
       </section>
+      </div>
+      )}
 
       {/* SECCIÓN 4: CONFIGURADOR GLOBAL DE HORAS PREESTABLECIDAS POR CATEGORÍA */}
-      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6">
+      {activeTab === 'horas' && (
+      <section className="rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-sm dark:shadow-xl space-y-6 animate-fadeIn">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
           <div>
             <h2 className="text-lg font-black text-unipaz-navy dark:text-white tracking-tight flex items-center gap-2">
               <Settings className="w-5 h-5 text-unipaz-cobalt" />
-              4. Catálogo Oficial de Horas por Categoría PFI
+              Catálogo Oficial de Horas por Categoría PFI
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Al dar de alta nuevos eventos, el sistema fija automáticamente las horas reglamentarias según este catálogo.
@@ -1055,6 +1120,7 @@ export default function AdminConfiguracionPage() {
           </div>
         </form>
       </section>
+      )}
 
       {/* BANNER DE ACCESO A GESTIÓN Y CONFIGURACIÓN DE BECAS */}
       <section className="rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-orange-500/10 border border-amber-300 dark:border-amber-500/30 p-6 sm:p-8 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">

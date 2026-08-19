@@ -6,6 +6,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Award,
+  BookOpen,
   Calendar,
   CheckCircle2,
   Clock,
@@ -35,7 +36,12 @@ import {
   ParseValidationResult,
 } from '@/lib/import-utils';
 import { usePFI } from '@/lib/store';
-import { PFIEvent, UserProfile } from '@/lib/types';
+import {
+  CATALOGO_BECAS,
+  CATALOGO_PROGRAMAS_ACADEMICOS,
+  PFIEvent,
+  UserProfile,
+} from '@/lib/types';
 
 export default function AdminImportarPage() {
   const {
@@ -503,6 +509,50 @@ export default function AdminImportarPage() {
           </div>
         </div>
       )}
+
+      {/* GUÍA DE REFERENCIA: CATÁLOGOS OFICIALES PARA IMPORTACIÓN */}
+      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-white/10 space-y-4 text-xs">
+        <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
+          <BookOpen className="w-5 h-5 text-unipaz-orange" />
+          <span>Guía Rápida de Claves Oficiales Reconocidas por el Importador</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Catálogo de Becas */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+            <span className="font-black text-xs text-unipaz-navy dark:text-white block">
+              🎟️ Claves de Beca (Columna "Tiene Beca" o "Clave Beca"):
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono text-[11px]">
+              {CATALOGO_BECAS.map((b) => (
+                <div key={b.clave} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+                  <strong className="text-unipaz-orange">{b.clave}</strong>: {b.porcentaje}%
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              * El importador también acepta valores como "SI", "SÍ", "20%", "50%", etc.
+            </p>
+          </div>
+
+          {/* Catálogo de Programas */}
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+            <span className="font-black text-xs text-unipaz-navy dark:text-white block">
+              🏛️ Claves de Programas Académicos (Columna "Programa Académico"):
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 font-mono text-[10px]">
+              {CATALOGO_PROGRAMAS_ACADEMICOS.slice(0, 9).map((p) => (
+                <div key={p.clave} className="p-1 rounded bg-slate-100 dark:bg-slate-900 truncate">
+                  <strong className="text-blue-600">{p.clave}</strong>: {p.nombre.replace('LICENCIATURA EN ', 'LIC. ')}
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              * Puedes colocar la clave corta (ej. <strong>AD</strong>, <strong>LM</strong>, <strong>TS</strong>) o el nombre completo del programa.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -37,7 +37,14 @@ import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewal
 import { exportStudentsToCsv, exportStudentsToExcel } from '@/lib/export-utils';
 import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { AttendanceStatus, formatGradoAcademico, PFIEvent, UserProfile } from '@/lib/types';
+import {
+  AttendanceStatus,
+  CATALOGO_BECAS,
+  CATALOGO_PROGRAMAS_ACADEMICOS,
+  formatGradoAcademico,
+  PFIEvent,
+  UserProfile,
+} from '@/lib/types';
 
 export default function AdminEstudiantesDirectoryPage() {
   const {
@@ -922,15 +929,11 @@ export default function AdminEstudiantesDirectoryPage() {
                     onChange={(e) => setScholarshipForm({ ...scholarshipForm, porcentaje: parseInt(e.target.value) || 50 })}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-mono font-bold text-xs"
                   >
-                    <option value="20">20% Descuento</option>
-                    <option value="25">25% Descuento</option>
-                    <option value="30">30% Descuento</option>
-                    <option value="40">40% Descuento</option>
-                    <option value="50">50% Descuento</option>
-                    <option value="60">60% Descuento</option>
-                    <option value="75">75% Descuento</option>
-                    <option value="80">80% Descuento</option>
-                    <option value="100">100% Descuento Total</option>
+                    {CATALOGO_BECAS.map((b) => (
+                      <option key={`std-beca-${b.clave}-${b.porcentaje}`} value={b.porcentaje}>
+                        {b.clave} · {b.porcentaje}% ({b.descripcion})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
