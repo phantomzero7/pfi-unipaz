@@ -56,27 +56,25 @@ export const Navbar: React.FC = () => {
   const isTemporaryStaffActive = activeStaffEvents.length > 0;
 
   const studentLinks = [
-    { href: '/estudiante', label: 'Mi Dashboard', icon: LayoutDashboard },
-    { href: '/estudiante/eventos', label: 'Catálogo de Actividades', icon: Calendar },
+    { href: '/estudiante', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/estudiante/eventos', label: 'Eventos PFI', icon: Calendar },
     { href: '/estudiante/pvc', label: 'PVC y Talleres', icon: Compass },
-    { href: '/estudiante/constancias', label: 'Mis Constancias', icon: FileCheck },
+    { href: '/estudiante/constancias', label: 'Constancias', icon: FileCheck },
   ];
 
   const deduLinks = [
     { href: '/admin', label: 'Panel DEDU', icon: LayoutDashboard },
-    { href: '/admin/eventos', label: 'Eventos & Staff', icon: Calendar },
-    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
-    { href: '/admin/estudiantes', label: 'Pases de Lista', icon: Users },
+    { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
+    { href: '/admin/estudiantes', label: 'Asistencias', icon: Users },
   ];
 
   const adminLinks = [
-    { href: '/admin', label: 'Panel General', icon: LayoutDashboard },
-    { href: '/admin/configuracion', label: 'Configurador PFI', icon: Settings },
-    { href: '/admin/becas', label: 'Gestión de Becas', icon: Award },
-    { href: '/admin/importar', label: 'Carga Masiva', icon: FileSpreadsheet },
-    { href: '/admin/eventos', label: 'Gestión de Eventos', icon: Calendar },
-    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
-    { href: '/admin/estudiantes', label: 'Directorio Alumnos', icon: Users },
+    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/becas', label: 'Becas', icon: Award },
+    { href: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
+    { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
+    { href: '/admin/importar', label: 'Importar', icon: FileSpreadsheet },
+    { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
   ];
 
   const currentLinks = isAdmin ? adminLinks : isDedu ? deduLinks : studentLinks;
@@ -113,7 +111,7 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {/* Pestañas de Navegación Refinadas */}
-            <nav className="hidden md:flex items-center p-1.5 rounded-full bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200/70 dark:border-white/10 shadow-inner">
+            <nav className="hidden md:flex items-center p-1 rounded-full bg-slate-100/90 dark:bg-slate-900/60 border border-slate-200/70 dark:border-white/10 shadow-inner">
               {currentLinks.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -121,14 +119,14 @@ export const Navbar: React.FC = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ${
                       isActive
-                        ? 'bg-white dark:bg-unipaz-cobalt text-unipaz-navy dark:text-white shadow-sm font-bold'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-unipaz-navy dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+                        ? 'bg-white dark:bg-unipaz-cobalt text-unipaz-navy dark:text-white shadow-sm font-black'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-unipaz-navy dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40 font-medium'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-unipaz-orange dark:text-white' : 'text-slate-400'}`} />
-                    {item.label}
+                    <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? 'text-unipaz-orange dark:text-white' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
                   </Link>
                 );
               })}
