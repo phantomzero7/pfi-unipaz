@@ -82,26 +82,23 @@ export default function AdminBecasConfigPage() {
   const [fechaInicio, setFechaInicio] = useState(pfiConfig.fecha_inicio_solicitud_becas || '2026-09-01');
   const [fechaFin, setFechaFin] = useState(pfiConfig.fecha_fin_solicitud_becas || '2026-09-25');
 
-  // Catálogo Dinámico de Modalidades de Beca
+  // Catálogo Dinámico de Modalidades de Beca (Solo Nombres de Modalidad, sin porcentajes duplicados)
   const [modalidadesBeca, setModalidadesBeca] = useState<string[]>([
-    'T1 - Beca 20%',
-    'BA - Beca 25%',
-    'BB - Beca 30%',
-    'BU - Beca Especial Grupo Violeta (50%)',
-    'B2 - Beca 50%',
-    'BG - Beca 60%',
-    '8B - Beca 80%',
-    'B1 - Beca 100%',
     'Excelencia Académica (Promedio 9.6 - 10.0)',
     'Mérito Académico',
     'Estudio Socioeconómico (desde 2° Cuatrimestre)',
     'Convenios Institucionales',
-    'Familiar / Hermanos (20%)',
+    'Familiar / Hermanos',
     'Egresados UNIPAZ',
     'Promoción Educativa',
     'Deportiva (Garzas UNIPAZ)',
     'Cultural y Artística',
     'Investigación y Publicaciones',
+    'Talento y Liderazgo Social',
+    'Madres Solteras / Jefas de Familia',
+    'Inclusión y Discapacidad',
+    'Intercultural / Pueblos Originarios',
+    'Beca Especial Grupo Violeta',
   ]);
   const [nuevaModalidad, setNuevaModalidad] = useState('');
 
@@ -118,7 +115,7 @@ export default function AdminBecasConfigPage() {
 
   // Form State para Asignación de Beca Regular (SOLO ALUMNOS SIN BECA)
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
-  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>('B2 - Beca 50%');
+  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>('Excelencia Académica (Promedio 9.6 - 10.0)');
   const [selectedPorcentaje, setSelectedPorcentaje] = useState<number>(50);
   const [promedioAsignado, setPromedioAsignado] = useState<number>(9.5);
   const [asignacionMsg, setAsignacionMsg] = useState<string | null>(null);
@@ -133,6 +130,7 @@ export default function AdminBecasConfigPage() {
 
   // MODAL DE EVALUACIÓN Y RATIFICACIÓN NORMATIVA DE BECA
   const [evaluatingStudent, setEvaluatingStudent] = useState<UserProfile | null>(null);
+  const [showConditionalModal, setShowConditionalModal] = useState(false);
   const [evalData, setEvalData] = useState({
     pagos_al_corriente: true,
     sin_reprobadas: true,
@@ -481,6 +479,7 @@ export default function AdminBecasConfigPage() {
 
   const openEvaluationModal = (student: UserProfile) => {
     setEvaluatingStudent(student);
+    setShowConditionalModal(false);
     const prog = getStudentScholarshipProgress(student.id);
     const isCond = student.estatus_ratificacion_beca === 'condicionada' || student.refrendo_beca_condicionado_admin || student.habia_tenido_beca_condicionada;
     
@@ -501,6 +500,19 @@ export default function AdminBecasConfigPage() {
       observaciones: student.resolucion_refrendo_observaciones || '',
     });
   };
+
+  const detectedReasons = useMemo(() => {
+    if (!evaluatingStudent) return [];
+    const reasons: string[] = [];
+    if (!evalData.pagos_al_corriente) reasons.push('Colegiaturas con pagos tardíos o pendientes de regularización.');
+    if (!evalData.solicitud_a_tiempo) reasons.push('Informe de becario entregado de forma extemporánea.');
+    if (!evalData.cumple_puntos_1000) reasons.push('Puntos formativos cuatrimestrales incompletos (< 1,000 pts).');
+    if (!evalData.esta_inscrito_proximo_ciclo) reasons.push('Trámite de reinscripción al próximo periodo pendiente.');
+    if (!evalData.sin_sanciones) reasons.push('Registra incidencia o acta disciplinaria en el periodo.');
+    if ((evalData.promedio_academico || 0) < 8.0) reasons.push(`Promedio académico (${evalData.promedio_academico}) inferior al estándar.`);
+    if (evalData.visto_bueno_reincidencia) reasons.push('Reincidencia en condición previa autorizada con Visto Bueno del Comité.');
+    return reasons;
+  }, [evaluatingStudent, evalData]);
 
   const handleSaveEvaluation = (resolution: 'aprobada' | 'condicionada' | 'rechazada') => {
     if (!evaluatingStudent) return;
@@ -1814,21 +1826,6 @@ export default function AdminBecasConfigPage() {
               </div>
             </div>
 
-            {/* Campo de Condiciones para Beca Condicionada */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 space-y-1.5">
-              <label className="block font-bold text-amber-900 dark:text-amber-300 text-xs flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                Condición / Compromiso del Alumno (Para "Beca Condicionada"):
-              </label>
-              <input
-                type="text"
-                value={evalData.condiciones}
-                onChange={(e) => setEvalData((p) => ({ ...p, condiciones: e.target.value }))}
-                placeholder="ej. Entregó informe fuera de tiempo / Pagos tardíos / Pendiente inscripción..."
-                className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/30 rounded-xl p-2 text-xs text-slate-900 dark:text-white font-medium"
-              />
-            </div>
-
             <div>
               <label className="block font-bold text-slate-600 dark:text-slate-400 mb-1">
                 Observaciones Generales del Dictamen:
@@ -1854,10 +1851,15 @@ export default function AdminBecasConfigPage() {
                 {evalData.proxima_carga_materias === 'minima' ? 'No Aplica (Carga Mínima)' : 'Rechazar / Baja de Beca'}
               </button>
 
-              {/* Botón 2: Beca Condicionada (Amarillo) */}
+              {/* Botón 2: Beca Condicionada (Amarillo) -> Abre Mini-Modal */}
               <button
                 type="button"
-                onClick={() => handleSaveEvaluation('condicionada')}
+                onClick={() => {
+                  if (detectedReasons.length > 0 && !evalData.condiciones.trim()) {
+                    setEvalData((p) => ({ ...p, condiciones: detectedReasons.join(' ') }));
+                  }
+                  setShowConditionalModal(true);
+                }}
                 disabled={evalData.proxima_carga_materias === 'minima'}
                 className={`py-3 px-3 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all ${
                   evalData.proxima_carga_materias !== 'minima'
@@ -1890,6 +1892,111 @@ export default function AdminBecasConfigPage() {
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Ratificar y Aprobar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MINI-MODAL DEDICADO: BECA CONDICIONADA */}
+      {showConditionalModal && evaluatingStudent && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100 animate-scaleUp">
+            <button
+              onClick={() => setShowConditionalModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Mini-Modal */}
+            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 flex-shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Dictamen Oficial de Beca
+                </span>
+                <h3 className="text-base font-black text-unipaz-navy dark:text-white">
+                  Beca Condicionada · {evaluatingStudent.nombre} {evaluatingStudent.apellidos}
+                </h3>
+              </div>
+            </div>
+
+            {/* Resumen Automático de Incumplimientos y Criterios Evaluados */}
+            <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 space-y-2">
+              <span className="font-black text-xs text-amber-950 dark:text-amber-200 block">
+                📋 Criterios que originan el condicionamiento:
+              </span>
+              {detectedReasons.length > 0 ? (
+                <ul className="space-y-1.5 text-[11px] text-amber-900 dark:text-amber-300">
+                  {detectedReasons.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-amber-600 font-bold">•</span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                  🟡 Condicionamiento preventivo o por acuerdo especial del Comité de Becas.
+                </p>
+              )}
+            </div>
+
+            {/* Input: Condición y Compromiso Formal del Alumno */}
+            <div className="space-y-1.5">
+              <label className="block font-bold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                Condición y Compromiso Formal del Estudiante:
+              </label>
+              <textarea
+                rows={3}
+                value={evalData.condiciones}
+                onChange={(e) => setEvalData((p) => ({ ...p, condiciones: e.target.value }))}
+                placeholder="Escribe el compromiso a cumplir (ej. Regularizar pagos antes del 15 de septiembre y entregar informe de becario a tiempo)..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-amber-300 dark:border-amber-500/30 rounded-xl p-3 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-amber-500"
+              />
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                * Este texto se mostrará directamente al alumno en su portal y en su dictamen para que conozca el motivo y su compromiso.
+              </span>
+            </div>
+
+            {/* Input: Comentarios Adicionales del Verificador / Comité */}
+            <div className="space-y-1.5">
+              <label className="block font-bold text-slate-700 dark:text-slate-300 text-xs">
+                Comentarios u Observaciones Adicionales del Verificador / Comité:
+              </label>
+              <textarea
+                rows={2}
+                value={evalData.observaciones}
+                onChange={(e) => setEvalData((p) => ({ ...p, observaciones: e.target.value }))}
+                placeholder="Notas internas del dictamen o número de acuerdo..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Acciones del Mini-Modal */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowConditionalModal(false)}
+                className="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors"
+              >
+                Volver a Evaluación
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConditionalModal(false);
+                  handleSaveEvaluation('condicionada');
+                }}
+                className="py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-102"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                Confirmar Beca Condicionada
               </button>
             </div>
           </div>
