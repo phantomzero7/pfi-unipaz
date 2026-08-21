@@ -175,89 +175,116 @@ export const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* Selector de Perfil Compacto */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center gap-2 p-1 pr-2.5 rounded-full bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 transition-all"
-                >
-                  <div className="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-white/20">
-                    <Image
-                      src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                      alt={currentUser.nombre}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="text-left hidden lg:block">
-                    <div className="text-xs font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[100px]">
-                      {currentUser.nombre}
+                {/* Selector de Perfil Oficial y Único */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                    className="flex items-center gap-2 p-1.5 pr-3 rounded-full bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 transition-all shadow-sm"
+                  >
+                    <div className="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-white/20">
+                      <Image
+                        src={currentUser.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                        alt={currentUser.nombre}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-
-                {/* Dropdown de Personas Demo */}
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-2xl p-3 shadow-2xl z-50 text-slate-800 dark:text-white animate-fadeIn">
-                    <div className="px-3 py-2 border-b border-slate-100 dark:border-white/10">
-                      <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                        Selector de Usuario Demo:
-                      </p>
+                    <div className="text-left hidden sm:block">
+                      <div className="text-xs font-bold text-slate-800 dark:text-white leading-tight truncate max-w-[120px]">
+                        {currentUser.nombre}
+                      </div>
+                      <div className="text-[9px] font-semibold text-unipaz-orange uppercase leading-none">
+                        {currentUser.role === 'admin'
+                          ? 'Administración'
+                          : currentUser.role === 'extension' || currentUser.role === 'dedu'
+                          ? 'Extensión / DEDU'
+                          : 'Estudiante'}
+                      </div>
                     </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
 
-                    <div className="mt-2 space-y-1">
-                      {profiles.map((p) => {
-                        const isCurrent = p.id === currentUser.id;
-                        return (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              switchUser(p.id);
-                              setShowProfileDropdown(false);
-                            }}
-                            className={`w-full flex items-center gap-3 p-2 rounded-xl text-left transition-all ${
-                              isCurrent
-                                ? 'bg-unipaz-navy text-white font-bold'
-                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            <div className="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 dark:border-white/20 flex-shrink-0">
-                              <Image
-                                src={p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                                alt={p.nombre}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div className="truncate flex-1">
-                              <div className="text-xs leading-tight truncate">
-                                {p.nombre} {p.apellidos}
+                  {/* Dropdown de Personas Demo Organizado */}
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-3.5 shadow-2xl z-50 text-slate-800 dark:text-white animate-fadeIn space-y-2.5">
+                      <div className="px-2 py-1.5 border-b border-slate-100 dark:border-white/10 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">
+                            Cambiar de Cuenta / Rol
+                          </p>
+                          <p className="text-[11px] font-bold text-unipaz-navy dark:text-white">
+                            {currentUser.nombre} {currentUser.apellidos}
+                          </p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-unipaz-orange/15 text-unipaz-orange border border-unipaz-orange/30">
+                          {currentUser.role}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                        {profiles.map((p) => {
+                          const isCurrent = p.id === currentUser.id;
+                          const roleBadge =
+                            p.role === 'admin'
+                              ? { label: 'Admin & Becas', color: 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300' }
+                              : p.role === 'extension' || p.role === 'dedu'
+                              ? { label: 'Extensión PFI', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' }
+                              : { label: p.tiene_beca ? `Beca ${p.porcentaje_beca}%` : 'Estudiante', color: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300' };
+
+                          return (
+                            <button
+                              key={p.id}
+                              onClick={() => {
+                                switchUser(p.id);
+                                setShowProfileDropdown(false);
+                              }}
+                              className={`w-full flex items-center gap-2.5 p-2 rounded-2xl text-left transition-all ${
+                                isCurrent
+                                  ? 'bg-unipaz-navy text-white shadow-md'
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-white/20 flex-shrink-0">
+                                <Image
+                                  src={p.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                                  alt={p.nombre}
+                                  fill
+                                  className="object-cover"
+                                />
                               </div>
-                              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                {p.matricula} · <span className="capitalize">{p.role}</span>
+                              <div className="truncate flex-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="text-xs font-bold truncate">
+                                    {p.nombre} {p.apellidos}
+                                  </span>
+                                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ${roleBadge.color}`}>
+                                    {roleBadge.label}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 dark:text-slate-400 truncate">
+                                  {p.matricula} · {p.carrera ? p.carrera.split(' ')[0] : ''}
+                                </div>
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          resetToDefaultData();
-                          setShowProfileDropdown(false);
-                        }}
-                        className="text-[11px] text-slate-500 hover:text-rose-500 dark:text-slate-400 dark:hover:text-rose-400 flex items-center gap-1.5 transition-colors p-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Restaurar datos muestra
-                      </button>
+                      <div className="pt-2 border-t border-slate-100 dark:border-white/10 flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            resetToDefaultData();
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Restablecer Datos Demo
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
             </div>
           </div>
         </div>
