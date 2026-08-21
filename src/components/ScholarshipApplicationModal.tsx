@@ -81,7 +81,10 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
     'Excelencia Académica (Promedio 9.6 - 10.0)'
   );
 
-  // Form State - Paso 2: Situación Laboral y Justificación
+  // Form State - Paso 2: Situación Laboral y Estudio Socioeconómico
+  const [ingresoMensualFamiliar, setIngresoMensualFamiliar] = useState('$10,000 - $18,000 MXN');
+  const [dependientesEconomicos, setDependientesEconomicos] = useState('3 a 4 personas');
+  const [tipoVivienda, setTipoVivienda] = useState('Propia');
   const [trabajaActualmente, setTrabajaActualmente] = useState(false);
   const [empresa, setEmpresa] = useState('');
   const [puesto, setPuesto] = useState('');
@@ -516,9 +519,73 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               </div>
             )}
 
-            {/* PASO 2: SITUACIÓN LABORAL Y JUSTIFICACIÓN */}
+            {/* PASO 2: SITUACIÓN LABORAL Y ESTUDIO SOCIOECONÓMICO */}
             {currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
+                {/* Estudio Socioeconómico Familiar */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
+                    <Home className="w-4 h-4 text-unipaz-orange" />
+                    <div>
+                      <span className="font-black text-xs text-unipaz-navy dark:text-white block">
+                        Estudio Socioeconómico y Entorno Familiar
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        Información socioeconómica para evaluación del Comité de Becas.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
+                        Ingreso Familiar Mensual:
+                      </label>
+                      <select
+                        value={ingresoMensualFamiliar}
+                        onChange={(e) => setIngresoMensualFamiliar(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
+                      >
+                        <option value="Menos de $10,000 MXN">Menos de $10,000 MXN</option>
+                        <option value="$10,000 - $18,000 MXN">$10,000 - $18,000 MXN</option>
+                        <option value="$18,000 - $30,000 MXN">$18,000 - $30,000 MXN</option>
+                        <option value="Más de $30,000 MXN">Más de $30,000 MXN</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
+                        Dependientes Económicos:
+                      </label>
+                      <select
+                        value={dependientesEconomicos}
+                        onChange={(e) => setDependientesEconomicos(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
+                      >
+                        <option value="1 a 2 personas">1 a 2 personas</option>
+                        <option value="3 a 4 personas">3 a 4 personas</option>
+                        <option value="5 o más personas">5 o más personas</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
+                        Tipo de Vivienda:
+                      </label>
+                      <select
+                        value={tipoVivienda}
+                        onChange={(e) => setTipoVivienda(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
+                      >
+                        <option value="Propia">Propia</option>
+                        <option value="Rentada">Rentada</option>
+                        <option value="Prestada / Familiar">Prestada / Familiar</option>
+                        <option value="Pagándose">Pagándose</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Switch de Trabajo */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">

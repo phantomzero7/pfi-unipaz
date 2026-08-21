@@ -234,18 +234,6 @@ export default function EstudianteDashboard() {
               </button>
             )}
 
-            {/* Botón Estudio Socioeconómico (Para incremento de beca o nueva postulación) */}
-            {pfiConfig.estudio_socioeconomico_habilitado && (
-              <button
-                onClick={() => setShowSocioeconomicModal(true)}
-                className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
-                title={currentUser.tiene_beca ? 'Estudio Socioeconómico para Solicitud de Incremento de Beca' : 'Llenar Estudio Socioeconómico para Solicitud de Beca'}
-              >
-                <FileCheck className="w-4 h-4 text-unipaz-orange" />
-                {currentUser.tiene_beca ? 'Estudio Socioeconómico / Incremento' : 'Estudio Socioeconómico'}
-              </button>
-            )}
-
             {canDownloadGeneralCert && (
               <button
                 onClick={() => setShowDictamenModal(true)}
