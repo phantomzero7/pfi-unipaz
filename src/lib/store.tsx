@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { MOCK_ATTENDANCES, MOCK_EVENTS, MOCK_PROFILES } from './mock-data';
+import { MOCK_ATTENDANCES, MOCK_AUDIT_LOGS, MOCK_EVENTS, MOCK_PROFILES } from './mock-data';
 import {
   calculateStudentPFIProgress,
   calculateStudentScholarshipProgress,
@@ -32,6 +32,7 @@ import {
   ScholarshipProgressSummary,
   ServicioBecarioDept,
   StaffApplication,
+  StudentAuditEntry,
   UserProfile,
   UserRole,
 } from './types';
@@ -359,9 +360,19 @@ interface PFIContextType {
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   
-  // Bitácora de Auditoría de Becas
+  // Bitácora de Auditoría de Becas y Expediente Estudiantil
   scholarshipAuditLogs: ScholarshipAuditLog[];
   addScholarshipAuditLog: (log: Omit<ScholarshipAuditLog, 'id' | 'fecha_registro'>) => void;
+  studentAuditLogs: StudentAuditEntry[];
+  logStudentAuditEvent: (
+    entry: Omit<StudentAuditEntry, 'id' | 'timestamp' | 'autor_id' | 'autor_nombre' | 'autor_rol'> & {
+      student_id: string;
+      autor_id?: string;
+      autor_nombre?: string;
+      autor_rol?: UserRole;
+    }
+  ) => void;
+  addStudentExpedienteComment: (studentId: string, comment: string) => { success: boolean; message: string };
   updateScholarshipDates: (dates: {
     fecha_inicio_solicitud?: string;
     fecha_fin_solicitud?: string;
@@ -460,6 +471,7 @@ const STORAGE_KEYS = {
   CURRENT_USER_ID: 'unipaz_pfi_active_user_id_v3',
   CONFIG: 'unipaz_pfi_config_v3',
   SCHOLARSHIP_LOGS: 'unipaz_pfi_scholarship_logs_v3',
+  STUDENT_AUDIT_LOGS: 'unipaz_pfi_student_audit_logs_v3',
 };
 
 export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -471,6 +483,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [feedbacks, setFeedbacks] = useState<EventFeedback[]>([]);
   const [pfiConfig, setPfiConfig] = useState<PFIGlobalConfig>(DEFAULT_PFI_CONFIG);
   const [scholarshipAuditLogs, setScholarshipAuditLogs] = useState<ScholarshipAuditLog[]>(INITIAL_SCHOLARSHIP_AUDIT_LOGS);
+  const [studentAuditLogs, setStudentAuditLogs] = useState<StudentAuditEntry[]>(MOCK_AUDIT_LOGS);
   const [currentUserId, setCurrentUserId] = useState<string>('usr-student-01');
   const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -487,6 +500,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedNotifications = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
       const savedFeedbacks = localStorage.getItem(STORAGE_KEYS.FEEDBACKS);
       const savedLogs = localStorage.getItem(STORAGE_KEYS.SCHOLARSHIP_LOGS);
+      const savedStudentLogs = localStorage.getItem(STORAGE_KEYS.STUDENT_AUDIT_LOGS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
       const savedTheme = localStorage.getItem('unipaz_pfi_theme') as 'light' | 'dark' | null;
@@ -498,6 +512,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
       if (savedFeedbacks) setFeedbacks(JSON.parse(savedFeedbacks));
       if (savedLogs) setScholarshipAuditLogs(JSON.parse(savedLogs));
+      if (savedStudentLogs) setStudentAuditLogs(JSON.parse(savedStudentLogs));
       if (savedUserId) setCurrentUserId(savedUserId);
       if (savedConfig) {
         const parsedConfig = JSON.parse(savedConfig);
@@ -684,6 +699,16 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tipo: 'success',
       });
 
+      logStudentAuditEvent({
+        student_id: just.student_id,
+        categoria: 'justificacion_asistencia',
+        accion: `Aprobación de Justificación Médica/Laboral: ${event?.titulo || just.event_id}`,
+        detalles: `Motivo expuesto: ${just.motivo}. Acreditación formal de +${nominalHours.toFixed(1)} hrs PFI. Observaciones resolutorias: ${observaciones || 'Aprobada'}.`,
+        valor_anterior: 'Inasistencia / No Acreditado',
+        valor_nuevo: `Justificada (+${nominalHours.toFixed(1)} hrs PFI)`,
+        metadata: { justification_id: just.id, event_id: just.event_id },
+      });
+
       return { success: true, message: `Justificación aprobada y +${nominalHours} hrs acreditadas al alumno.` };
     } else {
       addNotification({
@@ -691,6 +716,16 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         titulo: '❌ Justificación Rechazada',
         mensaje: `Tu solicitud para "${event?.titulo}" no fue aprobada: ${observaciones || 'Evidencia no concluyente'}.`,
         tipo: 'error',
+      });
+
+      logStudentAuditEvent({
+        student_id: just.student_id,
+        categoria: 'justificacion_asistencia',
+        accion: `Rechazo de Justificación: ${event?.titulo || just.event_id}`,
+        detalles: `Motivo expuesto: ${just.motivo}. Causa del rechazo: ${observaciones || 'Evidencia no concluyente'}.`,
+        valor_anterior: 'En Revisión',
+        valor_nuevo: 'Rechazada',
+        metadata: { justification_id: just.id, event_id: just.event_id },
       });
 
       return { success: true, message: 'Justificación marcada como rechazada.' };
@@ -1430,21 +1465,24 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     customHours?: number,
     role?: ParticipantRole
   ) => {
+    const existing = attendances.find((a) => a.id === attendanceId);
+    if (!existing) return;
+
+    const ev = events.find((e) => e.id === existing.event_id);
+    const assignedRole = role || existing.rol_participacion || 'asistente';
+    const nominalHrs = assignedRole === 'staff_logistica'
+      ? (ev?.horas_staff || (ev?.horas_pfi || 10) * 1.5)
+      : assignedRole === 'ponente'
+      ? (ev?.horas_ponente || 15.0)
+      : (ev?.horas_pfi || 0);
+
+    const nominalPoints = ev?.puntos_beca || getStandardScholarshipPoints(ev?.categoria || 'Taller Extracurricular', assignedRole);
+    const hours = customHours !== undefined ? customHours : status === 'asistio' ? nominalHrs : 0;
+    const points = status === 'asistio' ? nominalPoints : 0;
+
     setAttendances((prev) =>
       prev.map((a) => {
         if (a.id !== attendanceId) return a;
-        const ev = events.find((e) => e.id === a.event_id);
-        const assignedRole = role || a.rol_participacion || 'asistente';
-        const nominalHrs = assignedRole === 'staff_logistica'
-          ? (ev?.horas_staff || (ev?.horas_pfi || 10) * 1.5)
-          : assignedRole === 'ponente'
-          ? (ev?.horas_ponente || 15.0)
-          : (ev?.horas_pfi || 0);
-
-        const nominalPoints = ev?.puntos_beca || getStandardScholarshipPoints(ev?.categoria || 'Taller Extracurricular', assignedRole);
-        const hours = customHours !== undefined ? customHours : status === 'asistio' ? nominalHrs : 0;
-        const points = status === 'asistio' ? nominalPoints : 0;
-
         return {
           ...a,
           status,
@@ -1456,6 +1494,16 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+
+    logStudentAuditEvent({
+      student_id: existing.student_id,
+      categoria: 'validacion_actividad',
+      accion: `Validación Extemporánea de Actividad: ${ev?.titulo || 'Actividad PFI'}`,
+      detalles: `Estatus: ${status}, Horas Acreditadas: ${hours.toFixed(1)} hrs, Puntos Beca: ${points} pts, Rol: ${assignedRole}. Registrado por autoridad competente.`,
+      valor_anterior: `${existing.status} (${existing.horas_acreditadas?.toFixed(1) || '0.0'} hrs)`,
+      valor_nuevo: `${status} (${hours.toFixed(1)} hrs)`,
+      metadata: { event_id: existing.event_id, attendance_id: existing.id },
+    });
   };
 
   const assignScholarshipToStudent = (
@@ -1467,6 +1515,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const student = profiles.find((p) => p.id === studentId);
     if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    const prevBeca = student.tiene_beca ? `${student.porcentaje_beca}% (${student.tipo_beca})` : 'Sin Beca';
+    const newBeca = `${porcentaje}% (${tipoBeca || 'Excelencia Académica'})`;
 
     setProfiles((prev) =>
       prev.map((p) =>
@@ -1482,6 +1533,15 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : p
       )
     );
+
+    logStudentAuditEvent({
+      student_id: studentId,
+      categoria: 'cambio_beca',
+      accion: `Asignación / Modificación de Beca Institucional`,
+      detalles: `Modalidad: ${tipoBeca || 'Excelencia Académica'}, Porcentaje de descuento: ${porcentaje}%, Promedio: ${promedio || student.promedio_academico || 9.0}, Meta cuatrimestral: ${meta || 1000} pts.`,
+      valor_anterior: prevBeca,
+      valor_nuevo: newBeca,
+    });
 
     addNotification({
       user_id: studentId,
@@ -2037,6 +2097,15 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         tipo: 'error',
       });
 
+      logStudentAuditEvent({
+        student_id: studentId,
+        categoria: 'renovacion_beca',
+        accion: `Dictamen de Ratificación / Renovación de Beca: ${resKey.toUpperCase()}`,
+        detalles: `Resolución: ${resKey.toUpperCase()}. Modalidad: ${bType} (${bPct}%). Observaciones/Condiciones: ${observaciones || condiciones || 'Criterios reglamentarios evaluados por el Comité de Becas'}.`,
+        valor_anterior: student.tiene_beca ? `${student.porcentaje_beca}% (${student.tipo_beca})` : 'Sin Beca',
+        valor_nuevo: resKey === 'rechazada' ? 'Beca Suspendida / No Ratificada' : `${bPct}% (${bType}) [${resKey}]`,
+      });
+
       return {
         success: true,
         message: `Resolución no favorable / Baja registrada para ${student.nombre} ${student.apellidos}.`,
@@ -2219,6 +2288,49 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.SCHOLARSHIP_LOGS, JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const logStudentAuditEvent = (
+    entry: Omit<StudentAuditEntry, 'id' | 'timestamp' | 'autor_id' | 'autor_nombre' | 'autor_rol'> & {
+      student_id: string;
+      autor_id?: string;
+      autor_nombre?: string;
+      autor_rol?: UserRole;
+    }
+  ) => {
+    const activeAdmin = profiles.find((p) => p.id === currentUserId) || currentUser;
+    const newLog: StudentAuditEntry = {
+      id: `aud-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      timestamp: new Date().toISOString(),
+      student_id: entry.student_id,
+      autor_id: entry.autor_id || activeAdmin.id,
+      autor_nombre: entry.autor_nombre || `${activeAdmin.nombre} ${activeAdmin.apellidos}`,
+      autor_rol: entry.autor_rol || activeAdmin.role || 'admin',
+      categoria: entry.categoria,
+      accion: entry.accion,
+      detalles: entry.detalles,
+      valor_anterior: entry.valor_anterior,
+      valor_nuevo: entry.valor_nuevo,
+      metadata: entry.metadata,
+    };
+
+    setStudentAuditLogs((prev) => {
+      const updated = [newLog, ...prev];
+      localStorage.setItem(STORAGE_KEYS.STUDENT_AUDIT_LOGS, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addStudentExpedienteComment = (studentId: string, comment: string) => {
+    if (!comment.trim()) return { success: false, message: 'El comentario u observación no puede estar vacío.' };
+    logStudentAuditEvent({
+      student_id: studentId,
+      categoria: 'comentario_expediente',
+      accion: 'Observación y Nota Interna en Expediente',
+      detalles: comment.trim(),
+      valor_nuevo: 'Nota Registrada',
+    });
+    return { success: true, message: 'Nota de auditoría guardada permanentemente en el expediente.' };
   };
 
   const updateScholarshipDates = (dates: {
@@ -2505,6 +2617,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAttendances(MOCK_ATTENDANCES);
     setPfiConfig(DEFAULT_PFI_CONFIG);
     setScholarshipAuditLogs(INITIAL_SCHOLARSHIP_AUDIT_LOGS);
+    setStudentAuditLogs(MOCK_AUDIT_LOGS);
     setCurrentUserId('usr-student-01');
     localStorage.removeItem(STORAGE_KEYS.PROFILES);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
@@ -2515,6 +2628,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
     localStorage.removeItem(STORAGE_KEYS.SCHOLARSHIP_LOGS);
+    localStorage.removeItem(STORAGE_KEYS.STUDENT_AUDIT_LOGS);
   };
 
   return (
@@ -2530,6 +2644,9 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pfiConfig,
         scholarshipAuditLogs,
         addScholarshipAuditLog,
+        studentAuditLogs,
+        logStudentAuditEvent,
+        addStudentExpedienteComment,
         updateScholarshipDates,
         batchSendScholarshipNotifications,
         addPFICategory,

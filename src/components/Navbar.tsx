@@ -48,8 +48,8 @@ export const Navbar: React.FC = () => {
   const [showScannerModal, setShowScannerModal] = useState(false);
 
   const isAdmin = currentUser.role === 'admin';
-  const isDedu = currentUser.role === 'dedu';
-  const isStaffOrAdmin = isAdmin || isDedu || currentUser.role === 'staff';
+  const isExtension = currentUser.role === 'extension' || currentUser.role === 'dedu';
+  const isStaffOrAdmin = isAdmin || isExtension || currentUser.role === 'staff';
   const progress = getStudentProgress();
 
   // Verifica si el estudiante es Staff temporal para un evento activo hoy
@@ -63,23 +63,25 @@ export const Navbar: React.FC = () => {
     { href: '/estudiante/constancias', label: 'Constancias', icon: FileCheck },
   ];
 
-  const deduLinks = [
-    { href: '/admin', label: 'Panel DEDU', icon: LayoutDashboard },
-    { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
-    { href: '/admin/estudiantes', label: 'Asistencias', icon: Users },
+  const extensionLinks = [
+    { href: '/admin', label: 'Panel PFI', icon: LayoutDashboard },
+    { href: '/admin/eventos', label: 'Eventos y Talleres', icon: Calendar },
+    { href: '/admin/estudiantes', label: 'Expedientes & Horas', icon: Users },
+    { href: '/admin/informes', label: 'Informes PFI', icon: FileSpreadsheet },
+    { href: '/admin/scanner', label: 'Escáner QR', icon: ScanLine },
   ];
 
   const adminLinks = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/admin/becas', label: 'Becas', icon: Award },
+    { href: '/admin/becas', label: 'Becas & Becados', icon: Award },
     { href: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
-    { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
+    { href: '/admin/eventos', label: 'Eventos y Talleres', icon: Calendar },
     { href: '/admin/informes', label: 'Informes', icon: FileSpreadsheet },
     { href: '/admin/importar', label: 'Importar', icon: Layers },
     { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
   ];
 
-  const currentLinks = isAdmin ? adminLinks : isDedu ? deduLinks : studentLinks;
+  const currentLinks = isAdmin ? adminLinks : isExtension ? extensionLinks : studentLinks;
 
   return (
     <>

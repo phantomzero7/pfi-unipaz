@@ -85,6 +85,7 @@ export default function AdminBecasConfigPage() {
     revokeScholarship,
     notifyScholarshipResolution,
     getActivePeriodForStudent,
+    currentUser,
   } = usePFI();
 
   const [activeTab, setActiveTab] = useState<'convocatoria' | 'directorio' | 'modalidades' | 'politicas'>('convocatoria');
@@ -830,6 +831,43 @@ export default function AdminBecasConfigPage() {
     if (!selectedAuditStudent) return [];
     return scholarshipAuditLogs.filter((l) => l.student_id === selectedAuditStudent.id);
   }, [selectedAuditStudent, scholarshipAuditLogs]);
+
+  if (currentUser.role === 'extension' || currentUser.role === 'dedu') {
+    return (
+      <div className="max-w-3xl mx-auto py-16 text-center space-y-6 animate-fadeIn">
+        <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/50 text-unipaz-orange border border-amber-200 dark:border-amber-800/60 flex items-center justify-center mx-auto shadow-md">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-black text-unipaz-navy dark:text-white">
+            Módulo Exclusivo para Administración General & Rectoría
+          </h2>
+          <p className="text-xs text-slate-500 max-w-lg mx-auto">
+            La dictaminación, presupuestos, convocatorias y ratificaciones de becas son competencia exclusiva de la Dirección de Administración General y el Comité de Becas.
+          </p>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium max-w-lg mx-auto">
+            Como usuario de <strong>Extensión y Difusión Universitaria (DEDU)</strong>, tienes acceso y control total sobre el catálogo de eventos formativos PFI, talleres PVC, validaciones extemporáneas y asistencias en las pestañas correspondientes.
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Link
+            href="/admin/eventos"
+            className="py-2.5 px-5 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all"
+          >
+            <Calendar className="w-4 h-4 text-unipaz-orange" />
+            Gestión de Eventos y Talleres PFI
+          </Link>
+          <Link
+            href="/admin/estudiantes"
+            className="py-2.5 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-2 transition-all"
+          >
+            <Users className="w-4 h-4" />
+            Directorio & Expedientes de Alumnos
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto pb-12">

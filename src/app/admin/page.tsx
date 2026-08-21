@@ -91,14 +91,20 @@ export default function AdminDashboardPage() {
               Panel de Control PFI · UNIPAZ
             </span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-unipaz-cobalt dark:text-blue-300 border border-blue-200 dark:border-blue-400/30 font-bold uppercase">
-              {currentUser.role}
+              {currentUser.role === 'admin'
+                ? 'Administración General & Rectoría'
+                : currentUser.role === 'extension' || currentUser.role === 'dedu'
+                ? 'Extensión y Difusión (DEDU)'
+                : currentUser.role}
             </span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-unipaz-navy dark:text-white mt-1">
             Gestión y Analíticas Institucionales
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-            Supervisión de acreditaciones, regla de permanencia (80%), control de asistencias QR, becas y eventos.
+            {currentUser.role === 'admin'
+              ? 'Supervisión integral de acreditaciones, auditoría inmutable, regla de permanencia (80%), becas y eventos.'
+              : 'Supervisión y acreditación de horas PFI, talleres PVC, validaciones extemporáneas, eventos y asistencias QR.'}
           </p>
 
           {/* Periodos Activos */}
@@ -130,7 +136,7 @@ export default function AdminDashboardPage() {
             className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs flex items-center gap-2 border border-slate-300 dark:border-white/10 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4 text-unipaz-orange" />
-            Crear Evento
+            Crear Actividad / Taller
           </Link>
         </div>
       </div>

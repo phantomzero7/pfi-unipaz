@@ -74,6 +74,8 @@ export default function AdminEstudiantesDirectoryPage() {
     revokeScholarship,
     notifyScholarshipResolution,
     currentUser,
+    studentAuditLogs,
+    addStudentExpedienteComment,
   } = usePFI();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,6 +93,9 @@ export default function AdminEstudiantesDirectoryPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
+  const [modalTab, setModalTab] = useState<'actividades' | 'beca' | 'auditoria'>('actividades');
+  const [newAuditComment, setNewAuditComment] = useState('');
+  const [auditCommentFeedback, setAuditCommentFeedback] = useState<string | null>(null);
 
   // Modal para asignación directa de eventos a este estudiante
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -650,70 +655,334 @@ export default function AdminEstudiantesDirectoryPage() {
               </div>
             </div>
 
-            {/* Métricas de Avance */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Horas Acreditadas</span>
-                <div className="text-2xl font-black text-unipaz-orange font-mono">
-                  {selectedStudentProgress.horasTotales.toFixed(1)} <span className="text-xs font-normal text-slate-400">/ 400h</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Nivel Formativo</span>
-                <div className="text-xl font-black text-unipaz-navy dark:text-white">
-                  {selectedStudentProgress.escala}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">Estatus Titulación</span>
-                <div className="text-sm font-bold text-emerald-600">
-                  {selectedStudentProgress.isAcreditado ? '✓ Requisitos Cumplidos' : 'En Proceso Formativo'}
-                </div>
-              </div>
-            </div>
-
-            {/* Desglose de Asistencias a Actividades */}
-            <div className="space-y-2 pt-2">
-              <h4 className="font-black text-xs text-unipaz-navy dark:text-white">
-                Historial de Actividades y Asistencias ({selectedStudentAttendances.length})
-              </h4>
-
-              {selectedStudentAttendances.length === 0 ? (
-                <div className="p-6 text-center text-slate-400 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-white/10">
-                  No registra asistencias aún.
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {selectedStudentAttendances.map((att) => (
-                    <div
-                      key={att.id}
-                      className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <strong className="text-unipaz-navy dark:text-white">{att.event?.titulo || 'Actividad PFI'}</strong>
-                        <div className="text-[10px] text-slate-500">
-                          {att.event?.categoria} · {att.horas_acreditadas.toFixed(1)} hrs acreditadas
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        {att.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Acciones del Expediente */}
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
+            {/* Navegación por Pestañas del Expediente */}
+            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
               <button
-                onClick={() => setShowAssignModal(true)}
-                className="py-2.5 px-4 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
+                onClick={() => setModalTab('actividades')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                  modalTab === 'actividades'
+                    ? 'bg-unipaz-orange text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
               >
-                <Plus className="w-4 h-4" />
-                Asignar Actividad Directa
+                <Calendar className="w-3.5 h-3.5" />
+                Horas PFI & Asistencias ({selectedStudentAttendances.length})
+              </button>
+
+              <button
+                onClick={() => setModalTab('beca')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                  modalTab === 'beca'
+                    ? 'bg-unipaz-orange text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                <Award className="w-3.5 h-3.5" />
+                Beca & Puntos {selectedStudent.tiene_beca ? `(${selectedStudent.porcentaje_beca}%)` : ''}
+              </button>
+
+              <button
+                onClick={() => setModalTab('auditoria')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                  modalTab === 'auditoria'
+                    ? 'bg-unipaz-navy text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-unipaz-orange" />
+                Bitácora de Auditoría ({studentAuditLogs.filter((l) => l.student_id === selectedStudent.id).length})
+              </button>
+            </div>
+
+            {/* TAB 1: ACTIVIDADES Y HORAS FORMATIVAS */}
+            {modalTab === 'actividades' && (
+              <div className="space-y-4">
+                {/* Métricas de Avance */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Horas Acreditadas</span>
+                    <div className="text-2xl font-black text-unipaz-orange font-mono">
+                      {selectedStudentProgress.horasTotales.toFixed(1)} <span className="text-xs font-normal text-slate-400">/ 400h</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Nivel Formativo</span>
+                    <div className="text-xl font-black text-unipaz-navy dark:text-white">
+                      {selectedStudentProgress.escala}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Estatus Titulación</span>
+                    <div className="text-sm font-bold text-emerald-600">
+                      {selectedStudentProgress.isAcreditado ? '✓ Requisitos Cumplidos' : 'En Proceso Formativo'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desglose de Asistencias */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-black text-xs text-unipaz-navy dark:text-white">
+                      Historial de Actividades y Asistencias
+                    </h4>
+                    <button
+                      onClick={() => setShowAssignModal(true)}
+                      className="py-1.5 px-3 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Asignar Actividad Directa
+                    </button>
+                  </div>
+
+                  {selectedStudentAttendances.length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-white/10">
+                      No registra asistencias aún. Puedes acreditar una actividad con el botón de arriba.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {selectedStudentAttendances.map((att) => (
+                        <div
+                          key={att.id}
+                          className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="space-y-0.5">
+                            <strong className="text-unipaz-navy dark:text-white">{att.event?.titulo || 'Actividad PFI'}</strong>
+                            <div className="text-[10px] text-slate-500">
+                              {att.event?.categoria} · {att.horas_acreditadas.toFixed(1)} hrs acreditadas · Rol: {att.rol_participacion || 'Asistente'}
+                            </div>
+                            {att.notes && (
+                              <div className="text-[10px] text-slate-400 italic">Nota: {att.notes}</div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              att.status === 'asistio' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {att.status}
+                            </span>
+
+                            {att.status !== 'asistio' && (
+                              <button
+                                onClick={() => {
+                                  validateAttendanceManually(att.id, 'asistio');
+                                }}
+                                className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] flex items-center gap-1 transition-all"
+                                title="Acreditar extemporáneamente y registrar en auditoría"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                Validar Extemporáneo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: EXPEDIENTE DE BECA */}
+            {modalTab === 'beca' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Condición de Beca</span>
+                    <div className="text-lg font-black text-unipaz-navy dark:text-white">
+                      {selectedStudent.tiene_beca ? (
+                        <span className="text-unipaz-orange">{selectedStudent.porcentaje_beca}% · {selectedStudent.tipo_beca}</span>
+                      ) : (
+                        <span className="text-slate-400">Sin Beca Activa</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Promedio Académico Registrado: <strong>{selectedStudent.promedio_academico?.toFixed(2) || '9.00'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Meta Cuatrimestral de Renovación</span>
+                    <div className="text-lg font-black font-mono text-emerald-600">
+                      {getStudentScholarshipProgress(selectedStudent.id).puntosTotales} / 1,000 pts
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Estatus de Refrendo: <strong>{selectedStudent.estatus_ratificacion_beca || 'Al corriente'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedStudent.es_becario_departamental && (
+                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 space-y-1">
+                    <span className="text-[10px] font-black uppercase text-amber-900 dark:text-amber-300">
+                      Servicio Becario Departamental Asignado
+                    </span>
+                    <div className="text-xs font-bold text-amber-950 dark:text-amber-200">
+                      Departamento: {selectedStudent.departamento_beca} ({selectedStudent.horas_departamentales_semanales || 10} hrs/sem)
+                    </div>
+                    <div className="text-[11px] text-amber-800 dark:text-amber-300">
+                      Cumplimiento: {selectedStudent.cumplimiento_departamental_acreditado ? '✓ Acreditado (1,000 pts otorgados)' : 'En proceso cuatrimestral'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: BITÁCORA DE AUDITORÍA INMUTABLE */}
+            {modalTab === 'auditoria' && (
+              <div className="space-y-4">
+                {/* Banner de Seguridad Institucional */}
+                <div className="p-3.5 rounded-2xl bg-slate-900 text-white border border-slate-800 flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 text-[11px]">
+                    <strong className="text-white block font-black">
+                      Expediente de Auditoría y Trazabilidad Inmutable
+                    </strong>
+                    <p className="text-slate-300">
+                      Toda validación de horas, acreditación extemporánea, resolución de becas, justificaciones médicas y comentarios internos quedan grabados permanentemente con firma digital del responsable. <strong>Esta bitácora es estrictamente interna y confidencial (no visible para el estudiante).</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Formulario para Agregar Nota u Observación de Auditoría */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 text-xs">
+                    Agregar Observación o Comentario Oficial al Expediente:
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newAuditComment}
+                      onChange={(e) => setNewAuditComment(e.target.value)}
+                      placeholder="ej. Se cotejó comprobante de ingresos original en ventanilla y se autorizó prórroga..."
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl px-3 py-2 text-xs font-normal"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newAuditComment.trim()) return;
+                        const res = addStudentExpedienteComment(selectedStudent.id, newAuditComment);
+                        if (res.success) {
+                          setNewAuditComment('');
+                          setAuditCommentFeedback('✓ Nota grabada permanentemente en la bitácora de auditoría.');
+                          setTimeout(() => setAuditCommentFeedback(null), 4000);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 shrink-0 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Registrar Nota
+                    </button>
+                  </div>
+                  {auditCommentFeedback && (
+                    <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      {auditCommentFeedback}
+                    </div>
+                  )}
+                </div>
+
+                {/* Historial Cronológico de Movimientos */}
+                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                  {studentAuditLogs.filter((l) => l.student_id === selectedStudent.id).length === 0 ? (
+                    <div className="p-6 text-center text-slate-400 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-white/10">
+                      No hay registros previos de auditoría para este expediente.
+                    </div>
+                  ) : (
+                    studentAuditLogs
+                      .filter((l) => l.student_id === selectedStudent.id)
+                      .map((log) => {
+                        const getCategoryBadge = (cat: string) => {
+                          switch (cat) {
+                            case 'validacion_actividad':
+                              return { label: 'Validación de Actividad', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300' };
+                            case 'cambio_beca':
+                              return { label: 'Cambio de Beca', color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300' };
+                            case 'solicitud_beca':
+                              return { label: 'Solicitud / Dictamen Beca', color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300' };
+                            case 'renovacion_beca':
+                              return { label: 'Renovación / Refrendo', color: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300' };
+                            case 'justificacion_asistencia':
+                              return { label: 'Justificación Médica/Laboral', color: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300' };
+                            case 'comentario_expediente':
+                              return { label: 'Nota Interna / Observación', color: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200' };
+                            case 'sancion_penalizacion':
+                              return { label: 'Penalización / Sanción', color: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300' };
+                            default:
+                              return { label: 'Movimiento Registrado', color: 'bg-slate-100 text-slate-800 border-slate-300' };
+                          }
+                        };
+
+                        const badge = getCategoryBadge(log.categoria);
+                        const dateFormatted = new Date(log.timestamp).toLocaleString('es-MX', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+
+                        return (
+                          <div
+                            key={log.id}
+                            className="p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 shadow-sm space-y-2 text-xs"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${badge.color}`}>
+                                {badge.label}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">{dateFormatted}</span>
+                            </div>
+
+                            <div>
+                              <strong className="text-unipaz-navy dark:text-white font-bold block">
+                                {log.accion}
+                              </strong>
+                              <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-0.5">
+                                {log.detalles}
+                              </p>
+                            </div>
+
+                            {(log.valor_anterior || log.valor_nuevo) && (
+                              <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono">
+                                {log.valor_anterior && (
+                                  <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                    Antes: {log.valor_anterior}
+                                  </span>
+                                )}
+                                {log.valor_anterior && log.valor_nuevo && <span>➔</span>}
+                                {log.valor_nuevo && (
+                                  <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/60">
+                                    Nuevo: {log.valor_nuevo}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/5 text-[10px] text-slate-400">
+                              <span>
+                                Responsable: <strong>{log.autor_nombre}</strong> ({log.autor_rol === 'admin' ? 'Administración' : 'Extensión y Difusión'})
+                              </span>
+                              <span className="font-mono text-slate-400">🔒 ID: {log.id}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Pie del Expediente */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
+              <span className="text-[11px] text-slate-400">
+                Expediente Institucional UNIPAZ · {selectedStudent.matricula}
+              </span>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="py-2 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition-all"
+              >
+                Cerrar Expediente
               </button>
             </div>
           </div>

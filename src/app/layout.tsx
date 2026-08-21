@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { DemoModeBanner } from '@/components/DemoModeBanner';
 import { Navbar } from '@/components/Navbar';
 import { PFIProvider } from '@/lib/store';
 import '@/styles/globals.css';
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} bg-[#F8FAFC] dark:bg-[#0A1526] text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300`}>
         <PFIProvider>
+          <DemoModeBanner />
           <Navbar />
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             {children}

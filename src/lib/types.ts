@@ -1,9 +1,34 @@
-export type UserRole = 'estudiante' | 'staff' | 'dedu' | 'admin';
+export type UserRole = 'estudiante' | 'extension' | 'dedu' | 'admin' | 'staff';
 export type EventModality = 'presencial' | 'online' | 'hibrido';
 export type AttendanceStatus = 'registrado' | 'asistio' | 'incompleto' | 'cancelado' | 'lista_espera';
 export type ParticipantRole = 'asistente' | 'staff_logistica' | 'ponente' | 'moderador' | 'organizador';
 export type StaffApplicationStatus = 'pendiente' | 'aceptado' | 'rechazado';
 export type JustificationStatus = 'pendiente' | 'aprobada' | 'rechazada';
+
+export type AuditLogCategory =
+  | 'validacion_actividad'
+  | 'ajuste_horas_pfi'
+  | 'cambio_beca'
+  | 'solicitud_beca'
+  | 'renovacion_beca'
+  | 'justificacion_asistencia'
+  | 'comentario_expediente'
+  | 'sancion_penalizacion';
+
+export interface StudentAuditEntry {
+  id: string;
+  student_id: string;
+  timestamp: string;
+  autor_id: string;
+  autor_nombre: string;
+  autor_rol: UserRole;
+  categoria: AuditLogCategory;
+  accion: string;
+  detalles: string;
+  valor_anterior?: string;
+  valor_nuevo?: string;
+  metadata?: Record<string, any>;
+}
 
 export interface StaffApplication {
   student_id: string;
