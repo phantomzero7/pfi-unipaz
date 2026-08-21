@@ -331,6 +331,15 @@ interface PFIContextType {
   toggleBecarioReport: (enabled: boolean) => void;
   toggleSocioeconomicStudy: (enabled: boolean) => void;
   submitScholarshipApplication: (studentId: string, tipoBeca: string) => { success: boolean; message: string };
+  submitScholarshipRenewal: (
+    studentId: string,
+    params: {
+      solicitaAumento?: boolean;
+      porcentajeDeseado?: number;
+      motivoAumento?: string;
+      estudioActualizado?: boolean;
+    }
+  ) => { success: boolean; message: string };
   submitBecarioReport: (studentId: string) => { success: boolean; message: string };
   submitSocioeconomicStudy: (studentId: string) => { success: boolean; message: string };
   notifyScholarshipResolution: (
@@ -1939,6 +1948,73 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const submitScholarshipRenewal = (
+    studentId: string,
+    params: {
+      solicitaAumento?: boolean;
+      porcentajeDeseado?: number;
+      motivoAumento?: string;
+      estudioActualizado?: boolean;
+    }
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    const hoy = new Date().toISOString().split('T')[0];
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              solicitud_beca_status: params.solicitaAumento ? 'enviada' : 'en_evaluacion',
+              solicita_aumento_porcentaje: params.solicitaAumento || false,
+              porcentaje_beca_solicitado: params.porcentajeDeseado,
+              motivo_aumento_beca: params.motivoAumento || '',
+              fecha_solicitud_aumento: params.solicitaAumento ? hoy : undefined,
+              estudio_socioeconomico_entregado: params.estudioActualizado
+                ? true
+                : p.estudio_socioeconomico_entregado,
+              fecha_estudio_socioeconomico: params.estudioActualizado
+                ? hoy
+                : p.fecha_estudio_socioeconomico,
+            }
+          : p
+      )
+    );
+
+    logStudentAuditEvent({
+      student_id: studentId,
+      categoria: 'renovacion_beca',
+      accion: params.solicitaAumento ? 'Solicitud de Incremento de Beca' : 'Ratificación Ordinaria de Beca',
+      detalles: params.solicitaAumento
+        ? `Solicitud de renovación con petición de aumento al ${params.porcentajeDeseado}% (Motivo: ${params.motivoAumento || 'No especificado'})`
+        : `Ratificación y renovación ordinaria de beca (${student.porcentaje_beca}% ${student.tipo_beca || 'Institucional'})`,
+      valor_anterior: `${student.porcentaje_beca}%`,
+      valor_nuevo: params.solicitaAumento ? `${params.porcentajeDeseado}%` : `${student.porcentaje_beca}%`,
+    });
+
+    addNotification({
+      user_id: 'admin',
+      titulo: params.solicitaAumento
+        ? '📈 Solicitud de Aumento de Beca'
+        : '🔄 Renovación de Beca Ratificada',
+      mensaje: `${student.nombre} ${student.apellidos} (${student.matricula}) ha solicitado ${
+        params.solicitaAumento
+          ? `un incremento al ${params.porcentajeDeseado}% de beca.`
+          : `la ratificación de su beca del ${student.porcentaje_beca}%.`
+      }`,
+      tipo: 'info',
+    });
+
+    return {
+      success: true,
+      message: params.solicitaAumento
+        ? 'Tu solicitud de renovación con petición de aumento y estudio socioeconómico ha sido enviada al Comité de Becas.'
+        : 'Tu renovación de beca cuatrimestral ha sido registrada y ratificada satisfactoriamente.',
+    };
+  };
+
   // Periodos Académicos Cuatrimestrales y Semestrales
   const addAcademicPeriod = (period: Omit<import('./types').AcademicPeriod, 'id'>) => {
     const newId = `per-${period.codigo || Date.now()}`;
@@ -2771,6 +2847,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleBecarioReport,
         toggleSocioeconomicStudy,
         submitScholarshipApplication,
+        submitScholarshipRenewal,
         submitBecarioReport,
         submitSocioeconomicStudy,
         notifyScholarshipResolution,

@@ -337,6 +337,16 @@ export type EventCategory =
   | 'Simposio'
   | 'Jornada Social'
   | 'Cine Club'
+  | string;
+
+export type ActivityType =
+  | 'Taller'
+  | 'Conferencia'
+  | 'Seminario'
+  | 'Voluntariado'
+  | 'Concurso'
+  | 'Visita Guiada'
+  | 'Panel'
   | 'Foro'
   | 'Campaña'
   | string;
@@ -350,26 +360,160 @@ export interface ModalidadBecaConfig {
   porcentajes_aplicables?: number[];
   promedio_minimo?: number;
   requiere_estudio_socioeconomico?: boolean;
+  carrera_exclusiva?: string;
+  solo_posgrados?: boolean;
   activa: boolean;
 }
 
 export const MODALIDADES_BECA_DEFAULT: ModalidadBecaConfig[] = [
-  { id: 'mod-1', nombre: 'Excelencia Académica (Promedio 9.6 - 10.0)', descripcion: 'Estudiantes de alto rendimiento con promedio destacado sin materias reprobadas.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 9.6, activa: true },
-  { id: 'mod-2', nombre: 'Mérito Académico (Promedio 9.0 - 9.5)', descripcion: 'Estímulo a la constancia académica con promedio entre 9.0 y 9.5.', descuento_min: 25, descuento_max: 50, porcentajes_aplicables: [25, 30, 50], promedio_minimo: 9.0, activa: true },
-  { id: 'mod-3', nombre: 'Apoyo a la Economía Familiar', descripcion: 'Apoyo a estudiantes en situación de vulnerabilidad socioeconómica (a partir de 2° ciclo).', descuento_min: 20, descuento_max: 80, porcentajes_aplicables: [20, 25, 30, 50, 60, 80], promedio_minimo: 8.0, requiere_estudio_socioeconomico: true, activa: true },
-  { id: 'mod-4', nombre: 'Convenios Institucionales', descripcion: 'Descuentos acordados con empresas, sindicatos y dependencias gubernamentales.', descuento_min: 20, descuento_max: 50, porcentajes_aplicables: [20, 25, 30, 50], promedio_minimo: 8.0, activa: true },
-  { id: 'mod-5', nombre: 'Familiar / Hermanos', descripcion: 'Descuento para familias con dos o más integrantes cursando simultáneamente en UNIPAZ.', descuento_min: 20, descuento_max: 20, porcentajes_aplicables: [20], promedio_minimo: 8.0, activa: true },
-  { id: 'mod-6', nombre: 'Egresados UNIPAZ', descripcion: 'Estímulo de continuidad académica para egresados de licenciatura cursando posgrado.', descuento_min: 25, descuento_max: 50, porcentajes_aplicables: [25, 30, 50], promedio_minimo: 8.5, activa: true },
-  { id: 'mod-7', nombre: 'Promoción Educativa', descripcion: 'Beca de captación y nuevo ingreso según convenios de bachillerato.', descuento_min: 20, descuento_max: 50, porcentajes_aplicables: [20, 25, 30, 50], promedio_minimo: 8.0, activa: true },
-  { id: 'mod-8', nombre: 'Deportiva (Garzas UNIPAZ)', descripcion: 'Estudiantes atletas representativos de los equipos institucionales Garzas UNIPAZ.', descuento_min: 30, descuento_max: 80, porcentajes_aplicables: [30, 50, 60, 80], promedio_minimo: 8.0, activa: true },
-  { id: 'mod-9', nombre: 'Cultural y Artística', descripcion: 'Integrantes destacados de talleres artísticos y representativos culturales.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.0, activa: true },
-  { id: 'mod-10', nombre: 'Investigación y Publicaciones', descripcion: 'Alumnos adscritos a proyectos de investigación aplicada y publicaciones indexadas.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 9.0, activa: true },
-  { id: 'mod-11', nombre: 'Talento y Liderazgo Social', descripcion: 'Proyectos de impacto comunitario, derechos humanos e innovación social.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.5, activa: true },
-  { id: 'mod-12', nombre: 'Madres Solteras / Jefas de Familia', descripcion: 'Estímulo de equidad y apoyo integral a madres universitarias.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.0, requiere_estudio_socioeconomico: true, activa: true },
-  { id: 'mod-13', nombre: 'Inclusión y Discapacidad', descripcion: 'Beca de accesibilidad y apoyo prioritario para estudiantes con alguna discapacidad.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 8.0, requiere_estudio_socioeconomico: true, activa: true },
-  { id: 'mod-14', nombre: 'Intercultural / Pueblos Originarios', descripcion: 'Estímulo de inclusión y preservación de lenguas y pueblos originarios.', descuento_min: 50, descuento_max: 80, porcentajes_aplicables: [50, 60, 80], promedio_minimo: 8.0, requiere_estudio_socioeconomico: true, activa: true },
-  { id: 'mod-15', nombre: 'Beca Especial Grupo Violeta', descripcion: 'Convenio especial de protección y respaldo institucional Grupo Violeta.', descuento_min: 50, descuento_max: 50, porcentajes_aplicables: [50], promedio_minimo: 8.0, activa: true },
+  {
+    id: 'mod-1',
+    nombre: 'Beca Egresado UNIPAZ',
+    descripcion: 'Dirigida a egresados o estudiantes cuyos padres, madres o hermanos(as) son egresados de la Universidad, sin importar si dependen económicamente de ellos.',
+    descuento_min: 25,
+    descuento_max: 25,
+    porcentajes_aplicables: [25],
+    promedio_minimo: 8.0,
+    activa: true,
+  },
+  {
+    id: 'mod-2',
+    nombre: 'Beca Familiar',
+    descripcion: 'Disponible para estudiantes que tienen hermanos(as) inscritos actualmente en UNIPAZ.',
+    descuento_min: 25,
+    descuento_max: 25,
+    porcentajes_aplicables: [25],
+    promedio_minimo: 8.0,
+    activa: true,
+  },
+  {
+    id: 'mod-3',
+    nombre: 'Beca por Convenios',
+    descripcion: 'El/la estudiante trabaja en alguna de estas instituciones u organizaciones, o el padre/madre trabajan en instituciones públicas o privadas con convenios de colaboración.',
+    descuento_min: 25,
+    descuento_max: 30,
+    porcentajes_aplicables: [25, 30],
+    promedio_minimo: 8.0,
+    activa: true,
+  },
+  {
+    id: 'mod-4',
+    nombre: 'Beca de Excelencia Académica',
+    descripcion: 'Dirigida a estudiantes recién egresados de preparatoria con desempeño académico sobresaliente, que sean postulados por su institución de procedencia mediante convenio con UNIPAZ. Promedio general de 9.0 a 10.0. Requiere historial académico y la solicitud de beca emitida por la preparatoria correspondiente.',
+    descuento_min: 50,
+    descuento_max: 80,
+    porcentajes_aplicables: [50, 60, 70, 80],
+    promedio_minimo: 9.0,
+    activa: true,
+  },
+  {
+    id: 'mod-5',
+    nombre: 'Beca de Promoción',
+    descripcion: 'Se concede a través de campañas educativas en escuelas y ferias, mediante el llenado de un formato de solicitud.',
+    descuento_min: 30,
+    descuento_max: 30,
+    porcentajes_aplicables: [30],
+    promedio_minimo: 8.0,
+    activa: true,
+  },
+  {
+    id: 'mod-6',
+    nombre: 'Beca de Continuidad Escolar (Estudio Socioeconómico)',
+    descripcion: 'Disponible para estudiantes que hayan concluido al menos el primer cuatrimestre, con promedio mínimo de 8.0. La asignación se realiza tras un análisis socioeconómico y revisión del comité de becas.',
+    descuento_min: 20,
+    descuento_max: 30,
+    porcentajes_aplicables: [20, 25, 30],
+    promedio_minimo: 8.0,
+    requiere_estudio_socioeconomico: true,
+    activa: true,
+  },
+  {
+    id: 'mod-7',
+    nombre: 'Beca Grupo Violeta',
+    descripcion: 'Beca por Convenio con el Instituto de Justicia para Mujeres de La Paz, B. C. S. y aplica para la licenciatura de trabajo social solamente.',
+    descuento_min: 50,
+    descuento_max: 50,
+    porcentajes_aplicables: [50],
+    promedio_minimo: 8.0,
+    carrera_exclusiva: 'LICENCIATURA EN TRABAJO SOCIAL',
+    activa: true,
+  },
+  {
+    id: 'mod-8',
+    nombre: 'Beca Colaborador UNIPAZ',
+    descripcion: 'El personal directivo y administrativo de la Universidad Internacional de La Paz podrá acceder a una beca del 25% en colegiaturas de posgrado. Antigüedad mínima de un año en la institución.',
+    descuento_min: 25,
+    descuento_max: 50,
+    porcentajes_aplicables: [25, 30, 40, 50],
+    promedio_minimo: 8.0,
+    solo_posgrados: true,
+    activa: true,
+  },
 ];
+
+export function validarCondicionesEspecialesBeca(
+  carrera: string,
+  modalidadNombre: string,
+  porcentajeSolicitado?: number
+): {
+  permiteBeca: boolean;
+  motivoBloqueo?: string;
+  porcentajeMaximoPermitido?: number;
+  esExcepcional?: boolean;
+  advertencia?: string;
+} {
+  const cNorm = (carrera || '').toUpperCase();
+
+  // 1. Licenciatura en Médico Cirujano - No aplica Beca
+  if (cNorm.includes('MÉDICO CIRUJANO') || cNorm.includes('MEDICO CIRUJANO')) {
+    return {
+      permiteBeca: false,
+      motivoBloqueo: 'La Licenciatura en Médico Cirujano no aplica para programa de becas institucionales.',
+      porcentajeMaximoPermitido: 0,
+    };
+  }
+
+  // 2. Beca Grupo Violeta - Aplica solo para Trabajo Social
+  if (modalidadNombre.includes('Grupo Violeta')) {
+    if (!cNorm.includes('TRABAJO SOCIAL')) {
+      return {
+        permiteBeca: false,
+        motivoBloqueo: 'La Beca Grupo Violeta aplica exclusivamente para la Licenciatura en Trabajo Social.',
+        porcentajeMaximoPermitido: 0,
+      };
+    }
+  }
+
+  // 3. Beca Colaborador UNIPAZ - Solo Posgrados / Maestrías
+  if (modalidadNombre.includes('Colaborador UNIPAZ')) {
+    if (!cNorm.includes('MAESTRÍA') && !cNorm.includes('MAESTRIA') && !cNorm.includes('POSGRADO')) {
+      return {
+        permiteBeca: false,
+        motivoBloqueo: 'La Beca Colaborador UNIPAZ aplica exclusivamente para programas de Posgrado y Maestría.',
+        porcentajeMaximoPermitido: 0,
+      };
+    }
+  }
+
+  // 4. Licenciatura en Enfermería - Máximo 30% salvo caso excepcional
+  if (cNorm.includes('ENFERMERÍA') || cNorm.includes('ENFERMERIA')) {
+    const esMayorA30 = (porcentajeSolicitado || 0) > 30;
+    return {
+      permiteBeca: true,
+      porcentajeMaximoPermitido: 30,
+      esExcepcional: esMayorA30,
+      advertencia: esMayorA30
+        ? 'En Licenciatura en Enfermería el descuento máximo institucional es de 30%. Porcentajes mayores requieren autorización excepcional directa del Comité.'
+        : 'Licenciatura en Enfermería: Descuento regular aplicable hasta un máximo del 30%.',
+    };
+  }
+
+  // Todas las demás licenciaturas: 20% - 80%
+  return {
+    permiteBeca: true,
+    porcentajeMaximoPermitido: 80,
+  };
+}
 
 export interface ServicioBecarioDept {
   id: string;

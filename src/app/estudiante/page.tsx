@@ -37,14 +37,19 @@ import { OfficialClearanceDictamenModal } from '@/components/OfficialClearanceDi
 import { PrintableIdCardModal } from '@/components/PrintableIdCardModal';
 import { QrScannerModal } from '@/components/QrScannerModal';
 import { ScholarshipApplicationModal } from '@/components/ScholarshipApplicationModal';
+import { ScholarshipRenewalModal } from '@/components/ScholarshipRenewalModal';
 import { ScholarshipProgressWidget } from '@/components/ScholarshipProgressWidget';
-import { SocioeconomicStudyModal } from '@/components/SocioeconomicStudyModal';
 import { StudentBadgesShowcase } from '@/components/StudentBadgesShowcase';
 import { StudentQrCard } from '@/components/StudentQrCard';
 import { WorkshopCertificatePdfModal } from '@/components/WorkshopCertificatePdfModal';
 import { getActiveStaffEventsForStudent, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
-import { EventAttendance, formatGradoAcademico, PFIEvent } from '@/lib/types';
+import {
+  EventAttendance,
+  formatGradoAcademico,
+  PFIEvent,
+  PROGRAMAS_ACADEMICOS,
+} from '@/lib/types';
 
 export default function EstudianteDashboard() {
   const {
@@ -66,8 +71,8 @@ export default function EstudianteDashboard() {
   const [showDictamenModal, setShowDictamenModal] = useState(false);
   const [showPrintableCardModal, setShowPrintableCardModal] = useState(false);
   const [showScholarshipAppModal, setShowScholarshipAppModal] = useState(false);
+  const [showScholarshipRenewalModal, setShowScholarshipRenewalModal] = useState(false);
   const [showBecarioReportModal, setShowBecarioReportModal] = useState(false);
-  const [showSocioeconomicModal, setShowSocioeconomicModal] = useState(false);
   const [showStaffScannerModal, setShowStaffScannerModal] = useState(false);
 
   const [selectedWorkshopAtt, setSelectedWorkshopAtt] = useState<EventAttendance | null>(null);
@@ -146,12 +151,12 @@ export default function EstudianteDashboard() {
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setShowSocioeconomicModal(true)}
-              className="py-2.5 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
-              title="Llenar Estudio Socioeconómico para solicitar un incremento en tu porcentaje de beca"
+              onClick={() => setShowScholarshipRenewalModal(true)}
+              className="py-2.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+              title="Renovar beca cuatrimestral o solicitar aumento de porcentaje"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Solicitar Incremento de Beca
+              Renovar / Ratificar Beca
             </button>
           </div>
         </div>
@@ -727,11 +732,11 @@ export default function EstudianteDashboard() {
         />
       )}
 
-      {/* MODAL DE ESTUDIO SOCIOECONÓMICO */}
-      {showSocioeconomicModal && (
-        <SocioeconomicStudyModal
-          isOpen={showSocioeconomicModal}
-          onClose={() => setShowSocioeconomicModal(false)}
+      {/* MODAL DE RENOVACIÓN Y RATIFICACIÓN DE BECA */}
+      {showScholarshipRenewalModal && (
+        <ScholarshipRenewalModal
+          isOpen={showScholarshipRenewalModal}
+          onClose={() => setShowScholarshipRenewalModal(false)}
           student={currentUser}
         />
       )}

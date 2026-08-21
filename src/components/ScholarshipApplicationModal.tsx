@@ -52,6 +52,7 @@ import {
   OPCIONES_SEXO,
   PROGRAMAS_ACADEMICOS,
   UserProfile,
+  validarCondicionesEspecialesBeca,
 } from '@/lib/types';
 
 interface ScholarshipApplicationModalProps {
@@ -85,18 +86,28 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
     [pfiConfig.modalidadesBecaCatalog]
   );
 
-  // Modalidad seleccionada (Default: Excelencia Académica)
+  // Modalidad seleccionada (Default: Beca de Continuidad Escolar o Excelencia Académica)
   const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>(
-    'Excelencia Académica (Promedio 9.6 - 10.0)'
+    'Beca de Continuidad Escolar (Estudio Socioeconómico)'
   );
 
-  // Switch opcional para adjuntar estudio socioeconómico voluntario en modalidades académicas
+  // Switch opcional para adjuntar estudio socioeconómico voluntario en modalidades de mérito
   const [solicitaEstudioVoluntario, setSolicitaEstudioVoluntario] = useState(false);
 
   // Config de la modalidad seleccionada
   const selectedModalidadConfig = useMemo(
     () => modalidadesCatalog.find((m) => m.nombre === selectedTipoBeca) || modalidadesCatalog[0],
     [modalidadesCatalog, selectedTipoBeca]
+  );
+
+  // Validación de condiciones especiales por carrera
+  const validacionCarrera = useMemo(
+    () =>
+      validarCondicionesEspecialesBeca(
+        student.carrera || '',
+        selectedTipoBeca
+      ),
+    [student.carrera, selectedTipoBeca]
   );
 
   // Condición: ¿Aparece la sección de Estudio Socioeconómico?
@@ -405,52 +416,46 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     }}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/20 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
                   >
-                    <optgroup label="Excelencia, Mérito y Rendimiento Académico">
-                      <option value="Excelencia Académica (Promedio 9.6 - 10.0)">
-                        Excelencia Académica (Promedio 9.6 - 10.0)
-                      </option>
-                      <option value="Mérito Académico (Promedio 9.0 - 9.5)">
-                        Mérito Académico (Promedio 9.0 - 9.5)
-                      </option>
-                      <option value="Investigación y Publicaciones">
-                        Investigación y Publicaciones
-                      </option>
-                      <option value="Talento y Liderazgo Social">
-                        Talento y Liderazgo Social
-                      </option>
-                    </optgroup>
-                    <optgroup label="Apoyo a la Economía Familiar y Grupos Prioritarios (Requieren Estudio Socioeconómico)">
-                      <option value="Apoyo a la Economía Familiar">
-                        Apoyo a la Economía Familiar (Vulnerabilidad Económica)
-                      </option>
-                      <option value="Madres Solteras / Jefas de Familia">
-                        Madres Solteras / Jefas de Familia
-                      </option>
-                      <option value="Inclusión y Discapacidad">
-                        Inclusión y Discapacidad
-                      </option>
-                      <option value="Intercultural / Pueblos Originarios">
-                        Intercultural / Pueblos Originarios
-                      </option>
-                    </optgroup>
-                    <optgroup label="Convenios, Familiares y Representativas">
-                      <option value="Convenios Institucionales">
-                        Convenios Institucionales (Empresas / Gobierno)
-                      </option>
-                      <option value="Familiar / Hermanos">
-                        Familiar / Hermanos (20%)
-                      </option>
-                      <option value="Deportiva (Garzas UNIPAZ)">
-                        Deportiva (Garzas UNIPAZ)
-                      </option>
-                      <option value="Cultural y Artística">
-                        Cultural y Artística
-                      </option>
-                      <option value="Egresados UNIPAZ">
-                        Egresados UNIPAZ (Posgrados)
-                      </option>
-                    </optgroup>
+                    <option value="Beca de Continuidad Escolar (Estudio Socioeconómico)">
+                      1. Beca de Continuidad Escolar (Estudio Socioeconómico 20% - 30%)
+                    </option>
+                    <option value="Beca de Excelencia Académica">
+                      2. Beca de Excelencia Académica (Promedio 9.0 a 10.0 · 50% - 80%)
+                    </option>
+                    <option value="Beca por Convenios">
+                      3. Beca por Convenios (Empresas / Instituciones · 25% - 30%)
+                    </option>
+                    <option value="Beca Familiar">
+                      4. Beca Familiar (Hermanos inscritos · 25%)
+                    </option>
+                    <option value="Beca Egresado UNIPAZ">
+                      5. Beca Egresado UNIPAZ (Egresados o familiares · 25%)
+                    </option>
+                    <option value="Beca de Promoción">
+                      6. Beca de Promoción (Campañas educativas y ferias · 30%)
+                    </option>
+                    <option value="Beca Grupo Violeta">
+                      7. Beca Grupo Violeta (Instituto de Justicia para Mujeres · 50% Trabajo Social)
+                    </option>
+                    <option value="Beca Colaborador UNIPAZ">
+                      8. Beca Colaborador UNIPAZ (Personal UNIPAZ en Posgrados · 25% - 50%)
+                    </option>
                   </select>
+
+                  {/* Banner de Validación de Condiciones Especiales por Carrera */}
+                  {validacionCarrera.motivoBloqueo && (
+                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-900 dark:text-rose-200 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      <span className="font-bold">{validacionCarrera.motivoBloqueo}</span>
+                    </div>
+                  )}
+
+                  {validacionCarrera.advertencia && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
+                      <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span>{validacionCarrera.advertencia}</span>
+                    </div>
+                  )}
 
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                     {selectedModalidadConfig?.descripcion ||
