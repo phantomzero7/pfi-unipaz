@@ -277,8 +277,16 @@ export interface UserProfile {
   fecha_informe_becario?: string;
   fecha_estudio_socioeconomico?: string;
   
+  // Estatus de Inscripción y Baja
+  activo?: boolean; // Default: true
+  estatus_inscripcion?: 'activo' | 'baja_temporal' | 'baja_definitiva' | 'egresado';
+  motivo_baja?: string;
+  fecha_baja?: string;
+  
   created_at?: string;
 }
+
+export type EstatusInscripcion = 'activo' | 'baja_temporal' | 'baja_definitiva' | 'egresado';
 
 export interface AcademicPeriod {
   id: string;

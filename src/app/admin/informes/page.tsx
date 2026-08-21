@@ -49,6 +49,7 @@ export default function AdminInformesPage() {
   const [selectedCuatri, setSelectedCuatri] = useState<string>('todos');
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>('todos');
   const [selectedSexo, setSelectedSexo] = useState<string>('todos');
+  const [selectedEstatus, setSelectedEstatus] = useState<'activos' | 'todos' | 'bajas'>('activos');
   const [searchTerm, setSearchTerm] = useState('');
 
   const students = useMemo(() => profiles.filter((p) => p.role === 'estudiante'), [profiles]);
@@ -74,6 +75,10 @@ export default function AdminInformesPage() {
       if (selectedCarrera !== 'todas' && s.carrera !== selectedCarrera) return false;
       if (selectedCuatri !== 'todos' && String(s.cuatrimestre) !== selectedCuatri) return false;
       if (selectedSexo !== 'todos' && (s.sexo || 'Hombre') !== selectedSexo) return false;
+
+      const isInactive = s.activo === false || s.estatus_inscripcion === 'baja_temporal' || s.estatus_inscripcion === 'baja_definitiva';
+      if (selectedEstatus === 'activos' && isInactive) return false;
+      if (selectedEstatus === 'bajas' && !isInactive) return false;
 
       const q = searchTerm.toLowerCase();
       const matchSearch =
@@ -103,6 +108,7 @@ export default function AdminInformesPage() {
     selectedCarrera,
     selectedCuatri,
     selectedSexo,
+    selectedEstatus,
     searchTerm,
     getStudentProgress,
     getStudentScholarshipProgress,
@@ -318,9 +324,22 @@ export default function AdminInformesPage() {
           Filtros Dinámicos del Reporte ({reportData.length} resultados)
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-1">Programa Académico / Carrera:</label>
+            <label className="block text-[11px] font-bold text-slate-500 mb-1">Estatus de Matrícula:</label>
+            <select
+              value={selectedEstatus}
+              onChange={(e) => setSelectedEstatus(e.target.value as any)}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
+            >
+              <option value="activos">✓ Solo Activos (Ciclo Actual)</option>
+              <option value="todos">Todos (Histórico + Bajas)</option>
+              <option value="bajas">⚠️ Solo Bajas Cuatrimestrales</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 mb-1">Programa / Carrera:</label>
             <select
               value={selectedCarrera}
               onChange={(e) => setSelectedCarrera(e.target.value)}

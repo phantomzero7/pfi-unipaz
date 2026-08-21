@@ -373,6 +373,11 @@ interface PFIContextType {
     }
   ) => void;
   addStudentExpedienteComment: (studentId: string, comment: string) => { success: boolean; message: string };
+  updateStudentStatus: (
+    studentId: string,
+    estatus: 'activo' | 'baja_temporal' | 'baja_definitiva' | 'egresado',
+    motivo?: string
+  ) => { success: boolean; message: string };
   updateScholarshipDates: (dates: {
     fecha_inicio_solicitud?: string;
     fecha_fin_solicitud?: string;
@@ -1263,6 +1268,14 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return {
         success: false,
         message: `Estudiante no encontrado con el código o QR proporcionado ("${studentQuery}").`,
+      };
+    }
+
+    if (student.activo === false || student.estatus_inscripcion === 'baja_temporal' || student.estatus_inscripcion === 'baja_definitiva') {
+      return {
+        success: false,
+        message: `⚠️ Acceso Denegado: El alumno ${student.nombre} ${student.apellidos} (${student.matricula}) se encuentra en estatus de ${student.estatus_inscripcion === 'baja_definitiva' ? 'BAJA DEFINITIVA' : 'BAJA TEMPORAL'}. Su credencial digital e inscripciones están inhabilitadas.`,
+        student,
       };
     }
 
@@ -2350,6 +2363,46 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: 'Nota de auditoría guardada permanentemente en el expediente.' };
   };
 
+  const updateStudentStatus = (
+    studentId: string,
+    estatus: 'activo' | 'baja_temporal' | 'baja_definitiva' | 'egresado',
+    motivo?: string
+  ) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    const isActivo = estatus === 'activo';
+    const prevEstatus = student.estatus_inscripcion || (student.activo === false ? 'baja_temporal' : 'activo');
+
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === studentId
+          ? {
+              ...p,
+              activo: isActivo,
+              estatus_inscripcion: estatus,
+              motivo_baja: isActivo ? undefined : (motivo || 'Baja cuatrimestral registrada'),
+              fecha_baja: isActivo ? undefined : new Date().toISOString(),
+            }
+          : p
+      )
+    );
+
+    logStudentAuditEvent({
+      student_id: studentId,
+      categoria: 'comentario_expediente',
+      accion: `Actualización de Estatus de Inscripción: ${estatus.toUpperCase()}`,
+      detalles: `El estatus del alumno pasó de "${prevEstatus}" a "${estatus}". Motivo/Observaciones: ${motivo || (isActivo ? 'Reactivación de expediente' : 'Baja durante el ciclo activo')}.`,
+      valor_anterior: prevEstatus,
+      valor_nuevo: estatus,
+    });
+
+    return {
+      success: true,
+      message: `Estatus de ${student.nombre} ${student.apellidos} actualizado a ${estatus.toUpperCase()}.`,
+    };
+  };
+
   const updateScholarshipDates = (dates: {
     fecha_inicio_solicitud?: string;
     fecha_fin_solicitud?: string;
@@ -2668,6 +2721,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         studentAuditLogs,
         logStudentAuditEvent,
         addStudentExpedienteComment,
+        updateStudentStatus,
         updateScholarshipDates,
         batchSendScholarshipNotifications,
         addPFICategory,

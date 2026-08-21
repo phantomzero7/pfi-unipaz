@@ -101,12 +101,16 @@ export const PrintableIdCardModal: React.FC<PrintableIdCardModalProps> = ({
 
             {/* Content */}
             <div className="flex items-center gap-3">
-              <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-unipaz-orange shadow-md flex-shrink-0">
+              <div className={`relative w-14 h-14 rounded-xl overflow-hidden shadow-md flex-shrink-0 flex items-center justify-center ${
+                student.avatar_url && !student.avatar_url.includes('logo-unipaz')
+                  ? 'border-2 border-unipaz-orange bg-slate-800'
+                  : 'border-2 border-white/30 bg-white p-1'
+              }`}>
                 <Image
-                  src={student.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                  src={student.avatar_url && !student.avatar_url.includes('logo-unipaz') ? student.avatar_url : '/logo-unipaz.png'}
                   alt={student.nombre}
                   fill
-                  className="object-cover"
+                  className={student.avatar_url && !student.avatar_url.includes('logo-unipaz') ? 'object-cover' : 'object-contain p-0.5'}
                 />
               </div>
               <div className="space-y-0.5 min-w-0">

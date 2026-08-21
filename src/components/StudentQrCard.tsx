@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import QRCode from 'qrcode';
 import { motion } from 'framer-motion';
-import { Award, CheckCircle, Copy, Lock, QrCode, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { AlertTriangle, Award, CheckCircle, Copy, Lock, QrCode, ShieldAlert, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 
 interface StudentQrCardProps {
@@ -15,12 +15,15 @@ interface StudentQrCardProps {
 
 export const StudentQrCard: React.FC<StudentQrCardProps> = ({
   student,
-  horasTotales = 0,
-  escala = 'En Proceso',
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [liveSeconds, setLiveSeconds] = useState<string>('');
+
+  const isInactive =
+    student.activo === false ||
+    student.estatus_inscripcion === 'baja_temporal' ||
+    student.estatus_inscripcion === 'baja_definitiva';
 
   // Reloj de seguridad en vivo (Anti-Foto / Anti-Screenshot)
   useEffect(() => {
@@ -40,6 +43,11 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
   }, []);
 
   useEffect(() => {
+    if (isInactive) {
+      setQrDataUrl('');
+      return;
+    }
+
     // Generamos un QR con los datos del estudiante y el secreto criptográfico
     const payload = JSON.stringify({
       id: student.id,
@@ -60,7 +68,7 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
     })
       .then((url) => setQrDataUrl(url))
       .catch((err) => console.error('Error generating QR:', err));
-  }, [student]);
+  }, [student, isInactive]);
 
   const copyMatricula = () => {
     navigator.clipboard.writeText(student.matricula);
@@ -68,15 +76,21 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const hasCustomPhoto = student.avatar_url && student.avatar_url.trim() !== '' && !student.avatar_url.includes('logo-unipaz');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br from-[#001833] via-[#002855] to-[#0A1526] p-6 shadow-2xl text-white backdrop-blur-xl"
+      className={`relative overflow-hidden rounded-3xl border p-6 shadow-2xl text-white backdrop-blur-xl transition-all ${
+        isInactive
+          ? 'border-rose-500/40 bg-gradient-to-br from-[#200A0A] via-[#330000] to-[#0A0505]'
+          : 'border-white/20 bg-gradient-to-br from-[#001833] via-[#002855] to-[#0A1526]'
+      }`}
     >
       {/* Decorative Glows */}
-      <div className="absolute -top-16 -right-16 w-44 h-44 bg-unipaz-orange/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-44 h-44 bg-unipaz-cobalt/30 rounded-full blur-3xl pointer-events-none" />
+      <div className={`absolute -top-16 -right-16 w-44 h-44 rounded-full blur-3xl pointer-events-none ${isInactive ? 'bg-rose-600/20' : 'bg-unipaz-orange/20'}`} />
+      <div className={`absolute -bottom-16 -left-16 w-44 h-44 rounded-full blur-3xl pointer-events-none ${isInactive ? 'bg-rose-900/30' : 'bg-unipaz-cobalt/30'}`} />
 
       {/* Header Oficial con el Logo Institucional UNIPAZ */}
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -94,28 +108,37 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               UNIPAZ
             </h3>
             <p className="text-[10px] text-amber-300 font-bold tracking-wider uppercase">
-              Credencial Digital PFI
+              Credencial Digital Estudiantil
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          Oficial
-        </div>
+        {isInactive ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/30 border border-rose-400/50 text-rose-300 text-[11px] font-black uppercase">
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+            Inactiva / Baja
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Vigente · Oficial
+          </div>
+        )}
       </div>
 
-      {/* Cuerpo: Foto + Datos + QR */}
+      {/* Cuerpo: Foto/Logo + Datos + QR */}
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
         {/* Info del Estudiante */}
         <div className="sm:col-span-7 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-unipaz-orange shadow-lg flex-shrink-0">
+            <div className={`relative w-14 h-14 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 flex items-center justify-center ${
+              hasCustomPhoto ? 'border-2 border-unipaz-orange bg-slate-800' : 'border-2 border-white/30 bg-white p-1.5'
+            }`}>
               <Image
-                src={student.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                src={hasCustomPhoto ? student.avatar_url! : '/logo-unipaz.png'}
                 alt={student.nombre}
                 fill
-                className="object-cover"
+                className={hasCustomPhoto ? 'object-cover' : 'object-contain p-1'}
               />
             </div>
             <div>
@@ -147,37 +170,55 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">Horas PFI:</span>
-              <span className="font-black text-unipaz-orange">+{horasTotales.toFixed(1)} hrs</span>
+              <span className="text-slate-400">Estatus Institucional:</span>
+              <span className={`font-bold ${isInactive ? 'text-rose-400' : 'text-emerald-400'}`}>
+                {student.estatus_inscripcion === 'baja_temporal'
+                  ? 'Baja Temporal'
+                  : student.estatus_inscripcion === 'baja_definitiva'
+                  ? 'Baja Definitiva'
+                  : 'Inscrito Regular'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* QR Code Interactivo con Sello Dinámico Anti-Foto */}
-        <div className="sm:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-white text-slate-900 shadow-inner relative">
-          {qrDataUrl ? (
-            <div className="relative w-32 h-32">
-              <Image
-                src={qrDataUrl}
-                alt="QR Estudiante"
-                fill
-                className="object-contain"
-              />
+        <div className="sm:col-span-5 flex flex-col items-center justify-center p-3 rounded-2xl bg-white text-slate-900 shadow-inner relative min-h-[160px]">
+          {isInactive ? (
+            <div className="p-3 text-center space-y-1">
+              <ShieldAlert className="w-8 h-8 text-rose-600 mx-auto" />
+              <strong className="text-[11px] font-black text-rose-900 uppercase block leading-tight">
+                Credencial Suspendida
+              </strong>
+              <p className="text-[10px] text-slate-600 leading-tight">
+                Código QR inhabilitado por baja académica.
+              </p>
             </div>
+          ) : qrDataUrl ? (
+            <>
+              <div className="relative w-32 h-32">
+                <Image
+                  src={qrDataUrl}
+                  alt="QR Estudiante"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+
+              {/* Sello de Seguridad Dinámico Anti-Screenshot */}
+              <div className="mt-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-mono font-bold text-slate-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span>EN VIVO: {liveSeconds}</span>
+              </div>
+              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
+                Sello Dinámico UNIPAZ
+              </span>
+            </>
           ) : (
             <div className="w-32 h-32 flex items-center justify-center text-slate-400 animate-pulse">
               <QrCode className="w-8 h-8" />
             </div>
           )}
-
-          {/* Sello de Seguridad Dinámico Anti-Screenshot */}
-          <div className="mt-1 flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-mono font-bold text-slate-800">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>EN VIVO: {liveSeconds}</span>
-          </div>
-          <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
-            Sello Dinámico UNIPAZ
-          </span>
         </div>
       </div>
 
@@ -185,9 +226,11 @@ export const StudentQrCard: React.FC<StudentQrCardProps> = ({
       <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
         <span className="flex items-center gap-1">
           <Lock className="w-3 h-3 text-amber-400" />
-          Token: <code className="font-mono text-slate-300">{student.qr_secret.substring(0, 12)}...</code>
+          Token: <code className="font-mono text-slate-300">{student.qr_secret ? `${student.qr_secret.substring(0, 12)}...` : 'N/A'}</code>
         </span>
-        <span className="text-amber-400 font-bold">Válido Ciclo 2026</span>
+        <span className={isInactive ? 'text-rose-400 font-bold' : 'text-amber-400 font-bold'}>
+          {isInactive ? 'Inhabilitado' : 'Válido Ciclo 2026'}
+        </span>
       </div>
     </motion.div>
   );
