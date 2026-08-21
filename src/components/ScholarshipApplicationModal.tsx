@@ -47,6 +47,7 @@ import {
   getMaxPeriodos,
   getNombrePeriodo,
   isProgramaSemestral,
+  MODALIDADES_BECA_DEFAULT,
   OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA,
   OPCIONES_SEXO,
   PROGRAMAS_ACADEMICOS,
@@ -79,12 +80,37 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
 }) => {
   const { pfiConfig, submitScholarshipApplication, submitSocioeconomicStudy } = usePFI();
 
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const modalidadesCatalog = useMemo(
+    () => pfiConfig.modalidadesBecaCatalog || MODALIDADES_BECA_DEFAULT,
+    [pfiConfig.modalidadesBecaCatalog]
+  );
+
+  // Modalidad seleccionada (Default: Excelencia Académica)
+  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>(
+    'Excelencia Académica (Promedio 9.6 - 10.0)'
+  );
+
+  // Switch opcional para adjuntar estudio socioeconómico voluntario en modalidades académicas
+  const [solicitaEstudioVoluntario, setSolicitaEstudioVoluntario] = useState(false);
+
+  // Config de la modalidad seleccionada
+  const selectedModalidadConfig = useMemo(
+    () => modalidadesCatalog.find((m) => m.nombre === selectedTipoBeca) || modalidadesCatalog[0],
+    [modalidadesCatalog, selectedTipoBeca]
+  );
+
+  // Condición: ¿Aparece la sección de Estudio Socioeconómico?
+  const requiereEstudioSocioeconomico = Boolean(
+    selectedModalidadConfig?.requiere_estudio_socioeconomico || solicitaEstudioVoluntario
+  );
+
+  const totalSteps = requiereEstudioSocioeconomico ? 5 : 3;
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
   // ==========================================
-  // PASO 1: DATOS PERSONALES, ACADÉMICOS Y MODALIDAD
+  // PASO 1: DATOS PERSONALES Y ACADÉMICOS
   // ==========================================
   const [nombre, setNombre] = useState(student.nombre || '');
   const [apellidos, setApellidos] = useState(student.apellidos || '');
@@ -96,8 +122,6 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const [estadoCivil, setEstadoCivil] = useState('Soltero/a');
   const [curp, setCurp] = useState('HIGL030514MBSLR09');
   const [rfc, setRfc] = useState('HIGL030514AB1');
-  const [lugarNacimiento, setLugarNacimiento] = useState('La Paz, Baja California Sur');
-  const [numHijos, setNumHijos] = useState(0);
   const [telefono, setTelefono] = useState('(612) 123-4567');
   const [email, setEmail] = useState(student.email || 'estudiante@unipaz.mx');
   
@@ -107,16 +131,10 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const [colonia, setColonia] = useState('8 de Octubre 1ra Sección');
   const [codigoPostal, setCodigoPostal] = useState('23080');
   const [ciudad, setCiudad] = useState('La Paz');
-  const [estado, setEstado] = useState('Baja California Sur');
-  const [zonaDomicilio, setZonaDomicilio] = useState<'Urbano' | 'Semiurbano' | 'Rural'>('Urbano');
   const [preparatoriaProcedencia, setPreparatoriaProcedencia] = useState('CBTIS 230 / COBACH 01');
 
-  const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>(
-    'Estudio Socioeconómico y Apoyo Familiar'
-  );
-
   // ==========================================
-  // PASO 2: COMPOSICIÓN FAMILIAR Y SITUACIÓN LABORAL
+  // PASO 2 / SECCIÓN ESTUDIO SOCIOECONÓMICO: COMPOSICIÓN FAMILIAR
   // ==========================================
   const [miembros, setMiembros] = useState<MiembroHogar[]>([
     {
@@ -166,9 +184,6 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const [trabajaActualmente, setTrabajaActualmente] = useState(false);
   const [empresa, setEmpresa] = useState('');
   const [puesto, setPuesto] = useState('');
-  const [tipoJornada, setTipoJornada] = useState<'Medio Tiempo' | 'Tiempo Completo' | 'Por Honorarios'>('Medio Tiempo');
-  const [nombreSuperior, setNombreSuperior] = useState('');
-  const [telefonoEmpresa, setTelefonoEmpresa] = useState('');
 
   // ==========================================
   // PASO 3: BALANCE ECONÓMICO FAMILIAR
@@ -181,11 +196,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const [egresoAlimentacion, setEgresoAlimentacion] = useState(5500);
   const [egresoRenta, setEgresoRenta] = useState(3000);
   const [egresoLuzAgua, setEgresoLuzAgua] = useState(1100);
-  const [egresoInternet, setEgresoInternet] = useState(650);
-  const [egresoGas, setEgresoGas] = useState(400);
-  const [egresoMedicos, setEgresoMedicos] = useState(700);
   const [egresoTransporte, setEgresoTransporte] = useState(1500);
-  const [egresoEducacion, setEgresoEducacion] = useState(1400);
 
   const totalIngresos = useMemo(
     () => Number(ingresoPadre) + Number(ingresoMadre) + Number(ingresoAspirante) + Number(ingresoOtros),
@@ -197,33 +208,21 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
       Number(egresoAlimentacion) +
       Number(egresoRenta) +
       Number(egresoLuzAgua) +
-      Number(egresoInternet) +
-      Number(egresoGas) +
-      Number(egresoMedicos) +
-      Number(egresoTransporte) +
-      Number(egresoEducacion),
+      Number(egresoTransporte),
     [
       egresoAlimentacion,
       egresoRenta,
       egresoLuzAgua,
-      egresoInternet,
-      egresoGas,
-      egresoMedicos,
       egresoTransporte,
-      egresoEducacion,
     ]
   );
 
   const balanceNeto = totalIngresos - totalEgresos;
 
   // ==========================================
-  // PASO 4: VIVIENDA, SERVICIOS, BIENES Y TRASLADO
+  // PASO 4: VIVIENDA, BIENES Y TRASLADO
   // ==========================================
   const [tipoVivienda, setTipoVivienda] = useState('Propia (Pagada)');
-  const [numCuartos, setNumCuartos] = useState(3);
-  const [tieneComputadora, setTieneComputadora] = useState(true);
-  const [tieneInternet, setTieneInternet] = useState(true);
-  const [tieneAutomovil, setTieneAutomovil] = useState(false);
   const [medioTransporte, setMedioTransporte] = useState('Transporte Público (Camión / Calafia)');
   const [tiempoTrasladoMinutos, setTiempoTrasladoMinutos] = useState(40);
   const [referenciasUbicacion, setReferenciasUbicacion] = useState(
@@ -231,41 +230,16 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   );
 
   // ==========================================
-  // PASO 5: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA
+  // ÚLTIMO PASO: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA
   // ==========================================
   const [motivosSolicitud, setMotivosSolicitud] = useState(
-    'Solicito el apoyo de la beca institucional UNIPAZ para continuar de manera ininterrumpida mis estudios universitarios, apoyando a la economía familiar y comprometiéndome a mantener un desempeño académico sobresaliente y cumplir cabalmente con mis horas de formación integral (PFI).'
+    'Solicito el apoyo de la beca institucional UNIPAZ para continuar de manera ininterrumpida mis estudios universitarios, comprometiéndome a mantener un desempeño académico sobresaliente y cumplir cabalmente con mis horas de formación integral (PFI).'
   );
-  const [archivosCargados, setArchivosCargados] = useState<{
-    ine: boolean;
-    ingresos: boolean;
-    domicilio: boolean;
-    kardex: boolean;
-  }>({
-    ine: true,
-    ingresos: true,
-    domicilio: true,
-    kardex: true,
-  });
   const [declaraVerdad, setDeclaraVerdad] = useState(false);
   const [aceptaAvisoPrivacidad, setAceptaAvisoPrivacidad] = useState(false);
   const [firmaDigitalNombre, setFirmaDigitalNombre] = useState(`${student.nombre} ${student.apellidos}`);
 
   if (!isOpen) return null;
-
-  const calcularEdad = (fecha: string) => {
-    if (!fecha) return 20;
-    const hoy = new Date();
-    const nac = new Date(fecha);
-    let edad = hoy.getFullYear() - nac.getFullYear();
-    const m = hoy.getMonth() - nac.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) {
-      edad--;
-    }
-    return isNaN(edad) ? 20 : edad;
-  };
-
-  const edadCalculada = calcularEdad(fechaNacimiento);
 
   const handleAddMiembro = () => {
     if (!nuevoNombre.trim()) return;
@@ -297,7 +271,9 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
       return;
     }
     const res = submitScholarshipApplication(student.id, selectedTipoBeca);
-    submitSocioeconomicStudy(student.id);
+    if (requiereEstudioSocioeconomico) {
+      submitSocioeconomicStudy(student.id);
+    }
     setFeedbackMsg(res.message);
     setIsSubmitted(true);
   };
@@ -321,33 +297,45 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-unipaz-orange">
-                Convocatoria Institucional UNIPAZ
+                Convocatoria Institucional de Becas UNIPAZ
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200">
-                Cédula Socioeconómica Oficial
+                {requiereEstudioSocioeconomico ? 'Con Cédula Socioeconómica' : 'Evaluación por Mérito'}
               </span>
             </div>
             <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
-              Solicitud de Beca y Estudio Socioeconómico Integral
+              Formato Oficial de Solicitud de Beca
             </h3>
           </div>
         </div>
 
-        {/* STEPPER MULTI-PASO (5 PASOS) */}
+        {/* STEPPER DINÁMICO */}
         {!isSubmitted && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-black">
-              <span className="text-unipaz-orange">Paso {currentStep} de 5</span>
+              <span className="text-unipaz-orange">
+                Paso {currentStep} de {totalSteps}
+              </span>
               <span className="text-slate-500">
-                {currentStep === 1 && '1. Datos Generales & Modalidad de Beca'}
-                {currentStep === 2 && '2. Composición Familiar & Empleo'}
-                {currentStep === 3 && '3. Balance Económico Familiar'}
-                {currentStep === 4 && '4. Vivienda, Servicios & Traslado'}
-                {currentStep === 5 && '5. Justificación, Documentos & Firma'}
+                {requiereEstudioSocioeconomico ? (
+                  <>
+                    {currentStep === 1 && '1. Datos Generales & Modalidad'}
+                    {currentStep === 2 && '2. Composición Familiar & Empleo'}
+                    {currentStep === 3 && '3. Balance Económico Familiar'}
+                    {currentStep === 4 && '4. Vivienda, Bienes & Traslado'}
+                    {currentStep === 5 && '5. Justificación, Documentos & Firma'}
+                  </>
+                ) : (
+                  <>
+                    {currentStep === 1 && '1. Datos Generales & Modalidad'}
+                    {currentStep === 2 && '2. Situación Laboral & Justificación'}
+                    {currentStep === 3 && '3. Documentos, Veracidad & Firma'}
+                  </>
+                )}
               </span>
             </div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {[1, 2, 3, 4, 5].map((step) => (
+            <div className={`grid gap-1.5 ${requiereEstudioSocioeconomico ? 'grid-cols-5' : 'grid-cols-3'}`}>
+              {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
                 <div
                   key={step}
                   className={`h-2 rounded-full transition-all duration-300 ${
@@ -370,11 +358,11 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
-              ¡Solicitud y Estudio Socioeconómico Registrados!
+              ¡Solicitud de Beca Registrada con Éxito!
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
               {feedbackMsg ||
-                'Tu formato completo de solicitud de beca y cédula de información socioeconómica han sido remitidos formalmente al Comité de Becas y al Departamento de Trabajo Social para su dictamen colegiado.'}
+                'Tu solicitud oficial ha sido remitida formalmente al Comité de Becas UNIPAZ para su dictamen y asignación de porcentaje correspondiente.'}
             </p>
             <div className="pt-4">
               <button
@@ -392,41 +380,104 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
             {/* ========================================== */}
             {currentStep === 1 && (
               <div className="space-y-4 animate-fadeIn">
-                {/* Modalidad de Beca */}
+                {/* Selector de Modalidad Institucional */}
                 <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-                  <label className="block font-black text-xs text-unipaz-navy dark:text-amber-300 uppercase tracking-wider">
-                    Modalidad de Beca Solicitada:
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block font-black text-xs text-unipaz-navy dark:text-amber-300 uppercase tracking-wider">
+                      Modalidad de Beca Solicitada:
+                    </label>
+                    {selectedModalidadConfig?.requiere_estudio_socioeconomico ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300">
+                        Requiere Estudio Socioeconómico
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 border border-blue-300">
+                        Dictamen por Mérito / Convenio
+                      </span>
+                    )}
+                  </div>
+
                   <select
                     value={selectedTipoBeca}
-                    onChange={(e) => setSelectedTipoBeca(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedTipoBeca(e.target.value);
+                      setCurrentStep(1); // Reiniciar al paso 1 por cambio de modalidad
+                    }}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/20 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
                   >
-                    <option value="Estudio Socioeconómico y Apoyo Familiar">
-                      Estudio Socioeconómico y Apoyo Familiar (Vulnerabilidad Económica)
-                    </option>
-                    <option value="Excelencia Académica (Promedio 9.6 - 10.0)">
-                      Excelencia Académica (Promedio 9.6 - 10.0)
-                    </option>
-                    <option value="Mérito Académico (Promedio 9.0 - 9.5)">
-                      Mérito Académico (Promedio 9.0 - 9.5)
-                    </option>
-                    <option value="Convenio Institucional / Sectorial">
-                      Convenio Institucional / Sectorial (Gubernamental o Empresarial)
-                    </option>
-                    <option value="Familiar / Hermanos">
-                      Familiar / Hermanos Inscritos Simultáneamente
-                    </option>
-                    <option value="Deportiva / Representación UNIPAZ">
-                      Deportiva / Representación UNIPAZ
-                    </option>
-                    <option value="Cultural y Artística">
-                      Cultural y Artística
-                    </option>
-                    <option value="Inclusión y Población Prioritaria">
-                      Inclusión y Población Prioritaria
-                    </option>
+                    <optgroup label="Excelencia, Mérito y Rendimiento Académico">
+                      <option value="Excelencia Académica (Promedio 9.6 - 10.0)">
+                        Excelencia Académica (Promedio 9.6 - 10.0)
+                      </option>
+                      <option value="Mérito Académico (Promedio 9.0 - 9.5)">
+                        Mérito Académico (Promedio 9.0 - 9.5)
+                      </option>
+                      <option value="Investigación y Publicaciones">
+                        Investigación y Publicaciones
+                      </option>
+                      <option value="Talento y Liderazgo Social">
+                        Talento y Liderazgo Social
+                      </option>
+                    </optgroup>
+                    <optgroup label="Apoyo a la Economía Familiar y Grupos Prioritarios (Requieren Estudio Socioeconómico)">
+                      <option value="Apoyo a la Economía Familiar">
+                        Apoyo a la Economía Familiar (Vulnerabilidad Económica)
+                      </option>
+                      <option value="Madres Solteras / Jefas de Familia">
+                        Madres Solteras / Jefas de Familia
+                      </option>
+                      <option value="Inclusión y Discapacidad">
+                        Inclusión y Discapacidad
+                      </option>
+                      <option value="Intercultural / Pueblos Originarios">
+                        Intercultural / Pueblos Originarios
+                      </option>
+                    </optgroup>
+                    <optgroup label="Convenios, Familiares y Representativas">
+                      <option value="Convenios Institucionales">
+                        Convenios Institucionales (Empresas / Gobierno)
+                      </option>
+                      <option value="Familiar / Hermanos">
+                        Familiar / Hermanos (20%)
+                      </option>
+                      <option value="Deportiva (Garzas UNIPAZ)">
+                        Deportiva (Garzas UNIPAZ)
+                      </option>
+                      <option value="Cultural y Artística">
+                        Cultural y Artística
+                      </option>
+                      <option value="Egresados UNIPAZ">
+                        Egresados UNIPAZ (Posgrados)
+                      </option>
+                    </optgroup>
                   </select>
+
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {selectedModalidadConfig?.descripcion ||
+                      'Selecciona la modalidad para la que cumples los requisitos de la convocatoria.'}
+                  </p>
+
+                  {/* Switch para incluir estudio socioeconómico si la modalidad no lo exige obligatoriamente */}
+                  {!selectedModalidadConfig?.requiere_estudio_socioeconomico && (
+                    <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-700 dark:text-slate-300">
+                        ¿Deseas adjuntar Estudio Socioeconómico completo para mayor consideración del Comité?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSolicitaEstudioVoluntario(!solicitaEstudioVoluntario)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          solicitaEstudioVoluntario ? 'bg-unipaz-orange' : 'bg-slate-300 dark:bg-slate-700'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            solicitaEstudioVoluntario ? 'translate-x-4' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Nombre y Apellidos */}
@@ -473,6 +524,11 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                           <option key={p} value={p}>{p}</option>
                         ))}
                       </optgroup>
+                      <optgroup label="Maestrías y Posgrados">
+                        {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('MAESTRÍA')).map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
                   <div>
@@ -492,114 +548,22 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     </select>
                   </div>
                 </div>
-
-                {/* Identificación y Demográficos */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                      CURP:
-                    </label>
-                    <input
-                      type="text"
-                      value={curp}
-                      onChange={(e) => setCurp(e.target.value.toUpperCase())}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-mono text-xs uppercase"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                      Fecha Nacimiento:
-                    </label>
-                    <input
-                      type="date"
-                      value={fechaNacimiento}
-                      onChange={(e) => setFechaNacimiento(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-mono text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                      Sexo:
-                    </label>
-                    <select
-                      value={sexo}
-                      onChange={(e) => setSexo(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 text-xs font-bold"
-                    >
-                      {OPCIONES_SEXO.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
-                      Estado Civil:
-                    </label>
-                    <select
-                      value={estadoCivil}
-                      onChange={(e) => setEstadoCivil(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 text-xs font-bold"
-                    >
-                      <option value="Soltero/a">Soltero/a</option>
-                      <option value="Casado/a">Casado/a</option>
-                      <option value="Unión Libre">Unión Libre</option>
-                      <option value="Divorciado/a">Divorciado/a</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Domicilio Actual */}
-                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px]">
-                    <Home className="w-3.5 h-3.5 text-unipaz-orange" />
-                    Domicilio Particular
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                    <div className="sm:col-span-2">
-                      <input
-                        type="text"
-                        placeholder="Calle"
-                        value={calle}
-                        onChange={(e) => setCalle(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Núm Ext"
-                        value={numExterior}
-                        onChange={(e) => setNumExterior(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Colonia"
-                        value={colonia}
-                        onChange={(e) => setColonia(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* ========================================== */}
-            {/* PASO 2: COMPOSICIÓN FAMILIAR Y EMPLEO */}
-            {/* ========================================== */}
-            {currentStep === 2 && (
+            {/* ========================================================= */}
+            {/* PASOS CUANDO SE REQUIERE ESTUDIO SOCIOECONÓMICO (PASOS 2, 3, 4) */}
+            {/* ========================================================= */}
+            {requiereEstudioSocioeconomico && currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-black text-xs text-unipaz-navy dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-unipaz-orange" />
-                      Integrantes del Núcleo Familiar en el Hogar
+                      Cédula de Información Socioeconómica · Composición Familiar
                     </h4>
                     <span className="text-[10px] text-slate-500">
-                      Registra a todas las personas que habitan y dependen de la misma economía.
+                      Registra a las personas que habitan y dependen de la misma economía.
                     </span>
                   </div>
                 </div>
@@ -665,8 +629,6 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       <option value="Hermano/a">Hermano/a</option>
                       <option value="Hijo/a">Hijo/a</option>
                       <option value="Cónyuge">Cónyuge</option>
-                      <option value="Abuelo/a">Abuelo/a</option>
-                      <option value="Tío/a">Tío/a</option>
                     </select>
                     <input
                       type="number"
@@ -685,69 +647,10 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     </button>
                   </div>
                 </div>
-
-                {/* Switch de Empleo del Alumno */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                        ¿Trabajas actualmente?
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        Indica si realizas alguna actividad económica remunerada.
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setTrabajaActualmente(!trabajaActualmente)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        trabajaActualmente ? 'bg-unipaz-orange' : 'bg-slate-300 dark:bg-slate-700'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          trabajaActualmente ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {trabajaActualmente && (
-                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-                          Empresa o Negocio:
-                        </label>
-                        <input
-                          type="text"
-                          value={empresa}
-                          onChange={(e) => setEmpresa(e.target.value)}
-                          placeholder="Nombre de la empresa"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-                          Puesto y Horario:
-                        </label>
-                        <input
-                          type="text"
-                          value={puesto}
-                          onChange={(e) => setPuesto(e.target.value)}
-                          placeholder="Ej. Asistente / Turno Vespertino"
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
-            {/* ========================================== */}
-            {/* PASO 3: BALANCE ECONÓMICO FAMILIAR */}
-            {/* ========================================== */}
-            {currentStep === 3 && (
+            {requiereEstudioSocioeconomico && currentStep === 3 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Ingresos Mensuales */}
@@ -854,10 +757,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               </div>
             )}
 
-            {/* ========================================== */}
-            {/* PASO 4: VIVIENDA Y TRASLADO */}
-            {/* ========================================== */}
-            {currentStep === 4 && (
+            {requiereEstudioSocioeconomico && currentStep === 4 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
@@ -888,7 +788,6 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       <option value="Transporte Público (Camión / Calafia)">Transporte Público (Camión / Calafia)</option>
                       <option value="Automóvil Propio / Familiar">Automóvil Propio / Familiar</option>
                       <option value="A Pie / Bicicleta">A Pie / Bicicleta</option>
-                      <option value="Motocicleta">Motocicleta</option>
                     </select>
                   </div>
 
@@ -923,23 +822,109 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               </div>
             )}
 
-            {/* ========================================== */}
-            {/* PASO 5: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA */}
-            {/* ========================================== */}
-            {currentStep === 5 && (
+            {/* ========================================================= */}
+            {/* PASO 2 EN MODALIDADES SIN ESTUDIO OBLIGATORIO (ÁGIL) */}
+            {/* ========================================================= */}
+            {!requiereEstudioSocioeconomico && currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
+                {/* Switch de Trabajo */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-black text-xs text-unipaz-navy dark:text-white block">
+                        ¿Trabajas actualmente?
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Indica si realizas alguna actividad económica remunerada.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTrabajaActualmente(!trabajaActualmente)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        trabajaActualmente ? 'bg-unipaz-orange' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          trabajaActualmente ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {trabajaActualmente && (
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 grid grid-one-1 sm:grid-cols-2 gap-3 animate-fadeIn">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                          Empresa o Negocio:
+                        </label>
+                        <input
+                          type="text"
+                          value={empresa}
+                          onChange={(e) => setEmpresa(e.target.value)}
+                          placeholder="Nombre de la empresa"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                          Puesto y Horario:
+                        </label>
+                        <input
+                          type="text"
+                          value={puesto}
+                          onChange={(e) => setPuesto(e.target.value)}
+                          placeholder="Ej. Asistente / Turno Vespertino"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Motivos de Solicitud */}
                 <div>
-                  <label className="block text-xs font-black text-unipaz-navy dark:text-white uppercase mb-1">
-                    Motivos y Justificación Detallada de la Solicitud:
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-xs">
+                      Motivos y Justificación Académica / Representativa:
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {motivosSolicitud.length} caracteres
+                    </span>
+                  </div>
                   <textarea
                     rows={4}
                     required
                     value={motivosSolicitud}
                     onChange={(e) => setMotivosSolicitud(e.target.value)}
+                    placeholder="Describe detalladamente tu compromiso académico, trayectoria o representación UNIPAZ..."
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-unipaz-orange"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* ========================================================= */}
+            {/* ÚLTIMO PASO: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA */}
+            {/* ========================================================= */}
+            {((requiereEstudioSocioeconomico && currentStep === 5) ||
+              (!requiereEstudioSocioeconomico && currentStep === 3)) && (
+              <div className="space-y-4 animate-fadeIn">
+                {requiereEstudioSocioeconomico && (
+                  <div>
+                    <label className="block text-xs font-black text-unipaz-navy dark:text-white uppercase mb-1">
+                      Motivos y Justificación Detallada de la Solicitud:
+                    </label>
+                    <textarea
+                      rows={3}
+                      required
+                      value={motivosSolicitud}
+                      onChange={(e) => setMotivosSolicitud(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-2xl p-3 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-unipaz-orange"
+                    />
+                  </div>
+                )}
 
                 {/* Checklist Documental */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
@@ -952,17 +937,24 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-                      <span>2. Comprobante de Ingresos</span>
+                      <span>2. Comprobante de Domicilio</span>
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-                      <span>3. Comprobante de Domicilio</span>
+                      <span>3. Kárdex / Historial Académico</span>
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-                      <span>4. Kárdex / Historial Académico</span>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    </div>
+                    {requiereEstudioSocioeconomico ? (
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                        <span>4. Comprobante de Ingresos</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                        <span>4. Comprobante de Mérito / Convenio</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -977,7 +969,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       className="mt-0.5 rounded text-unipaz-orange focus:ring-0"
                     />
                     <span className="text-[11px] leading-snug">
-                      Declaro bajo protesta de decir verdad que toda la información económica, familiar y laboral aquí consignada es fidedigna y autorizo al Comité de Becas y Trabajo Social de UNIPAZ a verificarla.
+                      Declaro bajo protesta de decir verdad que toda la información aquí consignada es verídica y autorizo al Comité de Becas de UNIPAZ a verificarla.
                     </span>
                   </label>
                   <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-amber-950 dark:text-amber-200">
@@ -1014,7 +1006,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               {currentStep > 1 ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep((prev) => (prev - 1) as any)}
+                  onClick={() => setCurrentStep((prev) => prev - 1)}
                   className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -1027,17 +1019,17 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => alert('Borrador de solicitud y estudio socioeconómico guardado.')}
+                  onClick={() => alert('Borrador de solicitud guardado.')}
                   className="py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Guardar Borrador</span>
                 </button>
 
-                {currentStep < 5 ? (
+                {currentStep < totalSteps ? (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep((prev) => (prev + 1) as any)}
+                    onClick={() => setCurrentStep((prev) => prev + 1)}
                     className="py-2.5 px-5 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-black text-xs shadow-md flex items-center gap-1.5 transition-all hover:scale-105"
                   >
                     Siguiente Paso
@@ -1054,7 +1046,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     }`}
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Enviar Solicitud y Estudio Oficial
+                    Enviar Solicitud al Comité
                   </button>
                 )}
               </div>
