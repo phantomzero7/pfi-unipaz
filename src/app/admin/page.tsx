@@ -179,10 +179,10 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Grid de Acceso Rápido a Módulos Administrativos */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         <Link
           href="/admin/becas"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-orange-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-orange-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
         >
           <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange flex items-center justify-center">
             <Award className="w-5 h-5" />
@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
 
         <Link
           href="/admin/estudiantes"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-blue-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-blue-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
         >
           <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 flex items-center justify-center">
             <Users className="w-5 h-5" />
@@ -206,22 +206,34 @@ export default function AdminDashboardPage() {
 
         <Link
           href="/admin/eventos"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
         >
           <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-600 flex items-center justify-center">
             <Calendar className="w-5 h-5" />
           </div>
           <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-purple-600">
-            Eventos PFI
+            Eventos y Talleres
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/informes"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 flex items-center justify-center">
+            <FileSpreadsheet className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-indigo-600">
+            Informes y Listas
           </span>
         </Link>
 
         <Link
           href="/admin/importar"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-emerald-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-emerald-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
-            <FileSpreadsheet className="w-5 h-5" />
+            <Layers className="w-5 h-5" />
           </div>
           <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-emerald-600">
             Carga Masiva 3NF
@@ -229,20 +241,8 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link
-          href="/admin/scanner"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-600 flex items-center justify-center">
-            <ScanLine className="w-5 h-5" />
-          </div>
-          <span className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-amber-600">
-            Escáner QR
-          </span>
-        </Link>
-
-        <Link
           href="/admin/configuracion"
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2 group"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/90 dark:border-white/10 shadow-sm transition-all hover:scale-102 flex flex-col items-center text-center gap-2.5 group"
         >
           <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
             <Settings className="w-5 h-5" />
@@ -253,151 +253,36 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
-      {/* Grid: Lista de Estudiantes & Expedientes */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Columna Izquierda: Tabla de Estudiantes */}
-        <div className="lg:col-span-8 rounded-3xl bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/90 dark:border-white/10 p-6 sm:p-8 shadow-lg shadow-blue-950/5 dark:shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-            <div>
-              <h3 className="text-lg font-black text-unipaz-navy dark:text-white">
-                Avance PFI por Estudiante
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Monitoreo de horas, obligatorios y estatus para titulación:
-              </p>
-            </div>
-            <Link
-              href="/admin/estudiantes"
-              className="text-xs font-bold text-unipaz-orange hover:underline flex items-center gap-1"
-            >
-              Ver todos <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
+      {/* Reglas & Supervisión Operativa */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-blue-950/5 space-y-3">
+          <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
+            <Shield className="w-5 h-5 text-unipaz-orange" />
+            <span>Regla del 80% de Permanencia</span>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
-                  <th className="py-3 px-3">Estudiante</th>
-                  <th className="py-3 px-3">Programa Académico</th>
-                  <th className="py-3 px-3">Progreso Horas</th>
-                  <th className="py-3 px-3">Nivel PFI</th>
-                  <th className="py-3 px-3 text-right">Estatus</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {studentProgressList.map(({ student, progress }) => (
-                  <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="font-black text-unipaz-navy dark:text-white">
-                        {student.nombre} {student.apellidos}
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold">
-                        {student.matricula}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 text-slate-600 dark:text-slate-300 truncate max-w-[150px] font-medium">
-                      {student.carrera}
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              progress.horasTotales >= 730
-                                ? 'bg-amber-500 dark:bg-amber-400'
-                                : progress.horasTotales >= 400
-                                ? 'bg-emerald-500 dark:bg-emerald-400'
-                                : 'bg-unipaz-orange'
-                            }`}
-                            style={{ width: `${Math.min(100, (progress.horasTotales / 730) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="font-mono font-bold text-slate-800 dark:text-white text-[11px]">
-                          {progress.horasTotales.toFixed(0)}h
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
-                          progress.escala === 'Sobresaliente'
-                            ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-400/30'
-                            : progress.escala === 'Satisfactorio'
-                            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-400/30'
-                            : 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-400/30'
-                        }`}
-                      >
-                        {progress.escala}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      {progress.isAcreditado ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-end gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Acreditado
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 dark:text-slate-400 font-medium">En Proceso</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            El sistema valida automáticamente que el estudiante registre Check-In y Check-Out cumpliendo al menos el 80% de la duración nominal de cada día para conceder las horas PFI correspondientes.
+          </p>
         </div>
 
-        {/* Columna Derecha: Accesos Directos & Reglas */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 p-6 space-y-4 shadow-lg shadow-blue-950/5">
-            <h4 className="text-base font-black text-unipaz-navy dark:text-white">
-              Herramientas de Control Staff
-            </h4>
-            <div className="space-y-2 text-xs">
-              <Link
-                href="/admin/scanner"
-                className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-between text-slate-800 dark:text-slate-200 transition-all group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <ScanLine className="w-4 h-4 text-unipaz-orange" />
-                  <span className="font-bold">Escáner Check-In / Check-Out</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-unipaz-navy dark:group-hover:text-white" />
-              </Link>
-
-              <Link
-                href="/admin/eventos"
-                className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-between text-slate-800 dark:text-slate-200 transition-all group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="w-4 h-4 text-amber-500" />
-                  <span className="font-bold">Administrador de Talleres</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-unipaz-navy dark:group-hover:text-white" />
-              </Link>
-
-              <Link
-                href="/admin/estudiantes"
-                className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-between text-slate-800 dark:text-slate-200 transition-all group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 text-unipaz-cobalt" />
-                  <span className="font-bold">Auditoría de Expedientes</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-unipaz-navy dark:group-hover:text-white" />
-              </Link>
-            </div>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-blue-950/5 space-y-3">
+          <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
+            <Award className="w-5 h-5 text-amber-500" />
+            <span>Puntos de Beca (Meta 1,000 pts)</span>
           </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Los estudiantes becarios acumulan 1,000 puntos cuatrimestrales a través de eventos y talleres formativos, o mediante el Servicio Becario departamental para mantener su porcentaje de descuento.
+          </p>
+        </div>
 
-          <div className="rounded-3xl bg-white dark:bg-slate-950/80 border border-slate-200/90 dark:border-white/10 p-6 space-y-3 text-xs shadow-lg shadow-blue-950/5">
-            <h4 className="text-sm font-black text-unipaz-navy dark:text-white flex items-center gap-2">
-              <Shield className="w-4 h-4 text-unipaz-orange" />
-              Regla del 80% de Permanencia
-            </h4>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              El sistema valida automáticamente que el estudiante permanezca al menos el 80% de la duración nominal del evento para conceder las horas PFI correspondientes.
-            </p>
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-white/10 shadow-lg shadow-blue-950/5 space-y-3">
+          <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-sm">
+            <GraduationCap className="w-5 h-5 text-emerald-600" />
+            <span>Requisitos para Titulación</span>
           </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Para la liberación de constancia de egreso y titulación, se requieren mínimo 400 horas PFI (730 horas para mención Sobresaliente), 3 talleres extracurriculares, 1 de liderazgo y los 3 módulos PVC.
+          </p>
         </div>
       </div>
 

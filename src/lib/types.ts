@@ -264,17 +264,145 @@ export interface AcademicPeriod {
   descripcion?: string;
 }
 
+export interface PFICategoryConfig {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  horas_default?: number;
+  color?: string;
+  icono?: string;
+  activo?: boolean;
+  activa?: boolean;
+}
+
+export const CATEGORIAS_PFI_OFICIALES: PFICategoryConfig[] = [
+  { id: 'cat-acad', nombre: 'Académico', descripcion: 'Congresos, simposios, conferencias y foros académicos.', color: '#002855', activo: true },
+  { id: 'cat-soc', nombre: 'Social', descripcion: 'Jornadas de servicio a la comunidad, voluntariado y promoción social.', color: '#FF6600', activo: true },
+  { id: 'cat-cult', nombre: 'Cultural', descripcion: 'Talleres de arte, danza, teatro, música y cine club.', color: '#8B5CF6', activo: true },
+  { id: 'cat-dep', nombre: 'Deportivo', descripcion: 'Torneos, disciplinas deportivas universitarias y activación física.', color: '#10B981', activo: true },
+  { id: 'cat-inv', nombre: 'Investigación', descripcion: 'Publicaciones científicas, ponencias de investigación y coloquios.', color: '#3B82F6', activo: true },
+  { id: 'cat-apoyo', nombre: 'Apoyo Universitario', descripcion: 'Logística institucional, staff de apoyo y comités universitarios.', color: '#F59E0B', activo: true },
+  { id: 'cat-eco', nombre: 'Conciencia Ecológica', descripcion: 'Campañas de reforestación, reciclaje y cuidado del medio ambiente.', color: '#059669', activo: true },
+  { id: 'cat-salud', nombre: 'Bienestar y Salud Pública', descripcion: 'Ferias de la salud, jornadas médicas, vacunación y bienestar integral.', color: '#EC4899', activo: true },
+];
+
 export type EventCategory = 
-  | 'Taller Extracurricular' // Culturales / Deportivos / Sociales (16.67h c/u)
-  | 'Taller Liderazgo'      // Liderazgo y Promoción Social (10.00h)
-  | 'PVC'                   // Plan de Vida y Carrera I, II, III (25.00h c/u)
-  | 'Investigación'         // Artículos, Ponencias, Proyectos (100.00h)
-  | 'Club Anual'            // Clubes de lectura, debate, altruistas (33.34h)
-  | 'Simposio'              // Simposios y Congresos (5.56h)
-  | 'Jornada Social'        // Jornadas Sociales, Ferias (5.00h)
-  | 'Cine Club'             // Cine club, café literario, donación (2.50h)
-  | 'Foro'                  // Foros, conferencias, salud (2.00h)
-  | 'Campaña';              // Campañas de vacunación, colectas (1.00h)
+  | 'Académico'
+  | 'Social'
+  | 'Cultural'
+  | 'Deportivo'
+  | 'Investigación'
+  | 'Apoyo Universitario'
+  | 'Conciencia Ecológica'
+  | 'Bienestar y Salud Pública'
+  | 'Taller Extracurricular'
+  | 'Taller Liderazgo'
+  | 'PVC'
+  | 'Club Anual'
+  | 'Simposio'
+  | 'Jornada Social'
+  | 'Cine Club'
+  | 'Foro'
+  | 'Campaña'
+  | string;
+
+export interface ModalidadBecaConfig {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  descuento_min: number;
+  descuento_max: number;
+  porcentajes_aplicables?: number[];
+  promedio_minimo?: number;
+  requiere_estudio_socioeconomico?: boolean;
+  activa: boolean;
+}
+
+export const MODALIDADES_BECA_DEFAULT: ModalidadBecaConfig[] = [
+  { id: 'mod-1', nombre: 'Excelencia Académica (Promedio 9.6 - 10.0)', descripcion: 'Estudiantes de alto rendimiento con promedio destacado sin materias reprobadas.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 9.6, activa: true },
+  { id: 'mod-2', nombre: 'Mérito Académico', descripcion: 'Estímulo a la constancia académica con promedio entre 9.0 y 9.5.', descuento_min: 25, descuento_max: 50, porcentajes_aplicables: [25, 30, 50], promedio_minimo: 9.0, activa: true },
+  { id: 'mod-3', nombre: 'Estudio Socioeconómico', descripcion: 'Apoyo a estudiantes en situación de vulnerabilidad económica (a partir de 2° ciclo).', descuento_min: 20, descuento_max: 80, porcentajes_aplicables: [20, 25, 30, 50, 60, 80], promedio_minimo: 8.0, requiere_estudio_socioeconomico: true, activa: true },
+  { id: 'mod-4', nombre: 'Convenios Institucionales', descripcion: 'Descuentos acordados con empresas, sindicatos y dependencias gubernamentales.', descuento_min: 20, descuento_max: 50, porcentajes_aplicables: [20, 25, 30, 50], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-5', nombre: 'Familiar / Hermanos', descripcion: 'Descuento para familias con dos o más integrantes cursando simultáneamente en UNIPAZ.', descuento_min: 20, descuento_max: 20, porcentajes_aplicables: [20], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-6', nombre: 'Egresados UNIPAZ', descripcion: 'Estímulo de continuidad académica para egresados de licenciatura cursando posgrado.', descuento_min: 25, descuento_max: 50, porcentajes_aplicables: [25, 30, 50], promedio_minimo: 8.5, activa: true },
+  { id: 'mod-7', nombre: 'Promoción Educativa', descripcion: 'Beca de captación y nuevo ingreso según convenios de bachillerato.', descuento_min: 20, descuento_max: 50, porcentajes_aplicables: [20, 25, 30, 50], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-8', nombre: 'Deportiva (Garzas UNIPAZ)', descripcion: 'Estudiantes atletas representativos de los equipos institucionales Garzas UNIPAZ.', descuento_min: 30, descuento_max: 80, porcentajes_aplicables: [30, 50, 60, 80], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-9', nombre: 'Cultural y Artística', descripcion: 'Integrantes destacados de talleres artísticos y representativos culturales.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-10', nombre: 'Investigación y Publicaciones', descripcion: 'Alumnos adscritos a proyectos de investigación aplicada y publicaciones indexadas.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 9.0, activa: true },
+  { id: 'mod-11', nombre: 'Talento y Liderazgo Social', descripcion: 'Proyectos de impacto comunitario, derechos humanos e innovación social.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.5, activa: true },
+  { id: 'mod-12', nombre: 'Madres Solteras / Jefas de Familia', descripcion: 'Estímulo de equidad y apoyo integral a madres universitarias.', descuento_min: 30, descuento_max: 60, porcentajes_aplicables: [30, 50, 60], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-13', nombre: 'Inclusión y Discapacidad', descripcion: 'Beca de accesibilidad y apoyo prioritario para estudiantes con alguna discapacidad.', descuento_min: 50, descuento_max: 100, porcentajes_aplicables: [50, 60, 80, 100], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-14', nombre: 'Intercultural / Pueblos Originarios', descripcion: 'Estímulo de inclusión y preservación de lenguas y pueblos originarios.', descuento_min: 50, descuento_max: 80, porcentajes_aplicables: [50, 60, 80], promedio_minimo: 8.0, activa: true },
+  { id: 'mod-15', nombre: 'Beca Especial Grupo Violeta', descripcion: 'Convenio especial de protección y respaldo institucional Grupo Violeta.', descuento_min: 50, descuento_max: 50, porcentajes_aplicables: [50], promedio_minimo: 8.0, activa: true },
+];
+
+export interface ServicioBecarioDept {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  responsable?: string;
+  encargado?: string;
+  cupo_maximo?: number;
+  cupo_ocupado?: number;
+  activo: boolean;
+}
+
+export interface ScholarshipAuditLog {
+  id: string;
+  student_id: string;
+  periodo_codigo: string;
+  periodo_nombre: string;
+  fecha_registro: string;
+  autor_nombre: string;
+  autor_email?: string;
+  resolucion: 'aprobada' | 'condicionada' | 'rechazada';
+  tipo_beca: string;
+  porcentaje_beca: number;
+  promedio_evaluado: number;
+  criterios: {
+    sin_reprobadas: boolean;
+    pagos_al_corriente: boolean;
+    solicitud_a_tiempo: boolean;
+    sin_sanciones: boolean;
+    esta_inscrito_proximo_ciclo: boolean;
+    cumple_puntos_1000: boolean;
+    carga_materias: 'normal' | 'minima';
+    visto_bueno_reincidencia?: boolean;
+  };
+  condicion_acordada?: string;
+  comentarios_comite: string;
+  notificacion_enviada: boolean;
+  fecha_notificacion?: string;
+}
+
+export interface EventDayConfig {
+  id?: string;
+  dia_numero?: number;
+  titulo_dia?: string;
+  fecha: string; // YYYY-MM-DD
+  hora_inicio: string; // HH:MM
+  hora_fin: string; // HH:MM
+  porcentaje_permanencia_minimo?: number;
+  porcentaje_minimo?: number;
+  check_in_abierto?: boolean;
+  check_out_abierto?: boolean;
+}
+
+export interface RoleApplication {
+  id: string;
+  event_id: string;
+  student_id: string;
+  student_nombre?: string;
+  student_matricula?: string;
+  student_carrera?: string;
+  tiene_beca?: boolean;
+  rol_solicitado: 'staff_logistica' | 'ponente';
+  motivo?: string;
+  status: 'pendiente' | 'aprobada' | 'rechazada';
+  fecha_solicitud: string;
+  fecha_resolucion?: string;
+  revisado_por?: string;
+}
 
 export interface SignatureConfig {
   nombre: string;
@@ -282,6 +410,10 @@ export interface SignatureConfig {
 }
 
 export interface PFIGlobalSignatures {
+  extensionNombre?: string;
+  extensionCargo?: string;
+  controlEscolarNombre?: string;
+  controlEscolarCargo?: string;
   general: {
     firma1: SignatureConfig;
     firma2: SignatureConfig;
@@ -313,14 +445,32 @@ export interface PFIGlobalConfig {
   periodoCuatrimestralActualId?: string;
   periodoSemestralActualId?: string;
 
-  // Control de Convocatorias y Formularios de Beca (Solo Admin)
+  // Fechas Oficiales de Convocatoria de Nuevas Solicitudes de Beca
   periodo_solicitud_becas_activo: boolean;
   fecha_inicio_solicitud_becas?: string;
   fecha_fin_solicitud_becas?: string;
+  fecha_publicacion_resolucion_becas?: string;
+
+  // Fechas Oficiales de Periodo de Renovación / Ratificación de Becas
+  fecha_inicio_ratificacion_becas?: string;
+  fecha_fin_ratificacion_becas?: string;
+  fecha_publicacion_dictamen_ratificacion?: string;
+
+  // Habilitación de Formularios y Botones del Expediente Estudiantil
   informe_becario_habilitado: boolean;
   estudio_socioeconomico_habilitado: boolean;
+  habilitar_subida_informe_becario?: boolean;
+  habilitar_estudio_socioeconomico?: boolean;
+  habilitar_subida_reportes?: boolean;
+  habilitar_descarga_solicitud?: boolean;
+  habilitar_postulacion_roles?: boolean;
   
-  categoriaHoras: Record<EventCategory, number>;
+  // Catálogos Gestionables
+  departamentosServicioBecario?: ServicioBecarioDept[];
+  modalidadesBecaCatalog?: ModalidadBecaConfig[];
+  categoriasPfiCatalog?: PFICategoryConfig[];
+
+  categoriaHoras: Record<string, number>;
   reglasCohortePVC: {
     pvc1Cuatrimestres: number[]; // [1, 2, 3]
     pvc2Cuatrimestres: number[]; // [4, 5, 6]
@@ -337,24 +487,40 @@ export interface PFIEvent {
   subcategoria?: string;
   modalidad: EventModality;
   fecha_evento: string; // YYYY-MM-DD
+  fecha_fin_evento?: string; // YYYY-MM-DD
+  es_multidia?: boolean;
+  dias_evento?: EventDayConfig[];
   hora_inicio: string;  // HH:MM
   hora_fin: string;     // HH:MM
-  horas_pfi: number;     // Horas como oyente/asistente
+  horas_pfi: number;    // Default / Oyente
+  horas_presenciales?: number;
+
+  // Horas Acreditables según Rol de Participación
+  horas_oyente?: number;
+  horas_staff?: number;
+  horas_ponente?: number;
   
-  // Puntos de Beca (50 - 500 pts)
-  puntos_beca?: number;       // Puntos otorgados a estudiantes becados (ej. 50 a 500 pts)
-  puntos_beca_staff?: number; // Puntos extra para staff becado
+  // Puntos de Beca según Rol (50 - 500 pts)
+  puntos_beca?: number; // Oyente default
+  puntos_beca_oyente?: number;
+  puntos_beca_staff?: number;
+  puntos_beca_ponente?: number;
   
-  // Roles diferenciados y Staff Logístico
+  // Roles diferenciados y Cupos
   permite_staff?: boolean;
   cupo_staff?: number;
   cupo_staff_ocupado?: number;
-  horas_staff?: number;       // Horas acreditadas para Staff Logístico (ej. 8.00h)
-  horas_ponente?: number;     // Horas acreditadas para Ponente/Conferencista (ej. 15.00h)
+  permite_ponentes?: boolean;
+  cupo_ponentes?: number;
+  cupo_ponentes_ocupado?: number;
+  
   solicitudes_staff?: StaffApplication[];
+  solicitudes_roles?: RoleApplication[];
   
   cupo_maximo: number;  // 0 = ilimitado
   cupo_ocupado?: number;
+  porcentaje_permanencia_minimo?: number; // ej. 80%
+  porcentaje_minimo_permanencia?: number;
   enlace_virtual?: string;
   otp_online_code?: string;
   tolerancia_minutos?: number;

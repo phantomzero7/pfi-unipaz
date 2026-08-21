@@ -13,16 +13,24 @@ import {
   AppNotification,
   AttendanceJustification,
   AttendanceStatus,
+  CATEGORIAS_PFI_OFICIALES,
   EventAttendance,
   EventCategory,
+  EventDayConfig,
   EventFeedback,
   JustificationStatus,
+  ModalidadBecaConfig,
+  MODALIDADES_BECA_DEFAULT,
   ParticipantRole,
+  PFICategoryConfig,
   PFIEvent,
   PFIGlobalConfig,
   PFIGlobalSignatures,
   PFIProgressSummary,
+  RoleApplication,
+  ScholarshipAuditLog,
   ScholarshipProgressSummary,
+  ServicioBecarioDept,
   StaffApplication,
   UserProfile,
   UserRole,
@@ -82,13 +90,41 @@ export const DEFAULT_PFI_CONFIG: PFIGlobalConfig = {
   periodoCuatrimestralActualId: 'per-187',
   periodoSemestralActualId: 'per-902',
 
+  // Convocatorias y Fechas Oficiales
   periodo_solicitud_becas_activo: true,
   fecha_inicio_solicitud_becas: '2026-09-01',
   fecha_fin_solicitud_becas: '2026-09-25',
+  fecha_publicacion_resolucion_becas: '2026-09-30',
+  fecha_inicio_ratificacion_becas: '2026-08-15',
+  fecha_fin_ratificacion_becas: '2026-08-30',
+  fecha_publicacion_dictamen_ratificacion: '2026-09-05',
+  
   informe_becario_habilitado: true,
   estudio_socioeconomico_habilitado: true,
+  habilitar_subida_reportes: true,
+  habilitar_descarga_solicitud: true,
+
+  // Catálogos Gestionables
+  departamentosServicioBecario: [
+    { id: 'dept-1', nombre: 'Biblioteca', descripcion: 'Atención y catalogación de acervo bibliográfico', cupo_maximo: 8, cupo_ocupado: 3, activo: true },
+    { id: 'dept-2', nombre: 'INDE (Instituto de Investigación e Innovación)', descripcion: 'Apoyo a proyectos de investigación y estadística', cupo_maximo: 6, cupo_ocupado: 2, activo: true },
+    { id: 'dept-3', nombre: 'DEDU (Dirección de Extensión y Difusión)', descripcion: 'Logística de eventos y difusión universitaria', cupo_maximo: 10, cupo_ocupado: 5, activo: true },
+    { id: 'dept-4', nombre: 'Servicios Escolares y Archivo', descripcion: 'Control escolar, recepción y digitalización de expedientes', cupo_maximo: 5, cupo_ocupado: 1, activo: true },
+    { id: 'dept-5', nombre: 'Laboratorios y Soporte Tecnológico', descripcion: 'Mantenimiento preventivo de cómputo y aulas', cupo_maximo: 6, cupo_ocupado: 2, activo: true },
+    { id: 'dept-6', nombre: 'Coordinación de Deportes', descripcion: 'Organización de ligas y torneos universitarios', cupo_maximo: 6, cupo_ocupado: 1, activo: true },
+  ],
+  modalidadesBecaCatalog: MODALIDADES_BECA_DEFAULT,
+  categoriasPfiCatalog: CATEGORIAS_PFI_OFICIALES,
+
   categoriaHoras: {
+    'Académico': 4.00,
+    'Social': 5.00,
+    'Cultural': 16.67,
+    'Deportivo': 16.67,
     'Investigación': 100.00,
+    'Apoyo Universitario': 8.00,
+    'Conciencia Ecológica': 4.00,
+    'Bienestar y Salud Pública': 5.00,
     'Club Anual': 33.34,
     'PVC': 25.00,
     'Taller Extracurricular': 16.67,
@@ -323,11 +359,96 @@ interface PFIContextType {
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   
+  // Bitácora de Auditoría de Becas
+  scholarshipAuditLogs: ScholarshipAuditLog[];
+  addScholarshipAuditLog: (log: Omit<ScholarshipAuditLog, 'id' | 'fecha_registro'>) => void;
+  updateScholarshipDates: (dates: {
+    fecha_inicio_solicitud?: string;
+    fecha_fin_solicitud?: string;
+    fecha_publicacion_resolucion?: string;
+    fecha_inicio_ratificacion?: string;
+    fecha_fin_ratificacion?: string;
+    fecha_publicacion_dictamen?: string;
+    activo?: boolean;
+  }) => void;
+  batchSendScholarshipNotifications: (studentIds: string[]) => { sentCount: number; message: string };
+
+  // CRUD Categorías PFI
+  addPFICategory: (category: Omit<PFICategoryConfig, 'id'>) => { success: boolean; message: string };
+  updatePFICategory: (id: string, data: Partial<PFICategoryConfig>) => { success: boolean; message: string };
+  deletePFICategoryWithReassign: (id: string, reassignCategoryName: string) => { success: boolean; message: string; reassignedEvents: number };
+
+  // CRUD Modalidades de Beca
+  addModalidadBeca: (modalidad: Omit<ModalidadBecaConfig, 'id'>) => { success: boolean; message: string };
+  updateModalidadBeca: (id: string, data: Partial<ModalidadBecaConfig>) => { success: boolean; message: string };
+  deleteModalidadBeca: (id: string) => { success: boolean; message: string };
+
+  // CRUD Departamentos Servicio Becario
+  addServicioBecarioDept: (dept: Omit<ServicioBecarioDept, 'id'>) => { success: boolean; message: string };
+  updateServicioBecarioDept: (id: string, data: Partial<ServicioBecarioDept>) => { success: boolean; message: string };
+  deleteServicioBecarioDept: (id: string) => { success: boolean; message: string };
+
+  // Postulaciones de Roles en Eventos (Staff / Ponente)
+  submitRoleApplication: (eventId: string, studentId: string, role: 'staff_logistica' | 'ponente', motivo?: string) => { success: boolean; message: string };
+  reviewRoleApplication: (eventId: string, applicationId: string, decision: 'aprobada' | 'rechazada') => { success: boolean; message: string };
+
   // Stats
   resetToDefaultData: () => void;
 }
 
 const PFIContext = createContext<PFIContextType | undefined>(undefined);
+
+const INITIAL_SCHOLARSHIP_AUDIT_LOGS: ScholarshipAuditLog[] = [
+  {
+    id: 'log-001',
+    student_id: 'usr-student-01',
+    periodo_codigo: '186',
+    periodo_nombre: 'Enero - Abril 2026',
+    fecha_registro: '2026-04-28T14:30:00Z',
+    autor_nombre: 'Comité de Becas UNIPAZ',
+    resolucion: 'aprobada',
+    tipo_beca: 'Excelencia Académica (Promedio 9.6 - 10.0)',
+    porcentaje_beca: 50,
+    promedio_evaluado: 9.8,
+    criterios: {
+      sin_reprobadas: true,
+      pagos_al_corriente: true,
+      solicitud_a_tiempo: true,
+      sin_sanciones: true,
+      esta_inscrito_proximo_ciclo: true,
+      cumple_puntos_1000: true,
+      carga_materias: 'normal',
+    },
+    comentarios_comite: 'Expediente impecable, promedio 9.80 y 1,250 puntos formativos alcanzados en el cuatrimestre.',
+    notificacion_enviada: true,
+    fecha_notificacion: '2026-04-29T09:00:00Z',
+  },
+  {
+    id: 'log-002',
+    student_id: 'usr-student-03',
+    periodo_codigo: '186',
+    periodo_nombre: 'Enero - Abril 2026',
+    fecha_registro: '2026-04-28T16:15:00Z',
+    autor_nombre: 'Comité de Becas UNIPAZ',
+    resolucion: 'condicionada',
+    tipo_beca: 'Estudio Socioeconómico',
+    porcentaje_beca: 30,
+    promedio_evaluado: 8.4,
+    criterios: {
+      sin_reprobadas: true,
+      pagos_al_corriente: false,
+      solicitud_a_tiempo: true,
+      sin_sanciones: true,
+      esta_inscrito_proximo_ciclo: true,
+      cumple_puntos_1000: true,
+      carga_materias: 'normal',
+    },
+    condicion_acordada: 'Regularización de pagos de colegiatura pendientes antes de la siguiente reinscripción.',
+    comentarios_comite: 'Se otorga prórroga de regularización financiera autorizada en acta de sesión 186/C-4.',
+    notificacion_enviada: true,
+    fecha_notificacion: '2026-04-29T09:00:00Z',
+  },
+];
 
 const STORAGE_KEYS = {
   PROFILES: 'unipaz_pfi_profiles_v3',
@@ -338,6 +459,7 @@ const STORAGE_KEYS = {
   FEEDBACKS: 'unipaz_pfi_feedbacks_v3',
   CURRENT_USER_ID: 'unipaz_pfi_active_user_id_v3',
   CONFIG: 'unipaz_pfi_config_v3',
+  SCHOLARSHIP_LOGS: 'unipaz_pfi_scholarship_logs_v3',
 };
 
 export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -348,6 +470,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [feedbacks, setFeedbacks] = useState<EventFeedback[]>([]);
   const [pfiConfig, setPfiConfig] = useState<PFIGlobalConfig>(DEFAULT_PFI_CONFIG);
+  const [scholarshipAuditLogs, setScholarshipAuditLogs] = useState<ScholarshipAuditLog[]>(INITIAL_SCHOLARSHIP_AUDIT_LOGS);
   const [currentUserId, setCurrentUserId] = useState<string>('usr-student-01');
   const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -363,6 +486,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedJustifications = localStorage.getItem(STORAGE_KEYS.JUSTIFICATIONS);
       const savedNotifications = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
       const savedFeedbacks = localStorage.getItem(STORAGE_KEYS.FEEDBACKS);
+      const savedLogs = localStorage.getItem(STORAGE_KEYS.SCHOLARSHIP_LOGS);
       const savedUserId = localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID);
       const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
       const savedTheme = localStorage.getItem('unipaz_pfi_theme') as 'light' | 'dark' | null;
@@ -373,6 +497,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedJustifications) setJustifications(JSON.parse(savedJustifications));
       if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
       if (savedFeedbacks) setFeedbacks(JSON.parse(savedFeedbacks));
+      if (savedLogs) setScholarshipAuditLogs(JSON.parse(savedLogs));
       if (savedUserId) setCurrentUserId(savedUserId);
       if (savedConfig) {
         const parsedConfig = JSON.parse(savedConfig);
@@ -2083,11 +2208,303 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   };
 
+  const addScholarshipAuditLog = (log: Omit<ScholarshipAuditLog, 'id' | 'fecha_registro'>) => {
+    const newLog: ScholarshipAuditLog = {
+      ...log,
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      fecha_registro: new Date().toISOString(),
+    };
+    setScholarshipAuditLogs((prev) => {
+      const updated = [newLog, ...prev];
+      localStorage.setItem(STORAGE_KEYS.SCHOLARSHIP_LOGS, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateScholarshipDates = (dates: {
+    fecha_inicio_solicitud?: string;
+    fecha_fin_solicitud?: string;
+    fecha_publicacion_resolucion?: string;
+    fecha_inicio_ratificacion?: string;
+    fecha_fin_ratificacion?: string;
+    fecha_publicacion_dictamen?: string;
+    activo?: boolean;
+  }) => {
+    setPfiConfig((prev) => {
+      const updated: PFIGlobalConfig = {
+        ...prev,
+        periodo_solicitud_becas_activo: dates.activo !== undefined ? dates.activo : prev.periodo_solicitud_becas_activo,
+        fecha_inicio_solicitud_becas: dates.fecha_inicio_solicitud !== undefined ? dates.fecha_inicio_solicitud : prev.fecha_inicio_solicitud_becas,
+        fecha_fin_solicitud_becas: dates.fecha_fin_solicitud !== undefined ? dates.fecha_fin_solicitud : prev.fecha_fin_solicitud_becas,
+        fecha_publicacion_resolucion_becas: dates.fecha_publicacion_resolucion !== undefined ? dates.fecha_publicacion_resolucion : prev.fecha_publicacion_resolucion_becas,
+        fecha_inicio_ratificacion_becas: dates.fecha_inicio_ratificacion !== undefined ? dates.fecha_inicio_ratificacion : prev.fecha_inicio_ratificacion_becas,
+        fecha_fin_ratificacion_becas: dates.fecha_fin_ratificacion !== undefined ? dates.fecha_fin_ratificacion : prev.fecha_fin_ratificacion_becas,
+        fecha_publicacion_dictamen_ratificacion: dates.fecha_publicacion_dictamen !== undefined ? dates.fecha_publicacion_dictamen : prev.fecha_publicacion_dictamen_ratificacion,
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const batchSendScholarshipNotifications = (studentIds: string[]) => {
+    let sentCount = 0;
+    profiles.forEach((student) => {
+      if (studentIds.includes(student.id) && student.estatus_ratificacion_beca) {
+        sentCount++;
+        addNotification({
+          user_id: student.id,
+          titulo: student.estatus_ratificacion_beca === 'ratificada' 
+            ? '🎉 ¡Resolución Oficial de Beca Ratificada!' 
+            : student.estatus_ratificacion_beca === 'condicionada'
+            ? '⚠️ Dictamen Oficial: Beca Condicionada'
+            : 'Resolución Oficial de Beca emitida',
+          mensaje: student.resolucion_refrendo_observaciones || 'Se ha publicado tu dictamen oficial de beca para el siguiente ciclo. Consulta tu expediente para más detalles.',
+          tipo: student.estatus_ratificacion_beca === 'ratificada' ? 'success' : 'warning',
+        });
+      }
+    });
+    return { sentCount, message: `Se enviaron ${sentCount} dictámenes y notificaciones oficiales con éxito.` };
+  };
+
+  // CRUD Categorías PFI
+  const addPFICategory = (category: Omit<PFICategoryConfig, 'id'>) => {
+    const newCat: PFICategoryConfig = {
+      ...category,
+      id: `cat-${Date.now()}`,
+    };
+    setPfiConfig((prev) => {
+      const current = prev.categoriasPfiCatalog || CATEGORIAS_PFI_OFICIALES;
+      const updated = {
+        ...prev,
+        categoriasPfiCatalog: [...current, newCat],
+        categoriaHoras: {
+          ...prev.categoriaHoras,
+          [newCat.nombre]: 5.0,
+        },
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: `Categoría "${category.nombre}" creada correctamente.` };
+  };
+
+  const updatePFICategory = (id: string, data: Partial<PFICategoryConfig>) => {
+    setPfiConfig((prev) => {
+      const current = prev.categoriasPfiCatalog || CATEGORIAS_PFI_OFICIALES;
+      const updatedList = current.map((c) => (c.id === id ? { ...c, ...data } : c));
+      const updated = { ...prev, categoriasPfiCatalog: updatedList };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: 'Categoría actualizada correctamente.' };
+  };
+
+  const deletePFICategoryWithReassign = (id: string, reassignCategoryName: string) => {
+    const catToDelete = (pfiConfig.categoriasPfiCatalog || CATEGORIAS_PFI_OFICIALES).find((c) => c.id === id);
+    if (!catToDelete) return { success: false, message: 'Categoría no encontrada.', reassignedEvents: 0 };
+
+    let count = 0;
+    setEvents((prev) =>
+      prev.map((e) => {
+        if (e.categoria === catToDelete.nombre) {
+          count++;
+          return { ...e, categoria: reassignCategoryName as EventCategory };
+        }
+        return e;
+      })
+    );
+
+    setPfiConfig((prev) => {
+      const current = prev.categoriasPfiCatalog || CATEGORIAS_PFI_OFICIALES;
+      const updated = {
+        ...prev,
+        categoriasPfiCatalog: current.filter((c) => c.id !== id),
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+
+    return { success: true, message: `Categoría eliminada. Se reasignaron ${count} actividades a "${reassignCategoryName}".`, reassignedEvents: count };
+  };
+
+  // CRUD Modalidades de Beca
+  const addModalidadBeca = (modalidad: Omit<ModalidadBecaConfig, 'id'>) => {
+    const newMod: ModalidadBecaConfig = {
+      ...modalidad,
+      id: `mod-${Date.now()}`,
+    };
+    setPfiConfig((prev) => {
+      const current = prev.modalidadesBecaCatalog || MODALIDADES_BECA_DEFAULT;
+      const updated = {
+        ...prev,
+        modalidadesBecaCatalog: [...current, newMod],
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: `Modalidad de beca "${modalidad.nombre}" registrada.` };
+  };
+
+  const updateModalidadBeca = (id: string, data: Partial<ModalidadBecaConfig>) => {
+    setPfiConfig((prev) => {
+      const current = prev.modalidadesBecaCatalog || MODALIDADES_BECA_DEFAULT;
+      const updated = {
+        ...prev,
+        modalidadesBecaCatalog: current.map((m) => (m.id === id ? { ...m, ...data } : m)),
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: 'Modalidad de beca actualizada.' };
+  };
+
+  const deleteModalidadBeca = (id: string) => {
+    setPfiConfig((prev) => {
+      const current = prev.modalidadesBecaCatalog || MODALIDADES_BECA_DEFAULT;
+      const updated = {
+        ...prev,
+        modalidadesBecaCatalog: current.filter((m) => m.id !== id),
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: 'Modalidad de beca eliminada.' };
+  };
+
+  // CRUD Departamentos Servicio Becario
+  const addServicioBecarioDept = (dept: Omit<ServicioBecarioDept, 'id'>) => {
+    const newDept: ServicioBecarioDept = {
+      ...dept,
+      id: `dept-${Date.now()}`,
+    };
+    setPfiConfig((prev) => {
+      const current = prev.departamentosServicioBecario || [];
+      const updated = {
+        ...prev,
+        departamentosServicioBecario: [...current, newDept],
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: `Departamento "${dept.nombre}" agregado.` };
+  };
+
+  const updateServicioBecarioDept = (id: string, data: Partial<ServicioBecarioDept>) => {
+    setPfiConfig((prev) => {
+      const current = prev.departamentosServicioBecario || [];
+      const updated = {
+        ...prev,
+        departamentosServicioBecario: current.map((d) => (d.id === id ? { ...d, ...data } : d)),
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: 'Departamento actualizado.' };
+  };
+
+  const deleteServicioBecarioDept = (id: string) => {
+    setPfiConfig((prev) => {
+      const current = prev.departamentosServicioBecario || [];
+      const updated = {
+        ...prev,
+        departamentosServicioBecario: current.filter((d) => d.id !== id),
+      };
+      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(updated));
+      return updated;
+    });
+    return { success: true, message: 'Departamento eliminado.' };
+  };
+
+  // Postulaciones de Roles en Eventos (Staff / Ponente)
+  const submitRoleApplication = (eventId: string, studentId: string, role: 'staff_logistica' | 'ponente', motivo?: string) => {
+    const student = profiles.find((p) => p.id === studentId);
+    if (!student) return { success: false, message: 'Estudiante no encontrado.' };
+
+    const newApp: RoleApplication = {
+      id: `role-app-${Date.now()}`,
+      event_id: eventId,
+      student_id: studentId,
+      student_nombre: `${student.nombre} ${student.apellidos}`,
+      student_matricula: student.matricula,
+      student_carrera: student.carrera,
+      tiene_beca: student.tiene_beca,
+      rol_solicitado: role,
+      motivo: motivo || 'Interés de participación y acreditación formativa',
+      status: 'pendiente',
+      fecha_solicitud: new Date().toISOString(),
+    };
+
+    setEvents((prev) =>
+      prev.map((e) => {
+        if (e.id === eventId) {
+          const currentApps = e.solicitudes_roles || [];
+          return {
+            ...e,
+            solicitudes_roles: [...currentApps, newApp],
+          };
+        }
+        return e;
+      })
+    );
+
+    return { success: true, message: `Tu solicitud para participar como ${role === 'staff_logistica' ? 'Staff Logístico' : 'Ponente'} ha sido enviada al Comité para revisión.` };
+  };
+
+  const reviewRoleApplication = (eventId: string, applicationId: string, decision: 'aprobada' | 'rechazada') => {
+    const ev = events.find((e) => e.id === eventId);
+    if (!ev) return { success: false, message: 'Evento no encontrado.' };
+
+    let targetStudentId = '';
+    let targetRole: 'staff_logistica' | 'ponente' = 'staff_logistica';
+
+    setEvents((prev) =>
+      prev.map((e) => {
+        if (e.id === eventId) {
+          const updatedApps = (e.solicitudes_roles || []).map((app) => {
+            if (app.id === applicationId) {
+              targetStudentId = app.student_id;
+              targetRole = app.rol_solicitado;
+              return {
+                ...app,
+                status: decision,
+                fecha_resolucion: new Date().toISOString(),
+                revisado_por: currentUser.nombre,
+              };
+            }
+            return app;
+          });
+          return { ...e, solicitudes_roles: updatedApps };
+        }
+        return e;
+      })
+    );
+
+    if (decision === 'aprobada' && targetStudentId) {
+      assignEventToStudentWithRole(eventId, targetStudentId, targetRole);
+      addNotification({
+        user_id: targetStudentId,
+        titulo: `¡Postulación Aprobada: ${targetRole === 'staff_logistica' ? 'Staff Logístico' : 'Ponente'}!`,
+        mensaje: `Has sido asignado oficialmente como ${targetRole === 'staff_logistica' ? 'Staff Logístico' : 'Ponente'} para el evento "${ev.titulo}".`,
+        tipo: 'success',
+      });
+    } else if (decision === 'rechazada' && targetStudentId) {
+      addNotification({
+        user_id: targetStudentId,
+        titulo: 'Postulación no aceptada para rol especial',
+        mensaje: `Tu postulación para participar como ${targetRole === 'staff_logistica' ? 'Staff' : 'Ponente'} en "${ev.titulo}" no fue aprobada por cupo límite. Puedes asistir como oyente regular.`,
+        tipo: 'info',
+      });
+    }
+
+    return { success: true, message: `Postulación ${decision === 'aprobada' ? 'APROBADA' : 'RECHAZADA'} con éxito.` };
+  };
+
   const resetToDefaultData = () => {
     setProfiles(MOCK_PROFILES);
     setEvents(MOCK_EVENTS);
     setAttendances(MOCK_ATTENDANCES);
     setPfiConfig(DEFAULT_PFI_CONFIG);
+    setScholarshipAuditLogs(INITIAL_SCHOLARSHIP_AUDIT_LOGS);
     setCurrentUserId('usr-student-01');
     localStorage.removeItem(STORAGE_KEYS.PROFILES);
     localStorage.removeItem(STORAGE_KEYS.EVENTS);
@@ -2097,6 +2514,7 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.FEEDBACKS);
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER_ID);
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
+    localStorage.removeItem(STORAGE_KEYS.SCHOLARSHIP_LOGS);
   };
 
   return (
@@ -2110,6 +2528,21 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications,
         feedbacks,
         pfiConfig,
+        scholarshipAuditLogs,
+        addScholarshipAuditLog,
+        updateScholarshipDates,
+        batchSendScholarshipNotifications,
+        addPFICategory,
+        updatePFICategory,
+        deletePFICategoryWithReassign,
+        addModalidadBeca,
+        updateModalidadBeca,
+        deleteModalidadBeca,
+        addServicioBecarioDept,
+        updateServicioBecarioDept,
+        deleteServicioBecarioDept,
+        submitRoleApplication,
+        reviewRoleApplication,
         switchUser,
         setUserRole,
         toggleDocenteStaffRole,

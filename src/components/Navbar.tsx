@@ -13,6 +13,7 @@ import {
   FileCheck,
   FileSpreadsheet,
   GraduationCap,
+  Layers,
   LayoutDashboard,
   Moon,
   QrCode,
@@ -73,7 +74,8 @@ export const Navbar: React.FC = () => {
     { href: '/admin/becas', label: 'Becas', icon: Award },
     { href: '/admin/estudiantes', label: 'Estudiantes', icon: Users },
     { href: '/admin/eventos', label: 'Eventos', icon: Calendar },
-    { href: '/admin/importar', label: 'Importar', icon: FileSpreadsheet },
+    { href: '/admin/informes', label: 'Informes', icon: FileSpreadsheet },
+    { href: '/admin/importar', label: 'Importar', icon: Layers },
     { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
   ];
 
