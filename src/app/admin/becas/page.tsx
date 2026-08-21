@@ -143,6 +143,7 @@ export default function AdminBecasConfigPage() {
   // MODAL DE EVALUACIÓN Y RATIFICACIÓN NORMATIVA DE BECA
   const [evaluatingStudent, setEvaluatingStudent] = useState<UserProfile | null>(null);
   const [showConditionalModal, setShowConditionalModal] = useState(false);
+  const [selectedStudentForConditionDetails, setSelectedStudentForConditionDetails] = useState<UserProfile | null>(null);
   const [evalData, setEvalData] = useState({
     pagos_al_corriente: true,
     sin_reprobadas: true,
@@ -1408,9 +1409,15 @@ export default function AdminBecasConfigPage() {
                               ✓ Aprobada / Ratificada
                             </span>
                           ) : s.estatus_ratificacion_beca === 'condicionada' ? (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                              ⚠️ Beca Condicionada
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedStudentForConditionDetails(s)}
+                              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 transition-all flex items-center gap-1 shadow-xs hover:scale-105"
+                              title="Click para ver causas y compromiso de Beca Condicionada"
+                            >
+                              <span>⚠️ Beca Condicionada</span>
+                              <span className="text-[9px] underline font-normal">(ver)</span>
+                            </button>
                           ) : s.estatus_ratificacion_beca === 'suspendida' ? (
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
                               ✕ Baja / Suspendida
@@ -2145,10 +2152,10 @@ export default function AdminBecasConfigPage() {
         </div>
       )}
 
-      {/* MINI-MODAL DEDICADO: BECA CONDICIONADA */}
+      {/* MINI-MODAL DEDICADO: BECA CONDICIONADA (DESDE EVALUACIÓN) */}
       {showConditionalModal && evaluatingStudent && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-400 dark:border-amber-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowConditionalModal(false)}
               className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-white"
@@ -2157,18 +2164,18 @@ export default function AdminBecasConfigPage() {
             </button>
 
             <div className="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
-              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-md">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase text-amber-600">Dictamen Oficial</span>
+                <span className="text-[10px] font-black uppercase text-amber-600">Dictamen Oficial de Beca</span>
                 <h3 className="text-base font-black text-unipaz-navy dark:text-white">
                   Beca Condicionada · {evaluatingStudent.nombre} {evaluatingStudent.apellidos}
                 </h3>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/20 space-y-2">
+            <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 space-y-2">
               <span className="font-black text-xs text-amber-950 dark:text-amber-200 block">
                 📋 Criterios que originan el condicionamiento:
               </span>
@@ -2232,6 +2239,99 @@ export default function AdminBecasConfigPage() {
               >
                 <AlertTriangle className="w-4 h-4" />
                 Confirmar Beca Condicionada
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL INFORMATIVO: DETALLES DE BECA CONDICIONADA (DESDE TABLA DIRECTA) */}
+      {selectedStudentForConditionDetails && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedStudentForConditionDetails(null)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-md">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-amber-600">Expediente de Beca</span>
+                <h3 className="text-base font-black text-unipaz-navy dark:text-white">
+                  Detalles de Condicionamiento · {selectedStudentForConditionDetails.nombre} {selectedStudentForConditionDetails.apellidos}
+                </h3>
+                <div className="text-[11px] font-mono text-slate-400">
+                  {selectedStudentForConditionDetails.matricula} · {selectedStudentForConditionDetails.carrera}
+                </div>
+              </div>
+            </div>
+
+            {/* Datos de Beca */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 grid grid-cols-2 gap-2 text-[11px]">
+              <div>
+                <span className="text-slate-400 block text-[10px]">Modalidad de Beca:</span>
+                <strong className="text-unipaz-navy dark:text-white">{selectedStudentForConditionDetails.tipo_beca || 'Institucional'}</strong>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Porcentaje Descuento:</span>
+                <strong className="text-unipaz-orange font-bold">{selectedStudentForConditionDetails.porcentaje_beca}%</strong>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Estatus Ratificación:</span>
+                <span className="text-amber-600 font-bold">⚠️ CONDICIONADA</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Promedio Evaluado:</span>
+                <strong className="font-mono">{selectedStudentForConditionDetails.promedio_academico || '9.0'}</strong>
+              </div>
+            </div>
+
+            {/* Condición y Compromiso */}
+            <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/30 space-y-2">
+              <span className="font-black text-xs text-amber-950 dark:text-amber-200 block">
+                📝 Condición y Compromiso Asignado:
+              </span>
+              <p className="text-xs text-amber-900 dark:text-amber-300 font-medium">
+                {selectedStudentForConditionDetails.condiciones_ratificacion_beca ||
+                  selectedStudentForConditionDetails.resolucion_refrendo_observaciones ||
+                  'Beca sujeta a regularización de criterios administrativos o formativos en el periodo activo.'}
+              </p>
+            </div>
+
+            {/* Observaciones del Comité */}
+            {selectedStudentForConditionDetails.resolucion_refrendo_observaciones && (
+              <div className="space-y-1">
+                <span className="font-bold text-[11px] text-slate-500 block">Comentarios del Verificador / Comité:</span>
+                <p className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300">
+                  {selectedStudentForConditionDetails.resolucion_refrendo_observaciones}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setSelectedStudentForConditionDetails(null)}
+                className="py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const std = selectedStudentForConditionDetails;
+                  setSelectedStudentForConditionDetails(null);
+                  openEvaluationModal(std);
+                }}
+                className="py-2.5 px-4 rounded-xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Re-evaluar Beca
               </button>
             </div>
           </div>

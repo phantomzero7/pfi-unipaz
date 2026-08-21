@@ -494,7 +494,7 @@ export default function AdminEstudiantesDirectoryPage() {
 
       {/* MODAL DE ASIGNACIÓN DIRECTA DE ACTIVIDAD */}
       {showAssignModal && selectedStudent && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-2xl space-y-4 text-xs text-slate-800 dark:text-slate-100">
             <button
               onClick={() => setShowAssignModal(false)}
