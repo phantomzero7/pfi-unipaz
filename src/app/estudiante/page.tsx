@@ -123,36 +123,70 @@ export default function EstudianteDashboard() {
         </div>
       )}
 
-      {/* BANNER 2: CONVOCATORIA DE BECAS ABIERTA (Solo si el periodo está activo) */}
-      {pfiConfig.periodo_solicitud_becas_activo && (
-        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* BANNER 2: BANNER INTELIGENTE DE BECA SEGÚN ESTATUS DEL ESTUDIANTE */}
+      {currentUser.tiene_beca ? (
+        /* BANNER RENOVACIÓN / RATIFICACIÓN DE BECA PARA QUIENES YA TIENEN BECA */
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-500/5 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-slate-900 border border-emerald-300 dark:border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-md flex-shrink-0">
-              <Award className="w-5 h-5" />
+            <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-md flex-shrink-0">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange">
-                Convocatoria Institucional de Becas y Estímulos
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                Periodo de Renovación & Ratificación Cuatrimestral de Beca
               </span>
               <h4 className="text-xs sm:text-sm font-black text-unipaz-navy dark:text-white">
-                Periodo de Solicitud de Beca Abierto (Vigencia hasta el {pfiConfig.fecha_fin_solicitud_becas || '25 de Septiembre'})
+                Beca Activa: {currentUser.tipo_beca || 'Institucional'} · {currentUser.porcentaje_beca}% Descuento
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Excelencia Académica (≥9.0), Convenios, Familiares, Deportivas, Inclusión y Apoyo Socioeconómico.
+                Verifica tus 1,000 puntos cuatrimestrales, 0 materias reprobadas y pagos al corriente para refrendar tu descuento.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setShowScholarshipAppModal(true)}
-              className="py-2.5 px-4 rounded-2xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+              onClick={() => setShowSocioeconomicModal(true)}
+              className="py-2.5 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+              title="Llenar Estudio Socioeconómico para solicitar un incremento en tu porcentaje de beca"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Postular a Beca
+              Solicitar Incremento de Beca
             </button>
           </div>
         </div>
+      ) : (
+        /* BANNER CONVOCATORIA DE BECAS NUEVAS PARA ASPIRANTES SIN BECA */
+        pfiConfig.periodo_solicitud_becas_activo && (
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-amber-500 text-slate-950 shadow-md flex-shrink-0">
+                <Award className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange">
+                  Convocatoria Institucional de Becas y Estímulos
+                </span>
+                <h4 className="text-xs sm:text-sm font-black text-unipaz-navy dark:text-white">
+                  Periodo de Solicitud de Beca Abierto (Vigencia hasta el {pfiConfig.fecha_fin_solicitud_becas || '25 de Septiembre'})
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Excelencia Académica (≥9.0), Convenios, Familiares, Deportivas, Inclusión y Apoyo Socioeconómico.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setShowScholarshipAppModal(true)}
+                className="py-2.5 px-4 rounded-2xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Postular a Beca
+              </button>
+            </div>
+          </div>
+        )
       )}
 
       {/* Header Institucional */}
@@ -200,15 +234,15 @@ export default function EstudianteDashboard() {
               </button>
             )}
 
-            {/* Botón Estudio Socioeconómico (Solo para Beca Nueva o Reincorporación por pérdida de beca) */}
-            {pfiConfig.estudio_socioeconomico_habilitado && !currentUser.tiene_beca && (
+            {/* Botón Estudio Socioeconómico (Para incremento de beca o nueva postulación) */}
+            {pfiConfig.estudio_socioeconomico_habilitado && (
               <button
                 onClick={() => setShowSocioeconomicModal(true)}
                 className="py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
-                title="Llenar Cédula de Estudio Socioeconómico (Para Beca Nueva o Reincorporación)"
+                title={currentUser.tiene_beca ? 'Estudio Socioeconómico para Solicitud de Incremento de Beca' : 'Llenar Estudio Socioeconómico para Solicitud de Beca'}
               >
                 <FileCheck className="w-4 h-4 text-unipaz-orange" />
-                Estudio Socioeconómico
+                {currentUser.tiene_beca ? 'Estudio Socioeconómico / Incremento' : 'Estudio Socioeconómico'}
               </button>
             )}
 

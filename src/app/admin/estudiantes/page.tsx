@@ -43,13 +43,19 @@ import { ScholarshipRenewalDictamenModal } from '@/components/ScholarshipRenewal
 import { calculateStudentPFIProgress, calculateStudentScholarshipProgress, getAttendanceStatusInfo } from '@/lib/pfi-rules';
 import { usePFI } from '@/lib/store';
 import {
+  exportStudentsToExcel,
+  generateStudentsOfficialPdfReport,
+} from '@/lib/export-utils';
+import {
   AttendanceStatus,
   CATALOGO_BECAS,
   CATALOGO_PROGRAMAS_ACADEMICOS,
   formatGradoAcademico,
+  OPCIONES_SEXO,
   PFIEvent,
   UserProfile,
 } from '@/lib/types';
+import { ArrowDown, ArrowUp, ArrowUpDown, Printer } from 'lucide-react';
 
 export default function AdminEstudiantesDirectoryPage() {
   const {
@@ -75,6 +81,15 @@ export default function AdminEstudiantesDirectoryPage() {
   const [filterStatus, setFilterStatus] = useState<
     'todos' | 'acreditados' | 'riesgo' | 'becados_todos' | 'becados_departamentales' | 'becados_acreditados' | 'becados_riesgo' | 'no_becados'
   >('todos');
+  const [carreraFilter, setCarreraFilter] = useState<string>('todas');
+  const [cuatrimestreFilter, setCuatrimestreFilter] = useState<string>('todos');
+  const [sexoFilter, setSexoFilter] = useState<string>('todos');
+
+  // Ordenamiento interactivo por columnas
+  const [sortField, setSortField] = useState<'matricula' | 'nombre' | 'carrera' | 'cuatrimestre' | 'horasTotales' | 'porcentaje_beca' | 'puntosBeca' | 'isAcreditado'>('nombre');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isExporting, setIsExporting] = useState(false);
+
   const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
 
   // Modal para asignación directa de eventos a este estudiante
@@ -89,9 +104,18 @@ export default function AdminEstudiantesDirectoryPage() {
   const students = profiles.filter((p) => p.role === 'estudiante');
   const eventsMap = new Map<string, PFIEvent>(events.map((e) => [e.id, e]));
 
-  // Filtrado de estudiantes
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // Filtrado y Ordenamiento Dinámico de Estudiantes
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    const list = students.filter((s) => {
       const q = searchTerm.toLowerCase();
       const matchesQuery =
         s.nombre.toLowerCase().includes(q) ||
@@ -100,6 +124,10 @@ export default function AdminEstudiantesDirectoryPage() {
         s.carrera.toLowerCase().includes(q);
 
       if (!matchesQuery) return false;
+
+      if (carreraFilter !== 'todas' && s.carrera !== carreraFilter) return false;
+      if (cuatrimestreFilter !== 'todos' && (s.cuatrimestre?.toString() || '1') !== cuatrimestreFilter) return false;
+      if (sexoFilter !== 'todos' && (s.sexo || 'Hombre') !== sexoFilter) return false;
 
       const prog = getStudentProgress(s.id);
       const sch = getStudentScholarshipProgress(s.id);
@@ -115,7 +143,80 @@ export default function AdminEstudiantesDirectoryPage() {
       if (filterStatus === 'no_becados') return !s.tiene_beca;
       return true;
     });
-  }, [students, searchTerm, filterStatus, getStudentProgress, getStudentScholarshipProgress]);
+
+    return list.sort((a, b) => {
+      const progA = getStudentProgress(a.id);
+      const progB = getStudentProgress(b.id);
+      const schA = getStudentScholarshipProgress(a.id);
+      const schB = getStudentScholarshipProgress(b.id);
+
+      let valA: any = a.nombre;
+      let valB: any = b.nombre;
+
+      if (sortField === 'matricula') {
+        valA = a.matricula;
+        valB = b.matricula;
+      } else if (sortField === 'nombre') {
+        valA = `${a.nombre} ${a.apellidos}`;
+        valB = `${b.nombre} ${b.apellidos}`;
+      } else if (sortField === 'carrera') {
+        valA = a.carrera;
+        valB = b.carrera;
+      } else if (sortField === 'cuatrimestre') {
+        valA = a.cuatrimestre || 1;
+        valB = b.cuatrimestre || 1;
+      } else if (sortField === 'horasTotales') {
+        valA = progA.horasTotales;
+        valB = progB.horasTotales;
+      } else if (sortField === 'porcentaje_beca') {
+        valA = a.tiene_beca ? (a.porcentaje_beca || 0) : -1;
+        valB = b.tiene_beca ? (b.porcentaje_beca || 0) : -1;
+      } else if (sortField === 'puntosBeca') {
+        valA = schA.puntosTotales;
+        valB = schB.puntosTotales;
+      } else if (sortField === 'isAcreditado') {
+        valA = progA.isAcreditado ? 1 : 0;
+        valB = progB.isAcreditado ? 1 : 0;
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [students, searchTerm, filterStatus, carreraFilter, cuatrimestreFilter, sexoFilter, sortField, sortOrder, getStudentProgress, getStudentScholarshipProgress]);
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await exportStudentsToExcel(filteredStudents, getStudentProgress, getStudentScholarshipProgress);
+    } catch (e: any) {
+      alert(`Error al exportar a Excel: ${e.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      await generateStudentsOfficialPdfReport(
+        filteredStudents,
+        getStudentProgress,
+        getStudentScholarshipProgress,
+        {
+          carrera: carreraFilter !== 'todas' ? carreraFilter : undefined,
+          cuatrimestre: cuatrimestreFilter !== 'todos' ? `${cuatrimestreFilter}°` : undefined,
+          sexo: sexoFilter !== 'todos' ? sexoFilter : undefined,
+          status: filterStatus !== 'todos' ? filterStatus : undefined,
+          totalStudents: filteredStudents.length,
+        }
+      );
+    } catch (e: any) {
+      alert(`Error al generar reporte PDF: ${e.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const selectedStudentProgress = selectedStudent
     ? calculateStudentPFIProgress(
@@ -168,46 +269,113 @@ export default function AdminEstudiantesDirectoryPage() {
           </p>
         </div>
 
-        {/* Toggle Vista Mosaico / Lista */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/10 self-start md:self-auto">
+        {/* Acciones de Exportación y Toggle Vista Mosaico / Lista */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
           <button
-            onClick={() => setViewMode('table')}
-            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-              viewMode === 'table'
-                ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-            title="Vista de Lista"
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="py-2 px-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+            title="Exportar padrón filtrado a archivo Microsoft Excel (.xlsx)"
           >
-            <List className="w-4 h-4" />
-            <span className="hidden sm:inline">Lista</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Excel (.xlsx)</span>
           </button>
+
           <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-              viewMode === 'grid'
-                ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-            title="Vista en Mosaico"
+            onClick={handleExportPdf}
+            disabled={isExporting}
+            className="py-2 px-3.5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-sm transition-all hover:scale-105"
+            title="Generar Reporte Oficial en PDF Membretado para Impresión"
           >
-            <LayoutGrid className="w-4 h-4" />
-            <span className="hidden sm:inline">Mosaico</span>
+            <Printer className="w-3.5 h-3.5" />
+            <span>Imprimir PDF</span>
           </button>
+
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/10">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Vista de Lista"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Lista</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Vista en Mosaico"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Mosaico</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Barra de Búsqueda y Filtros en Píldoras */}
+      {/* Barra de Búsqueda y Filtros */}
       <div className="space-y-3">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, matrícula, carrera o modalidad..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-900 dark:text-white shadow-sm"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="relative lg:col-span-2">
+            <Search className="w-4 h-4 absolute left-4 top-3 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, matrícula, carrera..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-slate-900 dark:text-white shadow-sm"
+            />
+          </div>
+
+          <div>
+            <select
+              value={carreraFilter}
+              onChange={(e) => setCarreraFilter(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-3 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+            >
+              <option value="todas">Todas las Carreras</option>
+              {CATALOGO_PROGRAMAS_ACADEMICOS.map((c) => (
+                <option key={c.clave} value={c.nombre}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={cuatrimestreFilter}
+              onChange={(e) => setCuatrimestreFilter(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-2 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+            >
+              <option value="todos">Todos los Grados</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                <option key={num} value={num.toString()}>
+                  {num}° Cuatri/Sem
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={sexoFilter}
+              onChange={(e) => setSexoFilter(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-2 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+            >
+              <option value="todos">Todos Sexos</option>
+              {OPCIONES_SEXO.map((sx) => (
+                <option key={sx} value={sx}>
+                  {sx}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Píldoras de Filtro Modernas */}
@@ -250,17 +418,77 @@ export default function AdminEstudiantesDirectoryPage() {
           <p>No se encontraron estudiantes que coincidan con la búsqueda o filtro seleccionado.</p>
         </div>
       ) : viewMode === 'table' ? (
-        /* VISTA TABLA */
+        /* VISTA TABLA INTERACTIVA CON ORDENAMIENTO EN ENCABEZADOS */
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
-                  <th className="py-3 px-3">Estudiante</th>
-                  <th className="py-3 px-3">Carrera / Cuatrimestre</th>
-                  <th className="py-3 px-3">Horas PFI</th>
-                  <th className="py-3 px-3">Beca Institucional</th>
-                  <th className="py-3 px-3">Estatus Titulación</th>
+                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold select-none">
+                  <th
+                    onClick={() => handleSort('nombre')}
+                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Estudiante / Matrícula</span>
+                      {sortField === 'nombre' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('carrera')}
+                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Carrera / Grado</span>
+                      {sortField === 'carrera' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('horasTotales')}
+                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Horas PFI</span>
+                      {sortField === 'horasTotales' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('porcentaje_beca')}
+                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Beca & Puntos</span>
+                      {sortField === 'porcentaje_beca' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('isAcreditado')}
+                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Estatus Titulación</span>
+                      {sortField === 'isAcreditado' ? (
+                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-3 px-3 text-right">Acción</th>
                 </tr>
               </thead>

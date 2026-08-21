@@ -19,6 +19,8 @@ import {
   GraduationCap,
   KeyRound,
   Layers,
+  LayoutGrid,
+  List,
   MapPin,
   Mic,
   Plus,
@@ -71,6 +73,8 @@ export default function AdminEventosManagerPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('todas');
+  const [eventsTab, setEventsTab] = useState<'actividades' | 'talleres' | 'postulaciones'>('actividades');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<PFIEvent | null>(null);
   const [selectedEventForRoleReview, setSelectedEventForRoleReview] = useState<PFIEvent | null>(null);
@@ -393,6 +397,33 @@ export default function AdminEventosManagerPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  const isWorkshopEvent = (e: PFIEvent) => {
+    const cat = (e.categoria || '').toUpperCase();
+    const tit = (e.titulo || '').toUpperCase();
+    return cat.includes('TALLER') || cat.includes('PVC') || tit.includes('TALLER') || tit.includes('PVC');
+  };
+
+  const currentTabEvents = useMemo(() => {
+    if (eventsTab === 'actividades') {
+      return filteredEvents.filter((e) => !isWorkshopEvent(e));
+    } else if (eventsTab === 'talleres') {
+      return filteredEvents.filter((e) => isWorkshopEvent(e));
+    }
+    return filteredEvents;
+  }, [filteredEvents, eventsTab]);
+
+  const allPendingRoleApplications = useMemo(() => {
+    const list: { event: PFIEvent; app: RoleApplication }[] = [];
+    events.forEach((ev) => {
+      (ev.solicitudes_roles || []).forEach((app) => {
+        if (app.status === 'pendiente') {
+          list.push({ event: ev, app });
+        }
+      });
+    });
+    return list;
+  }, [events]);
+
   return (
     <div className="space-y-6 animate-fadeIn max-w-7xl mx-auto pb-12">
       {/* Header */}
@@ -408,17 +439,47 @@ export default function AdminEventosManagerPage() {
             Gestión y Programación de Eventos y Talleres
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Programación de actividades multi-día, horas por rol (oyente, staff, ponente) y postulaciones.
+            Separación de actividades generales, talleres formativos PVC y administración de roles.
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="py-3 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
-        >
-          <Plus className="w-4 h-4" />
-          Nueva Actividad / Taller
-        </button>
+        <div className="flex items-center gap-2.5">
+          {/* Toggle Vista Mosaico / Lista */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-white/10">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Vista en Mosaico"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Mosaico</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Vista en Lista"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Lista</span>
+            </button>
+          </div>
+
+          <button
+            onClick={openCreateModal}
+            className="py-2.5 px-4 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-orange-500/20 transition-all hover:scale-105"
+          >
+            <Plus className="w-4 h-4" />
+            {eventsTab === 'talleres' ? 'Nuevo Taller Formativo' : 'Nueva Actividad'}
+          </button>
+        </div>
       </div>
 
       {toastMessage && (
@@ -427,176 +488,378 @@ export default function AdminEventosManagerPage() {
         </div>
       )}
 
-      {/* Barra de Búsqueda y Filtros de Categoría */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar evento por título, ubicación o palabra clave..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-900 dark:text-white shadow-sm"
-          />
-        </div>
+      {/* Subpestañas Principales para Evitar Confusiones */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-4">
+        <button
+          onClick={() => setEventsTab('actividades')}
+          className={`py-2.5 px-4 rounded-2xl font-black text-xs flex items-center gap-2 transition-all ${
+            eventsTab === 'actividades'
+              ? 'bg-unipaz-navy dark:bg-white text-white dark:text-slate-950 shadow-md'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange'
+          }`}
+        >
+          <Calendar className="w-4 h-4 text-unipaz-orange" />
+          1. Actividades y Eventos Generales ({events.filter((e) => !isWorkshopEvent(e)).length})
+        </button>
 
-        {/* Píldoras de Categoría */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setSelectedCategoryFilter('todas')}
-            className={`py-1.5 px-3.5 rounded-full text-xs font-bold transition-all ${
-              selectedCategoryFilter === 'todas'
-                ? 'bg-unipaz-navy dark:bg-white text-white dark:text-slate-950 shadow-sm'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10'
-            }`}
-          >
-            Todas las Categorías ({events.length})
-          </button>
-          {categoriesCatalog.map((cat) => {
-            const count = events.filter((e) => e.categoria === cat.nombre).length;
-            return (
+        <button
+          onClick={() => setEventsTab('talleres')}
+          className={`py-2.5 px-4 rounded-2xl font-black text-xs flex items-center gap-2 transition-all ${
+            eventsTab === 'talleres'
+              ? 'bg-unipaz-orange text-white shadow-md shadow-orange-500/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange'
+          }`}
+        >
+          <GraduationCap className="w-4 h-4" />
+          2. Talleres Formativos & PVC ({events.filter((e) => isWorkshopEvent(e)).length})
+        </button>
+
+        <button
+          onClick={() => setEventsTab('postulaciones')}
+          className={`py-2.5 px-4 rounded-2xl font-black text-xs flex items-center gap-2 transition-all ${
+            eventsTab === 'postulaciones'
+              ? 'bg-purple-700 text-white shadow-md shadow-purple-500/20'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:border-purple-500'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          3. Bandeja de Postulaciones ({allPendingRoleApplications.length})
+        </button>
+      </div>
+
+      {eventsTab !== 'postulaciones' ? (
+        <>
+          {/* Barra de Búsqueda y Filtros de Categoría */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder={eventsTab === 'talleres' ? 'Buscar taller formativo o PVC...' : 'Buscar actividad, conferencia o simposio...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-900 dark:text-white shadow-sm"
+              />
+            </div>
+
+            {/* Píldoras de Categoría */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategoryFilter(cat.nombre)}
-                className={`py-1.5 px-3.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                  selectedCategoryFilter === cat.nombre
-                    ? 'bg-unipaz-orange text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange'
+                onClick={() => setSelectedCategoryFilter('todas')}
+                className={`py-1.5 px-3.5 rounded-full text-xs font-bold transition-all ${
+                  selectedCategoryFilter === 'todas'
+                    ? 'bg-unipaz-navy dark:bg-white text-white dark:text-slate-950 shadow-sm'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10'
                 }`}
               >
-                <span>{cat.nombre}</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500">
-                  {count}
-                </span>
+                Todas las Categorías
               </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Grid de Eventos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map((ev) => {
-          const pendingApps = (ev.solicitudes_roles || []).filter((a) => a.status === 'pendiente');
-
-          return (
-            <div
-              key={ev.id}
-              className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4 flex flex-col justify-between hover:border-unipaz-orange/40 transition-all group"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange bg-orange-100 dark:bg-orange-500/20 px-2.5 py-0.5 rounded-full">
-                    {ev.categoria}
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase">
-                    {ev.modalidad}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-base font-black text-unipaz-navy dark:text-white group-hover:text-unipaz-orange transition-colors">
-                    {ev.titulo}
-                  </h3>
-                  {ev.descripcion && (
-                    <p className="text-xs text-slate-500 line-clamp-2 mt-1">
-                      {ev.descripcion}
-                    </p>
-                  )}
-                </div>
-
-                {/* Fechas & Multidía */}
-                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-unipaz-orange" />
-                    <span>{ev.fecha_evento}</span>
-                    <span className="text-slate-400">· {ev.hora_inicio} - {ev.hora_fin}</span>
-                  </div>
-                  {ev.es_multidia && (
-                    <div className="text-[11px] font-bold text-blue-600">
-                      📅 Evento de Múltiples Días ({ev.dias_evento?.length || 1} sesiones con Check-In individual)
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate">{ev.ubicacion}</span>
-                  </div>
-                </div>
-
-                {/* Horas y Puntos Fijos por Rol */}
-                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5 space-y-1.5 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Oyente / Asistente:</span>
-                    <strong className="font-mono text-emerald-600">{ev.horas_presenciales?.toFixed(1)} hrs · {ev.puntos_beca || 200} pts</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Staff Logístico:</span>
-                    <strong className="font-mono text-amber-600">{ev.horas_staff?.toFixed(1) || '10.0'} hrs · {ev.puntos_beca_staff || 300} pts</strong>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Ponente / Expositor:</span>
-                    <strong className="font-mono text-blue-600">{ev.horas_ponente?.toFixed(1) || '15.0'} hrs · {ev.puntos_beca_ponente || 400} pts</strong>
-                  </div>
-                </div>
-
-                {/* Postulaciones Pendientes */}
-                {pendingApps.length > 0 && (
-                  <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 text-amber-900 dark:text-amber-200 flex items-center justify-between">
-                    <span className="font-bold text-xs">🟡 {pendingApps.length} postulación(es) de rol pendiente(s)</span>
-                    <button
-                      onClick={() => setSelectedEventForRoleReview(ev)}
-                      className="py-1 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px]"
-                    >
-                      Revisar
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Botones de Acción */}
-              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setSelectedKioskEvent(ev)}
-                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
-                    title="Proyectar QR en Kiosco / Pantalla"
-                  >
-                    <QrCode className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setSelectedSpeakerEvent(ev)}
-                    className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
-                    title="Emitir Constancia de Ponente"
-                  >
-                    <Mic className="w-4 h-4 text-unipaz-orange" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => openEditModal(ev)}
-                    className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-white font-bold text-xs flex items-center gap-1"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`¿Eliminar la actividad "${ev.titulo}"?`)) {
-                        deleteEvent(ev.id);
-                      }
-                    }}
-                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
-                    title="Eliminar Evento"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+              {categoriesCatalog.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryFilter(cat.nombre)}
+                  className={`py-1.5 px-3.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    selectedCategoryFilter === cat.nombre
+                      ? 'bg-unipaz-orange text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange'
+                  }`}
+                >
+                  <span>{cat.nombre}</span>
+                </button>
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          {currentTabEvents.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-400 rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-white/10 space-y-2">
+              <Calendar className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700" />
+              <p>No se encontraron registros en esta sección.</p>
+            </div>
+          ) : viewMode === 'grid' ? (
+            /* Grid de Eventos / Talleres */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentTabEvents.map((ev) => {
+                const pendingApps = (ev.solicitudes_roles || []).filter((a) => a.status === 'pendiente');
+
+                return (
+                  <div
+                    key={ev.id}
+                    className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4 flex flex-col justify-between hover:border-unipaz-orange/40 transition-all group"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange bg-orange-100 dark:bg-orange-500/20 px-2.5 py-0.5 rounded-full">
+                          {ev.categoria}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase">
+                          {ev.modalidad}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-black text-unipaz-navy dark:text-white group-hover:text-unipaz-orange transition-colors">
+                          {ev.titulo}
+                        </h3>
+                        {ev.descripcion && (
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                            {ev.descripcion}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Fechas & Multidía */}
+                      <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-unipaz-orange" />
+                          <span>{ev.fecha_evento}</span>
+                          <span className="text-slate-400">· {ev.hora_inicio} - {ev.hora_fin}</span>
+                        </div>
+                        {ev.es_multidia && (
+                          <div className="text-[11px] font-bold text-blue-600">
+                            📅 Multi-Días ({ev.dias_evento?.length || 1} sesiones con Check-In individual)
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="truncate">{ev.ubicacion}</span>
+                        </div>
+                      </div>
+
+                      {/* Horas y Puntos Fijos por Rol */}
+                      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5 space-y-1.5 text-[11px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Oyente / Asistente:</span>
+                          <strong className="font-mono text-emerald-600">{ev.horas_presenciales?.toFixed(1)} hrs · {ev.puntos_beca || 200} pts</strong>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Staff Logístico:</span>
+                          <strong className="font-mono text-amber-600">{ev.horas_staff?.toFixed(1) || '10.0'} hrs · {ev.puntos_beca_staff || 300} pts</strong>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Ponente / Expositor:</span>
+                          <strong className="font-mono text-blue-600">{ev.horas_ponente?.toFixed(1) || '15.0'} hrs · {ev.puntos_beca_ponente || 400} pts</strong>
+                        </div>
+                      </div>
+
+                      {/* Postulaciones Pendientes */}
+                      {pendingApps.length > 0 && (
+                        <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 text-amber-900 dark:text-amber-200 flex items-center justify-between">
+                          <span className="font-bold text-xs">🟡 {pendingApps.length} solicitud(es) de rol</span>
+                          <button
+                            onClick={() => setSelectedEventForRoleReview(ev)}
+                            className="py-1 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px]"
+                          >
+                            Revisar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botones de Acción */}
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedKioskEvent(ev)}
+                          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
+                          title="Proyectar QR en Kiosco / Pantalla"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setSelectedSpeakerEvent(ev)}
+                          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
+                          title="Emitir Constancia de Ponente"
+                        >
+                          <Mic className="w-4 h-4 text-unipaz-orange" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(ev)}
+                          className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-white font-bold text-xs flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar "${ev.titulo}"?`)) {
+                              deleteEvent(ev.id);
+                            }
+                          }}
+                          className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
+                          title="Eliminar Evento"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Vista en Lista (Tabla) */
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                    <th className="py-3 px-3">Título de la Actividad</th>
+                    <th className="py-3 px-3">Categoría</th>
+                    <th className="py-3 px-3">Modalidad / Sede</th>
+                    <th className="py-3 px-3">Fecha & Horario</th>
+                    <th className="py-3 px-3">Horas Formativas</th>
+                    <th className="py-3 px-3">Cupo</th>
+                    <th className="py-3 px-3 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {currentTabEvents.map((ev) => (
+                    <tr key={ev.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <td className="py-3 px-3">
+                        <strong className="text-unipaz-navy dark:text-white block">{ev.titulo}</strong>
+                        {ev.instructor_titular && (
+                          <span className="text-[10px] text-slate-400">Instructor: {ev.instructor_titular}</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange">
+                          {ev.categoria}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="uppercase font-bold text-[10px] text-slate-600 dark:text-slate-300 block">{ev.modalidad}</span>
+                        <span className="text-[10px] text-slate-400 truncate max-w-[140px] block">{ev.ubicacion}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-medium">{ev.fecha_evento}</div>
+                        <span className="text-[10px] text-slate-400">{ev.hora_inicio} - {ev.hora_fin}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="font-mono font-bold text-emerald-600">{ev.horas_presenciales?.toFixed(1)} hrs</span>
+                        <span className="text-[10px] text-slate-400 block">Staff: {ev.horas_staff?.toFixed(1) || '10.0'}h</span>
+                      </td>
+                      <td className="py-3 px-3 font-mono">
+                        {ev.cupo_maximo} lugares
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedKioskEvent(ev)}
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300"
+                            title="QR Kiosco"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openEditModal(ev)}
+                            className="py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
+                          >
+                            <Edit2 className="w-3 h-3" /> Editar
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`¿Eliminar "${ev.titulo}"?`)) {
+                                deleteEvent(ev.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      ) : (
+        /* BANDEJA DE POSTULACIONES DE ROLES (STAFF Y PONENTES) */
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+          <h3 className="text-base font-black text-unipaz-navy dark:text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-purple-600" />
+            Solicitudes de Participación como Staff Logístico y Ponentes
+          </h3>
+          <p className="text-xs text-slate-500">
+            Revisa y dictamina las postulaciones enviadas por estudiantes para participar en actividades formativas con roles especiales.
+          </p>
+
+          {allPendingRoleApplications.length === 0 ? (
+            <div className="p-10 text-center text-xs text-slate-400 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-200 dark:border-white/10">
+              ✓ No hay solicitudes pendientes de aprobación de rol en este momento.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                    <th className="py-3 px-3">Estudiante</th>
+                    <th className="py-3 px-3">Actividad / Taller</th>
+                    <th className="py-3 px-3">Rol Solicitado</th>
+                    <th className="py-3 px-3">Fecha Solicitud</th>
+                    <th className="py-3 px-3 text-right">Dictamen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {allPendingRoleApplications.map(({ event: ev, app }) => {
+                    const std = profiles.find((p) => p.id === app.student_id);
+
+                    return (
+                      <tr key={`${ev.id}-${app.student_id}-${app.rol_solicitado}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td className="py-3 px-3">
+                          <strong className="text-unipaz-navy dark:text-white block">{std?.nombre} {std?.apellidos}</strong>
+                          <span className="text-[10px] font-mono text-slate-400">{std?.matricula} · {std?.carrera}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <strong className="text-slate-800 dark:text-slate-200 block">{ev.titulo}</strong>
+                          <span className="text-[10px] text-slate-400">{ev.fecha_evento}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            app.rol_solicitado === 'staff_logistica' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {app.rol_solicitado === 'staff_logistica' ? '🛡️ Staff Logístico' : '🎤 Ponente / Expositor'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 text-[11px]">
+                          {app.fecha_solicitud}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => {
+                                reviewRoleApplication(ev.id, app.id, 'rechazada');
+                                setToastMessage(`Solicitud de ${std?.nombre} rechazada.`);
+                              }}
+                              className="py-1 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
+                            >
+                              Rechazar
+                            </button>
+                            <button
+                              onClick={() => {
+                                reviewRoleApplication(ev.id, app.id, 'aprobada');
+                                setToastMessage(`✓ Solicitud de ${std?.nombre} aprobada con éxito.`);
+                              }}
+                              className="py-1 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                            >
+                              Aprobar Rol
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* MODAL CREAR / EDITAR ACTIVIDAD CON HORAS POR ROL        */}

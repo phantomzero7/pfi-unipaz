@@ -118,20 +118,22 @@ export const CertificatePdfModal: React.FC<CertificatePdfModalProps> = ({
       doc.setFillColor(0, 40, 85);
       doc.rect(14, 14, 269, 18, 'F');
 
+      // Logo Institucional dentro de la franja superior
+      if (logoBase64) {
+        doc.setFillColor(255, 255, 255);
+        doc.circle(25, 23, 7.5, 'F');
+        doc.addImage(logoBase64, 'PNG', 18.5, 16.5, 13, 13);
+      }
+
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text('UNIVERSIDAD INTERNACIONAL DE LA PAZ · LA PAZ, B.C.S., MÉXICO', 148.5, 25, { align: 'center' });
+      doc.text('UNIVERSIDAD INTERNACIONAL DE LA PAZ · LA PAZ, B.C.S., MÉXICO', 150, 25, { align: 'center' });
 
-      // Logo Institucional en el Certificado
-      if (logoBase64) {
-        doc.addImage(logoBase64, 'PNG', 20, 36, 24, 24);
-      }
-
-      // Encabezado Principal
+      // Encabezado Principal (Despejado sin solapamiento)
       doc.setTextColor(0, 40, 85);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.text('CONSTANCIA DE ACREDITACIÓN PFI', 148.5, 46, { align: 'center' });
 
       doc.setFontSize(12);

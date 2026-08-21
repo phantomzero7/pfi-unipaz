@@ -24,6 +24,8 @@ import {
   GraduationCap,
   History,
   Layers,
+  LayoutGrid,
+  List,
   Lock,
   MessageSquare,
   PenTool,
@@ -117,6 +119,11 @@ export default function AdminBecasConfigPage() {
 
   // Modal para revisar solicitud de aspirante nuevo
   const [selectedApplicantForReview, setSelectedApplicantForReview] = useState<UserProfile | null>(null);
+  const [applicantReviewTipoBeca, setApplicantReviewTipoBeca] = useState<string>('Excelencia Académica (Promedio 9.6 - 10.0)');
+  const [applicantReviewPorcentaje, setApplicantReviewPorcentaje] = useState<number>(50);
+  const [applicantReviewObservaciones, setApplicantReviewObservaciones] = useState<string>('');
+  const [applicantReviewCondiciones, setApplicantReviewCondiciones] = useState<string>('');
+  const [modalidadesViewMode, setModalidadesViewMode] = useState<'grid' | 'list'>('grid');
 
   // Selección múltiple para envío de notificaciones en lote
   const [selectedForNotification, setSelectedForNotification] = useState<string[]>([]);
@@ -234,6 +241,14 @@ export default function AdminBecasConfigPage() {
     setAsignacionMsg(res.message);
     setSelectedStudentId('');
     setTimeout(() => setAsignacionMsg(null), 4000);
+  };
+
+  const openApplicantReviewModal = (s: UserProfile) => {
+    setSelectedApplicantForReview(s);
+    setApplicantReviewTipoBeca(s.tipo_beca_solicitada || s.tipo_beca || 'Excelencia Académica (Promedio 9.6 - 10.0)');
+    setApplicantReviewPorcentaje(s.porcentaje_beca || 50);
+    setApplicantReviewObservaciones('Requisitos normativos, promedio académico y estudio socioeconómico validados por el Comité de Becas UNIPAZ.');
+    setApplicantReviewCondiciones('');
   };
 
   const handleAssignDeptBeca = (e: React.FormEvent) => {
@@ -1090,11 +1105,11 @@ export default function AdminBecasConfigPage() {
                         </td>
                         <td className="py-3 px-3 text-right">
                           <button
-                            onClick={() => setSelectedApplicantForReview(s)}
-                            className="py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 ml-auto transition-all"
+                            onClick={() => openApplicantReviewModal(s)}
+                            className="py-1.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 ml-auto transition-all hover:scale-105 shadow-xs"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            Revisar & Dictaminar
+                            Revisar Expediente
                           </button>
                         </td>
                       </tr>
@@ -1472,11 +1487,11 @@ export default function AdminBecasConfigPage() {
       )}
 
       {/* ======================================================== */}
-      {/* SUBPESTAÑA 3: MODALIDADES DE BECA (CRUD COMPLETO)        */}
+      {/* SUBPESTAÑA 3: MODALIDADES DE BECA (CRUD COMPLETO CON VISTA DUAL) */}
       {/* ======================================================== */}
       {activeTab === 'modalidades' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
             <div>
               <h3 className="text-base font-black text-unipaz-navy dark:text-white flex items-center gap-2">
                 <Award className="w-5 h-5 text-unipaz-orange" />
@@ -1486,62 +1501,161 @@ export default function AdminBecasConfigPage() {
                 Administra los tipos de beca reconocidos, sus descripciones, rangos de descuento y promedios mínimos requeridos.
               </p>
             </div>
-            <button
-              onClick={openCreateModalidad}
-              className="py-2.5 px-4 rounded-2xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105"
-            >
-              <Plus className="w-4 h-4" />
-              Nueva Modalidad de Beca
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {modalidadesCatalogo.map((m) => (
-              <div key={m.id} className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-3 flex flex-col justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange bg-orange-100 dark:bg-orange-500/20 px-2 py-0.5 rounded-full">
-                      Descuento {m.descuento_min}% - {m.descuento_max}%
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.activa ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                      {m.activa ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-black text-unipaz-navy dark:text-white leading-tight">
-                    {m.nombre}
-                  </h4>
-                  <p className="text-xs text-slate-500 line-clamp-2">
-                    {m.descripcion}
-                  </p>
-                  <div className="text-[11px] text-slate-600 dark:text-slate-400 pt-1 space-y-1">
-                    <div>• Promedio mínimo: <strong>{m.promedio_minimo || 8.0}</strong></div>
-                    <div>• Requiere estudio socioeconómico: <strong>{m.requiere_estudio_socioeconomico ? 'SÍ' : 'NO'}</strong></div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
-                  <button
-                    onClick={() => openEditModalidad(m)}
-                    className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`¿Eliminar la modalidad "${m.nombre}"?`)) {
-                        deleteModalidadBeca(m.id);
-                      }
-                    }}
-                    className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
-                    title="Eliminar Modalidad"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Selector de Vista Dual (Mosaico / Lista) */}
+              <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10">
+                <button
+                  onClick={() => setModalidadesViewMode('grid')}
+                  className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    modalidadesViewMode === 'grid'
+                      ? 'bg-white dark:bg-slate-900 text-unipaz-orange shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Vista en Mosaico (Tarjetas)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  Mosaico
+                </button>
+                <button
+                  onClick={() => setModalidadesViewMode('list')}
+                  className={`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    modalidadesViewMode === 'list'
+                      ? 'bg-white dark:bg-slate-900 text-unipaz-orange shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Vista en Lista (Tabla)"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  Lista
+                </button>
               </div>
-            ))}
+
+              <button
+                onClick={openCreateModalidad}
+                className="py-2.5 px-4 rounded-2xl bg-unipaz-orange hover:bg-orange-600 text-white font-black text-xs flex items-center gap-2 shadow-md transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                Nueva Modalidad
+              </button>
+            </div>
           </div>
+
+          {modalidadesViewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {modalidadesCatalogo.map((m) => (
+                <div key={m.id} className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-unipaz-orange bg-orange-100 dark:bg-orange-500/20 px-2 py-0.5 rounded-full">
+                        Descuento {m.descuento_min}% - {m.descuento_max}%
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.activa ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
+                        {m.activa ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-black text-unipaz-navy dark:text-white leading-tight">
+                      {m.nombre}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2">
+                      {m.descripcion}
+                    </p>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 pt-1 space-y-1">
+                      <div>• Promedio mínimo: <strong>{m.promedio_minimo || 8.0}</strong></div>
+                      <div>• Requiere estudio socioeconómico: <strong>{m.requiere_estudio_socioeconomico ? 'SÍ' : 'NO'}</strong></div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/10">
+                    <button
+                      onClick={() => openEditModalidad(m)}
+                      className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1 transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`¿Eliminar la modalidad "${m.nombre}"?`)) {
+                          deleteModalidadBeca(m.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
+                      title="Eliminar Modalidad"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                    <th className="py-3 px-3">Modalidad de Beca</th>
+                    <th className="py-3 px-3">Rango de Descuento</th>
+                    <th className="py-3 px-3">Promedio Mínimo</th>
+                    <th className="py-3 px-3">Estudio Socioeconómico</th>
+                    <th className="py-3 px-3">Estatus</th>
+                    <th className="py-3 px-3 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {modalidadesCatalogo.map((m) => (
+                    <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <td className="py-3 px-3">
+                        <strong className="text-unipaz-navy dark:text-white block">{m.nombre}</strong>
+                        <span className="text-[11px] text-slate-400 line-clamp-1">{m.descripcion}</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="font-mono font-bold text-unipaz-orange">{m.descuento_min}% - {m.descuento_max}%</span>
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-blue-600">
+                        {m.promedio_minimo || 8.0}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.requiere_estudio_socioeconomico ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {m.requiere_estudio_socioeconomico ? 'REQUERIDO' : 'OPCIONAL'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          m.activa ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {m.activa ? 'ACTIVA' : 'INACTIVA'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => openEditModalidad(m)}
+                            className="py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3 h-3" /> Editar
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`¿Eliminar la modalidad "${m.nombre}"?`)) {
+                                deleteModalidadBeca(m.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
+                            title="Eliminar Modalidad"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -1649,73 +1763,250 @@ export default function AdminBecasConfigPage() {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL REVISAR SOLICITUD DE ASPIRANTE                     */}
+      {/* MODAL REVISAR SOLICITUD DE ASPIRANTE (EXPEDIENTE COMPLETO) */}
       {/* ======================================================== */}
       {selectedApplicantForReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-xs text-slate-800 dark:text-slate-100">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-xs text-slate-800 dark:text-slate-100 max-h-[92vh] overflow-y-auto">
             <button
               onClick={() => setSelectedApplicantForReview(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-white/10 pb-4">
-              <div className="p-2.5 rounded-2xl bg-blue-600 text-white">
-                <FileText className="w-6 h-6" />
+            {/* Header del Expediente */}
+            <div className="flex items-center gap-4 border-b border-slate-200 dark:border-white/10 pb-4">
+              <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-md">
+                <FileText className="w-7 h-7" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase text-unipaz-orange">Comisión de Becas</span>
-                <h3 className="text-base font-black text-unipaz-navy dark:text-white">
-                  Solicitud de Beca · {selectedApplicantForReview.nombre} {selectedApplicantForReview.apellidos}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase text-unipaz-orange bg-orange-100 dark:bg-orange-500/20 px-2 py-0.5 rounded-full">
+                    Comité Evaluador de Becas
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-bold">
+                    {selectedApplicantForReview.matricula}
+                  </span>
+                </div>
+                <h3 className="text-lg font-black text-unipaz-navy dark:text-white mt-0.5">
+                  Expediente de Solicitud · {selectedApplicantForReview.nombre} {selectedApplicantForReview.apellidos}
                 </h3>
+                <p className="text-[11px] text-slate-500">
+                  {selectedApplicantForReview.carrera} · {selectedApplicantForReview.cuatrimestre}° Cuatrimestre
+                </p>
               </div>
             </div>
 
-            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10">
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div><span className="text-slate-400">Matrícula:</span> <strong>{selectedApplicantForReview.matricula}</strong></div>
-                <div><span className="text-slate-400">Programa:</span> <strong>{selectedApplicantForReview.carrera}</strong></div>
-                <div><span className="text-slate-400">Promedio:</span> <strong className="text-blue-600 font-mono">{selectedApplicantForReview.promedio_academico || 9.0}</strong></div>
-                <div><span className="text-slate-400">Cuatrimestre:</span> <strong>{selectedApplicantForReview.cuatrimestre}°</strong></div>
-              </div>
-              <div className="pt-2 border-t border-slate-200 dark:border-white/10">
-                <span className="text-slate-400 block mb-1">Modalidad Solicitada:</span>
-                <strong className="text-unipaz-navy dark:text-white text-xs">{selectedApplicantForReview.tipo_beca_solicitada || 'Excelencia Académica'}</strong>
+            {/* 1. FICHA ACADÉMICA Y DATOS PERSONALES */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-unipaz-navy dark:text-white uppercase tracking-wider block">
+                1. Datos Académicos y Personales del Aspirante
+              </span>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Promedio Académico:</span>
+                  <strong className="text-blue-600 dark:text-blue-400 font-mono text-sm font-black">
+                    {selectedApplicantForReview.promedio_academico || 9.0}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Sexo:</span>
+                  <strong className="text-slate-700 dark:text-slate-200">{selectedApplicantForReview.sexo || 'Hombre'}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Correo Institucional:</span>
+                  <strong className="text-slate-700 dark:text-slate-200 truncate block">{selectedApplicantForReview.email || 'estudiante@unipaz.mx'}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Grupo Prioritario / Etnia:</span>
+                  <strong className="text-slate-700 dark:text-slate-200">{selectedApplicantForReview.pertenencia_etnica_prioritaria || 'Población General'}</strong>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 dark:border-white/10">
+            {/* 2. DETALLES DE LA POSTULACIÓN & EXPOSICIÓN DE MOTIVOS */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-unipaz-navy dark:text-white uppercase tracking-wider block">
+                2. Postulación y Exposición de Motivos
+              </span>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Modalidad Solicitada por el Estudiante:</span>
+                    <strong className="text-unipaz-orange text-xs">
+                      {selectedApplicantForReview.tipo_beca_solicitada || 'Excelencia Académica (Promedio 9.6 - 10.0)'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Situación Laboral:</span>
+                    <strong className="text-slate-700 dark:text-slate-200">
+                      {selectedApplicantForReview.situacion_laboral_solicitante || 'Estudiante Tiempo Completo / Sin empleo'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 block text-[10px] mb-1">Justificación y Motivos redactados por el estudiante:</span>
+                  <p className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    {selectedApplicantForReview.motivos_solicitud_beca ||
+                      'Solicito la beca institucional UNIPAZ para mantener la continuidad en mis estudios profesionales con excelencia y compromiso social, comprometiéndome a cumplir puntualmente con todas las horas y actividades formativas del PFI.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. ESTUDIO SOCIOECONÓMICO Y DOCUMENTACIÓN */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-unipaz-navy dark:text-white uppercase tracking-wider block">
+                3. Estudio Socioeconómico & Documentos Adjuntos
+              </span>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Estudio Socioeconómico:</span>
+                  <span className="font-bold text-emerald-600">
+                    {selectedApplicantForReview.estudio_socioeconomico_entregado ? '✓ Entregado' : '✓ En Expediente'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Ingreso Familiar Estimado:</span>
+                  <strong className="text-slate-700 dark:text-slate-200">$12,000 - $16,500 MXN</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Personas Dependientes:</span>
+                  <strong className="text-slate-700 dark:text-slate-200">3 - 4 integrantes</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Tipo de Vivienda:</span>
+                  <strong className="text-slate-700 dark:text-slate-200">Propia / Zona Urbana</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. DICTAMINACIÓN Y RESOLUCIÓN OFICIAL */}
+            <div className="p-5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-500/30 space-y-4">
+              <span className="text-xs font-black text-blue-950 dark:text-blue-200 uppercase tracking-wider block">
+                4. Dictamen Oficial del Comité de Becas
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Modalidad Definitiva a Asignar:
+                  </label>
+                  <select
+                    value={applicantReviewTipoBeca}
+                    onChange={(e) => setApplicantReviewTipoBeca(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold"
+                  >
+                    {modalidadesCatalogo.map((m) => (
+                      <option key={m.id} value={m.nombre}>
+                        {m.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Porcentaje de Descuento Aprobado:
+                  </label>
+                  <select
+                    value={applicantReviewPorcentaje}
+                    onChange={(e) => setApplicantReviewPorcentaje(Number(e.target.value))}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold font-mono text-unipaz-orange"
+                  >
+                    {[10, 15, 20, 25, 30, 40, 50, 60, 70, 75, 80, 100].map((pct) => (
+                      <option key={pct} value={pct}>
+                        {pct}% de Descuento
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Observaciones / Fundamentación del Dictamen:
+                </label>
+                <input
+                  type="text"
+                  value={applicantReviewObservaciones}
+                  onChange={(e) => setApplicantReviewObservaciones(e.target.value)}
+                  placeholder="Ej. Cumple con el promedio reglamentario y estudio socioeconómico verificado."
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Condiciones Formales (Solo si se aprueba como Condicionada):
+                </label>
+                <input
+                  type="text"
+                  value={applicantReviewCondiciones}
+                  onChange={(e) => setApplicantReviewCondiciones(e.target.value)}
+                  placeholder="Ej. Mantener promedio ≥ 9.0 y regularizar documentación en 30 días."
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Acciones de Dictamen */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => {
-                  notifyScholarshipResolution(selectedApplicantForReview.id, 'rechazada', selectedApplicantForReview.tipo_beca_solicitada || 'Excelencia Académica', 0, 'Solicitud no aprobada por cupo o dictamen.');
+                  notifyScholarshipResolution(
+                    selectedApplicantForReview.id,
+                    'rechazada',
+                    applicantReviewTipoBeca,
+                    0,
+                    applicantReviewObservaciones || 'Solicitud no aprobada por el Comité de Becas según cupo y criterios vigentes.'
+                  );
                   setSelectedApplicantForReview(null);
                 }}
-                className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs"
+                className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
               >
-                Rechazar
+                <XCircle className="w-4 h-4" />
+                Rechazar Solicitud
               </button>
+
               <button
                 type="button"
                 onClick={() => {
-                  notifyScholarshipResolution(selectedApplicantForReview.id, 'condicionada', selectedApplicantForReview.tipo_beca_solicitada || 'Excelencia Académica', 30, 'Beca otorgada condicionada a promedio.', 'Mantener promedio');
+                  notifyScholarshipResolution(
+                    selectedApplicantForReview.id,
+                    'condicionada',
+                    applicantReviewTipoBeca,
+                    applicantReviewPorcentaje,
+                    applicantReviewObservaciones || 'Beca autorizada en estatus condicionado por el Comité.',
+                    applicantReviewCondiciones || 'Cumplir con el promedio mínimo y horas formativas PFI.'
+                  );
                   setSelectedApplicantForReview(null);
                 }}
-                className="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs"
+                className="py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
               >
-                Condicionar
+                <AlertTriangle className="w-4 h-4" />
+                Aprobar Condicionada
               </button>
+
               <button
                 type="button"
                 onClick={() => {
-                  notifyScholarshipResolution(selectedApplicantForReview.id, 'aprobada', selectedApplicantForReview.tipo_beca_solicitada || 'Excelencia Académica', 50, 'Solicitud dictaminada y aprobada por el Comité.');
+                  notifyScholarshipResolution(
+                    selectedApplicantForReview.id,
+                    'aprobada',
+                    applicantReviewTipoBeca,
+                    applicantReviewPorcentaje,
+                    applicantReviewObservaciones || 'Solicitud dictaminada y aprobada favorablemente por el Comité de Becas.'
+                  );
                   setSelectedApplicantForReview(null);
                 }}
-                className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs"
+                className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-105"
               >
-                Aprobar
+                <CheckCircle2 className="w-4 h-4" />
+                Aprobar y Asignar Beca
               </button>
             </div>
           </div>

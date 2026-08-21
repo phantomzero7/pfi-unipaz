@@ -48,6 +48,7 @@ export default function AdminInformesPage() {
   const [selectedCarrera, setSelectedCarrera] = useState<string>('todas');
   const [selectedCuatri, setSelectedCuatri] = useState<string>('todos');
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>('todos');
+  const [selectedSexo, setSelectedSexo] = useState<string>('todos');
   const [searchTerm, setSearchTerm] = useState('');
 
   const students = useMemo(() => profiles.filter((p) => p.role === 'estudiante'), [profiles]);
@@ -72,6 +73,7 @@ export default function AdminInformesPage() {
       // Filtros básicos
       if (selectedCarrera !== 'todas' && s.carrera !== selectedCarrera) return false;
       if (selectedCuatri !== 'todos' && String(s.cuatrimestre) !== selectedCuatri) return false;
+      if (selectedSexo !== 'todos' && (s.sexo || 'Hombre') !== selectedSexo) return false;
 
       const q = searchTerm.toLowerCase();
       const matchSearch =
@@ -100,6 +102,7 @@ export default function AdminInformesPage() {
     reportType,
     selectedCarrera,
     selectedCuatri,
+    selectedSexo,
     searchTerm,
     getStudentProgress,
     getStudentScholarshipProgress,
@@ -315,7 +318,7 @@ export default function AdminInformesPage() {
           Filtros Dinámicos del Reporte ({reportData.length} resultados)
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1">Programa Académico / Carrera:</label>
             <select
@@ -338,9 +341,23 @@ export default function AdminInformesPage() {
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
             >
               <option value="todos">Todos los cuatrimestres</option>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                <option key={n} value={String(n)}>{n}° Cuatrimestre</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={String(n)}>{n}° Cuatri/Sem</option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 mb-1">Desglose por Sexo:</label>
+            <select
+              value={selectedSexo}
+              onChange={(e) => setSelectedSexo(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
+            >
+              <option value="todos">Todos los sexos</option>
+              <option value="Hombre">Hombre</option>
+              <option value="Mujer">Mujer</option>
+              <option value="Otro">Otro / No especificado</option>
             </select>
           </div>
 
@@ -383,6 +400,7 @@ export default function AdminInformesPage() {
               <thead>
                 <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
                   <th className="py-3 px-3">Estudiante</th>
+                  <th className="py-3 px-3">Sexo</th>
                   <th className="py-3 px-3">Carrera</th>
                   <th className="py-3 px-3">Grado</th>
                   <th className="py-3 px-3">Horas PFI</th>
@@ -402,6 +420,7 @@ export default function AdminInformesPage() {
                         <strong className="text-unipaz-navy dark:text-white">{std.nombre} {std.apellidos}</strong>
                         <div className="text-[10px] font-mono text-slate-400">{std.matricula}</div>
                       </td>
+                      <td className="py-3 px-3 text-slate-500 text-[11px]">{std.sexo || 'Hombre'}</td>
                       <td className="py-3 px-3 text-slate-600 dark:text-slate-300 font-medium">{std.carrera}</td>
                       <td className="py-3 px-3">{std.cuatrimestre || 1}° Cuatri</td>
                       <td className="py-3 px-3 font-mono font-bold text-unipaz-orange">

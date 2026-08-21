@@ -247,6 +247,8 @@ export interface UserProfile {
   visto_bueno_reincidencia_comite?: boolean; // Excepción autorizada por Comité
   informe_becario_entregado?: boolean;
   estudio_socioeconomico_entregado?: boolean;
+  situacion_laboral_solicitante?: string;
+  motivos_solicitud_beca?: string;
   fecha_informe_becario?: string;
   fecha_estudio_socioeconomico?: string;
   
