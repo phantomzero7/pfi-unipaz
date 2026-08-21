@@ -1,31 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
   Award,
   Briefcase,
   Building2,
+  Bus,
   Calendar,
+  Car,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
   FileCheck2,
+  FileSpreadsheet,
   FileText,
   GraduationCap,
+  HeartPulse,
   HelpCircle,
   Home,
+  Info,
   Mail,
   MapPin,
+  Navigation,
   PenTool,
   Phone,
+  Plus,
   RotateCcw,
   Save,
   Send,
   ShieldCheck,
   Sparkles,
+  Trash2,
+  Tv,
+  Upload,
   User,
+  Users,
+  Wifi,
   X,
 } from 'lucide-react';
 import { usePFI } from '@/lib/store';
@@ -46,29 +59,48 @@ interface ScholarshipApplicationModalProps {
   student: UserProfile;
 }
 
+interface MiembroHogar {
+  id: string;
+  nombre: string;
+  parentesco: string;
+  edad: number;
+  estadoCivil: string;
+  escolaridad: string;
+  ocupacion: string;
+  tipoEmpleo: 'Asalariado' | 'Independiente / No asalariado' | 'Hogar / Sin empleo';
+  prestacionesMedicas: 'IMSS' | 'ISSSTE' | 'ISSSPE' | 'Privado' | 'Ninguna';
+  ingresoMensual: number;
+}
+
 export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalProps> = ({
   isOpen,
   onClose,
   student,
 }) => {
-  const { pfiConfig, submitScholarshipApplication } = usePFI();
+  const { pfiConfig, submitScholarshipApplication, submitSocioeconomicStudy } = usePFI();
 
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
-  const [hasSignature, setHasSignature] = useState(false);
 
-  // Form State - Paso 1: Académico y Personal
+  // ==========================================
+  // PASO 1: DATOS PERSONALES, ACADÉMICOS Y MODALIDAD
+  // ==========================================
   const [nombre, setNombre] = useState(student.nombre || '');
   const [apellidos, setApellidos] = useState(student.apellidos || '');
   const [carrera, setCarrera] = useState<string>(student.carrera || PROGRAMAS_ACADEMICOS[0]);
   const [cuatrimestre, setCuatrimestre] = useState(student.cuatrimestre?.toString() || '1');
   const [fechaNacimiento, setFechaNacimiento] = useState('2003-05-14');
-  const [sexo, setSexo] = useState<string>('Hombre');
+  const [sexo, setSexo] = useState<string>(student.sexo || 'Mujer');
   const [pertenenciaEtnica, setPertenenciaEtnica] = useState<string>(OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA[0]);
   const [estadoCivil, setEstadoCivil] = useState('Soltero/a');
+  const [curp, setCurp] = useState('HIGL030514MBSLR09');
+  const [rfc, setRfc] = useState('HIGL030514AB1');
+  const [lugarNacimiento, setLugarNacimiento] = useState('La Paz, Baja California Sur');
+  const [numHijos, setNumHijos] = useState(0);
   const [telefono, setTelefono] = useState('(612) 123-4567');
   const [email, setEmail] = useState(student.email || 'estudiante@unipaz.mx');
+  
   const [calle, setCalle] = useState('Av. de los Deportistas');
   const [numExterior, setNumExterior] = useState('145');
   const [numInterior, setNumInterior] = useState('');
@@ -76,33 +108,151 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
   const [codigoPostal, setCodigoPostal] = useState('23080');
   const [ciudad, setCiudad] = useState('La Paz');
   const [estado, setEstado] = useState('Baja California Sur');
+  const [zonaDomicilio, setZonaDomicilio] = useState<'Urbano' | 'Semiurbano' | 'Rural'>('Urbano');
   const [preparatoriaProcedencia, setPreparatoriaProcedencia] = useState('CBTIS 230 / COBACH 01');
+
   const [selectedTipoBeca, setSelectedTipoBeca] = useState<string>(
-    'Excelencia Académica (Promedio 9.6 - 10.0)'
+    'Estudio Socioeconómico y Apoyo Familiar'
   );
 
-  // Form State - Paso 2: Situación Laboral y Estudio Socioeconómico
-  const [ingresoMensualFamiliar, setIngresoMensualFamiliar] = useState('$10,000 - $18,000 MXN');
-  const [dependientesEconomicos, setDependientesEconomicos] = useState('3 a 4 personas');
-  const [tipoVivienda, setTipoVivienda] = useState('Propia');
+  // ==========================================
+  // PASO 2: COMPOSICIÓN FAMILIAR Y SITUACIÓN LABORAL
+  // ==========================================
+  const [miembros, setMiembros] = useState<MiembroHogar[]>([
+    {
+      id: '1',
+      nombre: 'Carlos Higuera',
+      parentesco: 'Padre',
+      edad: 52,
+      estadoCivil: 'Casado/a',
+      escolaridad: 'Preparatoria / Bachillerato',
+      ocupacion: 'Empleado de Servicios / Comercio',
+      tipoEmpleo: 'Asalariado',
+      prestacionesMedicas: 'IMSS',
+      ingresoMensual: 9800,
+    },
+    {
+      id: '2',
+      nombre: 'Rosa Lucero',
+      parentesco: 'Madre',
+      edad: 49,
+      estadoCivil: 'Casada',
+      escolaridad: 'Secundaria',
+      ocupacion: 'Hogar / Venta Independiente',
+      tipoEmpleo: 'Independiente / No asalariado',
+      prestacionesMedicas: 'IMSS',
+      ingresoMensual: 4500,
+    },
+    {
+      id: '3',
+      nombre: 'Mateo Higuera Lucero',
+      parentesco: 'Hermano/a',
+      edad: 14,
+      estadoCivil: 'Soltero/a',
+      escolaridad: 'Secundaria',
+      ocupacion: 'Estudiante',
+      tipoEmpleo: 'Hogar / Sin empleo',
+      prestacionesMedicas: 'IMSS',
+      ingresoMensual: 0,
+    },
+  ]);
+
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [nuevoParentesco, setNuevoParentesco] = useState('Hermano/a');
+  const [nuevaEdad, setNuevaEdad] = useState(16);
+  const [nuevaOcupacion, setNuevaOcupacion] = useState('Estudiante');
+  const [nuevoIngreso, setNuevoIngreso] = useState(0);
+
   const [trabajaActualmente, setTrabajaActualmente] = useState(false);
   const [empresa, setEmpresa] = useState('');
   const [puesto, setPuesto] = useState('');
   const [tipoJornada, setTipoJornada] = useState<'Medio Tiempo' | 'Tiempo Completo' | 'Por Honorarios'>('Medio Tiempo');
   const [nombreSuperior, setNombreSuperior] = useState('');
   const [telefonoEmpresa, setTelefonoEmpresa] = useState('');
-  const [motivosSolicitud, setMotivosSolicitud] = useState(
-    'Solicito la presente beca institucional para continuar mis estudios profesionales con dedicación y excelencia, comprometiéndome a cumplir activamente con las horas formativas del Programa de Formación Integral y mantener mi promedio académico sobresaliente.'
+
+  // ==========================================
+  // PASO 3: BALANCE ECONÓMICO FAMILIAR
+  // ==========================================
+  const [ingresoPadre, setIngresoPadre] = useState(9800);
+  const [ingresoMadre, setIngresoMadre] = useState(4500);
+  const [ingresoAspirante, setIngresoAspirante] = useState(0);
+  const [ingresoOtros, setIngresoOtros] = useState(0);
+
+  const [egresoAlimentacion, setEgresoAlimentacion] = useState(5500);
+  const [egresoRenta, setEgresoRenta] = useState(3000);
+  const [egresoLuzAgua, setEgresoLuzAgua] = useState(1100);
+  const [egresoInternet, setEgresoInternet] = useState(650);
+  const [egresoGas, setEgresoGas] = useState(400);
+  const [egresoMedicos, setEgresoMedicos] = useState(700);
+  const [egresoTransporte, setEgresoTransporte] = useState(1500);
+  const [egresoEducacion, setEgresoEducacion] = useState(1400);
+
+  const totalIngresos = useMemo(
+    () => Number(ingresoPadre) + Number(ingresoMadre) + Number(ingresoAspirante) + Number(ingresoOtros),
+    [ingresoPadre, ingresoMadre, ingresoAspirante, ingresoOtros]
   );
 
-  // Form State - Paso 3: Términos y Firma
+  const totalEgresos = useMemo(
+    () =>
+      Number(egresoAlimentacion) +
+      Number(egresoRenta) +
+      Number(egresoLuzAgua) +
+      Number(egresoInternet) +
+      Number(egresoGas) +
+      Number(egresoMedicos) +
+      Number(egresoTransporte) +
+      Number(egresoEducacion),
+    [
+      egresoAlimentacion,
+      egresoRenta,
+      egresoLuzAgua,
+      egresoInternet,
+      egresoGas,
+      egresoMedicos,
+      egresoTransporte,
+      egresoEducacion,
+    ]
+  );
+
+  const balanceNeto = totalIngresos - totalEgresos;
+
+  // ==========================================
+  // PASO 4: VIVIENDA, SERVICIOS, BIENES Y TRASLADO
+  // ==========================================
+  const [tipoVivienda, setTipoVivienda] = useState('Propia (Pagada)');
+  const [numCuartos, setNumCuartos] = useState(3);
+  const [tieneComputadora, setTieneComputadora] = useState(true);
+  const [tieneInternet, setTieneInternet] = useState(true);
+  const [tieneAutomovil, setTieneAutomovil] = useState(false);
+  const [medioTransporte, setMedioTransporte] = useState('Transporte Público (Camión / Calafia)');
+  const [tiempoTrasladoMinutos, setTiempoTrasladoMinutos] = useState(40);
+  const [referenciasUbicacion, setReferenciasUbicacion] = useState(
+    'Casa de una planta color azul claro, cerca de la cancha deportiva de la 8 de Octubre, entre Calle 1 y Calle 2.'
+  );
+
+  // ==========================================
+  // PASO 5: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA
+  // ==========================================
+  const [motivosSolicitud, setMotivosSolicitud] = useState(
+    'Solicito el apoyo de la beca institucional UNIPAZ para continuar de manera ininterrumpida mis estudios universitarios, apoyando a la economía familiar y comprometiéndome a mantener un desempeño académico sobresaliente y cumplir cabalmente con mis horas de formación integral (PFI).'
+  );
+  const [archivosCargados, setArchivosCargados] = useState<{
+    ine: boolean;
+    ingresos: boolean;
+    domicilio: boolean;
+    kardex: boolean;
+  }>({
+    ine: true,
+    ingresos: true,
+    domicilio: true,
+    kardex: true,
+  });
   const [declaraVerdad, setDeclaraVerdad] = useState(false);
   const [aceptaAvisoPrivacidad, setAceptaAvisoPrivacidad] = useState(false);
   const [firmaDigitalNombre, setFirmaDigitalNombre] = useState(`${student.nombre} ${student.apellidos}`);
 
   if (!isOpen) return null;
 
-  // Calcular edad automáticamente
   const calcularEdad = (fecha: string) => {
     if (!fecha) return 20;
     const hoy = new Date();
@@ -117,6 +267,29 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
 
   const edadCalculada = calcularEdad(fechaNacimiento);
 
+  const handleAddMiembro = () => {
+    if (!nuevoNombre.trim()) return;
+    const newItem: MiembroHogar = {
+      id: Date.now().toString(),
+      nombre: nuevoNombre,
+      parentesco: nuevoParentesco,
+      edad: Number(nuevaEdad) || 18,
+      estadoCivil: 'Soltero/a',
+      escolaridad: 'Preparatoria',
+      ocupacion: nuevaOcupacion,
+      tipoEmpleo: nuevoIngreso > 0 ? 'Asalariado' : 'Hogar / Sin empleo',
+      prestacionesMedicas: 'IMSS',
+      ingresoMensual: Number(nuevoIngreso) || 0,
+    };
+    setMiembros((prev) => [...prev, newItem]);
+    setNuevoNombre('');
+    setNuevoIngreso(0);
+  };
+
+  const handleRemoveMiembro = (id: string) => {
+    setMiembros((prev) => prev.filter((m) => m.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!declaraVerdad || !aceptaAvisoPrivacidad) {
@@ -124,13 +297,14 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
       return;
     }
     const res = submitScholarshipApplication(student.id, selectedTipoBeca);
+    submitSocioeconomicStudy(student.id);
     setFeedbackMsg(res.message);
     setIsSubmitted(true);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-slate-800 dark:text-slate-100 my-6 max-h-[94vh] overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-slate-800 dark:text-slate-100 my-6 max-h-[94vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -147,144 +321,118 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-unipaz-orange">
-                Convocatoria Institucional de Becas
+                Convocatoria Institucional UNIPAZ
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-200">
-                Beca Nueva
+                Cédula Socioeconómica Oficial
               </span>
             </div>
             <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
-              Formato de Solicitud de Beca Académica
+              Solicitud de Beca y Estudio Socioeconómico Integral
             </h3>
           </div>
         </div>
 
-        {/* STEPPER MULTI-PASO */}
+        {/* STEPPER MULTI-PASO (5 PASOS) */}
         {!isSubmitted && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-black">
-              <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-unipaz-orange' : 'text-slate-400'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${currentStep >= 1 ? 'bg-unipaz-orange text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                  1
-                </span>
-                <span className="hidden sm:inline">Académico y Personal</span>
-              </div>
-              <div className="h-0.5 flex-1 mx-3 bg-slate-200 dark:bg-slate-800" />
-              <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-unipaz-orange' : 'text-slate-400'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${currentStep >= 2 ? 'bg-unipaz-orange text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                  2
-                </span>
-                <span className="hidden sm:inline">Situación y Motivos</span>
-              </div>
-              <div className="h-0.5 flex-1 mx-3 bg-slate-200 dark:bg-slate-800" />
-              <div className={`flex items-center gap-2 ${currentStep >= 3 ? 'text-unipaz-orange' : 'text-slate-400'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${currentStep >= 3 ? 'bg-unipaz-orange text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                  3
-                </span>
-                <span className="hidden sm:inline">Términos y Firma</span>
-              </div>
+              <span className="text-unipaz-orange">Paso {currentStep} de 5</span>
+              <span className="text-slate-500">
+                {currentStep === 1 && '1. Datos Generales & Modalidad de Beca'}
+                {currentStep === 2 && '2. Composición Familiar & Empleo'}
+                {currentStep === 3 && '3. Balance Económico Familiar'}
+                {currentStep === 4 && '4. Vivienda, Servicios & Traslado'}
+                {currentStep === 5 && '5. Justificación, Documentos & Firma'}
+              </span>
             </div>
-            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-unipaz-orange to-amber-400 transition-all duration-300 rounded-full"
-                style={{ width: `${(currentStep / 3) * 100}%` }}
-              />
+            <div className="grid grid-cols-5 gap-1.5">
+              {[1, 2, 3, 4, 5].map((step) => (
+                <div
+                  key={step}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    currentStep === step
+                      ? 'bg-unipaz-orange shadow-sm'
+                      : currentStep > step
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-200 dark:bg-slate-800'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         )}
 
-        {/* CONTENIDO SEGÚN ESTADO O PASO */}
+        {/* FORMULARIO O CONFIRMACIÓN */}
         {isSubmitted ? (
-          <div className="p-8 rounded-3xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-500/30 text-center space-y-4 animate-fadeIn">
-            <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-            <h4 className="font-black text-lg text-emerald-900 dark:text-emerald-200">
-              ¡Solicitud de Beca Registrada con Éxito!
-            </h4>
-            <p className="text-xs text-slate-700 dark:text-slate-300 max-w-md mx-auto">
-              Tu expediente y solicitud de <strong>{selectedTipoBeca}</strong> han sido turnados al Comité de Becas UNIPAZ para dictamen.
-            </p>
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-white/10 text-left text-xs space-y-1">
-              <div><strong>Folio de Solicitud:</strong> <span className="font-mono text-unipaz-orange font-bold">SOL-BECA-{student.matricula}-{new Date().getFullYear()}</span></div>
-              <div><strong>Estudiante:</strong> {nombre} {apellidos} ({student.matricula})</div>
-              <div><strong>Programa Académico:</strong> {carrera} · {cuatrimestre}° {getNombrePeriodo(carrera)}</div>
-              <div><strong>Fecha de Envío:</strong> {new Date().toLocaleDateString('es-MX')}</div>
+          <div className="text-center py-10 space-y-4 animate-fadeIn">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Recibirás la notificación de resolución en tu Dashboard de Estudiante una vez finalizado el periodo de evaluación.
+            <h3 className="text-xl font-black text-unipaz-navy dark:text-white">
+              ¡Solicitud y Estudio Socioeconómico Registrados!
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
+              {feedbackMsg ||
+                'Tu formato completo de solicitud de beca y cédula de información socioeconómica han sido remitidos formalmente al Comité de Becas y al Departamento de Trabajo Social para su dictamen colegiado.'}
             </p>
-            <button
-              onClick={onClose}
-              className="mt-2 py-3 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-all hover:scale-105"
-            >
-              Aceptar y Volver al Dashboard
-            </button>
+            <div className="pt-4">
+              <button
+                onClick={onClose}
+                className="py-2.5 px-6 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md"
+              >
+                Entendido y Cerrar
+              </button>
+            </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 text-xs">
-            {/* PASO 1: INFORMACIÓN ACADÉMICA Y PERSONAL */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* ========================================== */}
+            {/* PASO 1: DATOS PERSONALES Y MODALIDAD */}
+            {/* ========================================== */}
             {currentStep === 1 && (
               <div className="space-y-4 animate-fadeIn">
-                <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/60 dark:border-amber-500/30 flex items-center justify-between text-amber-900 dark:text-amber-200">
-                  <div>
-                    <span className="font-black text-xs block">Convocatoria Activa</span>
-                    <span className="text-[10px] text-amber-800 dark:text-amber-300">
-                      Recepción de solicitudes: {pfiConfig.fecha_inicio_solicitud_becas || '01-Sep'} al {pfiConfig.fecha_fin_solicitud_becas || '25-Sep'}
-                    </span>
-                  </div>
-                  <Sparkles className="w-5 h-5 text-unipaz-orange" />
-                </div>
-
                 {/* Modalidad de Beca */}
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                    Modalidad de Beca / Estímulo a Postular:
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                  <label className="block font-black text-xs text-unipaz-navy dark:text-amber-300 uppercase tracking-wider">
+                    Modalidad de Beca Solicitada:
                   </label>
                   <select
                     value={selectedTipoBeca}
                     onChange={(e) => setSelectedTipoBeca(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-bold text-xs text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/20 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
                   >
-                    <optgroup label="Excelencia, Mérito e Investigación">
-                      <option value="Excelencia Académica (Promedio 9.6 - 10.0)">Beca de Excelencia Académica (Promedio 9.6 - 10.0)</option>
-                      <option value="Mérito Académico">Estímulo al Mérito Académico</option>
-                      <option value="Investigación y Publicaciones">Beca de Investigación y Publicaciones</option>
-                      <option value="Posgrados e Investigación">Estímulo de Posgrados e Investigación</option>
-                    </optgroup>
-                    <optgroup label="Socioeconómicas, Familiares y Convenios">
-                      <option value="Estudio Socioeconómico (desde 2° Cuatrimestre)">Beca Estudio Socioeconómico (desde 2° Cuatrimestre)</option>
-                      <option value="Convenios Institucionales">Beca por Convenios Institucionales / Empresas</option>
-                      <option value="Familiar / Hermanos (20%)">Beca Familiar / Hermanos (20%)</option>
-                      <option value="Egresados UNIPAZ">Beca Egresados UNIPAZ</option>
-                      <option value="Promoción Educativa">Beca de Promoción Educativa</option>
-                    </optgroup>
-                    <optgroup label="Deportivas, Culturales y Talento">
-                      <option value="Deportiva (Garzas UNIPAZ)">Beca Deportiva (Garzas UNIPAZ)</option>
-                      <option value="Cultural y Artística">Beca Cultural y Artística</option>
-                      <option value="Talento y Liderazgo">Beca de Talento y Liderazgo Social</option>
-                    </optgroup>
-                    <optgroup label="Estímulos de Inclusión y Responsabilidad Social">
-                      <option value="Madres Solteras / Jefas de Familia">Estímulo Madres Solteras / Jefas de Familia</option>
-                      <option value="Inclusión y Discapacidad">Estímulo de Inclusión y Personas con Discapacidad</option>
-                      <option value="Intercultural / Pueblos Originarios">Estímulo Intercultural / Pueblos Originarios</option>
-                    </optgroup>
+                    <option value="Estudio Socioeconómico y Apoyo Familiar">
+                      Estudio Socioeconómico y Apoyo Familiar (Vulnerabilidad Económica)
+                    </option>
+                    <option value="Excelencia Académica (Promedio 9.6 - 10.0)">
+                      Excelencia Académica (Promedio 9.6 - 10.0)
+                    </option>
+                    <option value="Mérito Académico (Promedio 9.0 - 9.5)">
+                      Mérito Académico (Promedio 9.0 - 9.5)
+                    </option>
+                    <option value="Convenio Institucional / Sectorial">
+                      Convenio Institucional / Sectorial (Gubernamental o Empresarial)
+                    </option>
+                    <option value="Familiar / Hermanos">
+                      Familiar / Hermanos Inscritos Simultáneamente
+                    </option>
+                    <option value="Deportiva / Representación UNIPAZ">
+                      Deportiva / Representación UNIPAZ
+                    </option>
+                    <option value="Cultural y Artística">
+                      Cultural y Artística
+                    </option>
+                    <option value="Inclusión y Población Prioritaria">
+                      Inclusión y Población Prioritaria
+                    </option>
                   </select>
                 </div>
 
-                {/* Grid Datos de Identidad */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Nombre y Apellidos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                      Matrícula:
-                    </label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={student.matricula}
-                      className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-white/10 rounded-xl p-2.5 font-mono font-bold text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Nombre(s):
                     </label>
                     <input
@@ -296,7 +444,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
                       Apellidos:
                     </label>
                     <input
@@ -309,24 +457,19 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                   </div>
                 </div>
 
-                {/* Programa Académico y Cuatrimestre */}
+                {/* Programa Académico y Periodo */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
                     <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
-                      Programa Académico:
+                      Programa Académico / Carrera:
                     </label>
                     <select
                       value={carrera}
                       onChange={(e) => setCarrera(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-slate-900 dark:text-white"
                     >
                       <optgroup label="Licenciaturas">
                         {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('LICENCIATURA')).map((p) => (
-                          <option key={p} value={p}>{p}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Maestrías y Posgrados">
-                        {PROGRAMAS_ACADEMICOS.filter((p) => p.startsWith('MAESTRÍA')).map((p) => (
                           <option key={p} value={p}>{p}</option>
                         ))}
                       </optgroup>
@@ -343,39 +486,45 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     >
                       {Array.from({ length: getMaxPeriodos(carrera) }, (_, i) => i + 1).map((c) => (
                         <option key={c} value={c}>
-                          {c}° {getNombrePeriodo(carrera)} {c > 10 && !isProgramaSemestral(carrera) ? '(Extensión / Irregular)' : ''}
+                          {c}° {getNombrePeriodo(carrera)}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Fecha Nacimiento, Sexo y Estado Civil */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Identificación y Demográficos */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
-                      Fecha de Nacimiento:
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
+                      CURP:
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="date"
-                        value={fechaNacimiento}
-                        onChange={(e) => setFechaNacimiento(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-mono text-xs"
-                      />
-                      <span className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-bold flex items-center whitespace-nowrap">
-                        {edadCalculada} años
-                      </span>
-                    </div>
+                    <input
+                      type="text"
+                      value={curp}
+                      onChange={(e) => setCurp(e.target.value.toUpperCase())}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-mono text-xs uppercase"
+                    />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
+                      Fecha Nacimiento:
+                    </label>
+                    <input
+                      type="date"
+                      value={fechaNacimiento}
+                      onChange={(e) => setFechaNacimiento(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
                       Sexo:
                     </label>
                     <select
                       value={sexo}
                       onChange={(e) => setSexo(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 text-xs font-bold"
                     >
                       {OPCIONES_SEXO.map((s) => (
                         <option key={s} value={s}>{s}</option>
@@ -383,13 +532,13 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     </select>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[10px]">
                       Estado Civil:
                     </label>
                     <select
                       value={estadoCivil}
                       onChange={(e) => setEstadoCivil(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2 text-xs font-bold"
                     >
                       <option value="Soltero/a">Soltero/a</option>
                       <option value="Casado/a">Casado/a</option>
@@ -399,201 +548,152 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                   </div>
                 </div>
 
-                {/* Autoadscripción Étnica y Grupos Prioritarios */}
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 text-[11px]">
-                    Autoadscripción Étnica y Grupos de Población Prioritaria:
-                  </label>
-                  <select
-                    value={pertenenciaEtnica}
-                    onChange={(e) => setPertenenciaEtnica(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-unipaz-orange"
-                  >
-                    {OPCIONES_PERTENENCIA_ETNICA_PRIORITARIA.map((g) => (
-                      <option key={g} value={g}>{g}</option>
-                    ))}
-                  </select>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block">
-                    Información con fines de equidad, inclusión e impulso de becas afirmativas UNIPAZ.
-                  </span>
-                </div>
-
-                {/* Contacto */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                      Teléfono Celular:
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={telefono}
-                      onChange={(e) => setTelefono(e.target.value)}
-                      placeholder="(612) 000-0000"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                      Correo Electrónico:
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-
                 {/* Domicilio Actual */}
                 <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/5">
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px]">
                     <Home className="w-3.5 h-3.5 text-unipaz-orange" />
-                    Domicilio Actual:
+                    Domicilio Particular
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Calle"
-                      value={calle}
-                      onChange={(e) => setCalle(e.target.value)}
-                      className="sm:col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                    />
-                    <div className="flex gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <div className="sm:col-span-2">
                       <input
                         type="text"
-                        placeholder="Núm. Ext"
+                        placeholder="Calle"
+                        value={calle}
+                        onChange={(e) => setCalle(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Núm Ext"
                         value={numExterior}
                         onChange={(e) => setNumExterior(e.target.value)}
-                        className="w-1/2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
                       />
+                    </div>
+                    <div>
                       <input
                         type="text"
-                        placeholder="Int"
-                        value={numInterior}
-                        onChange={(e) => setNumInterior(e.target.value)}
-                        className="w-1/2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        placeholder="Colonia"
+                        value={colonia}
+                        onChange={(e) => setColonia(e.target.value)}
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Colonia"
-                      value={colonia}
-                      onChange={(e) => setColonia(e.target.value)}
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                    />
-                    <input
-                      type="text"
-                      placeholder="C.P."
-                      value={codigoPostal}
-                      onChange={(e) => setCodigoPostal(e.target.value)}
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-mono"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Ciudad / Municipio"
-                      value={ciudad}
-                      onChange={(e) => setCiudad(e.target.value)}
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Prepa de Procedencia */}
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                    Escuela Preparatoria de Procedencia:
-                  </label>
-                  <input
-                    type="text"
-                    value={preparatoriaProcedencia}
-                    onChange={(e) => setPreparatoriaProcedencia(e.target.value)}
-                    placeholder="Nombre del Bachillerato o Preparatoria"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
-                  />
                 </div>
               </div>
             )}
 
-            {/* PASO 2: SITUACIÓN LABORAL Y ESTUDIO SOCIOECONÓMICO */}
+            {/* ========================================== */}
+            {/* PASO 2: COMPOSICIÓN FAMILIAR Y EMPLEO */}
+            {/* ========================================== */}
             {currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
-                {/* Estudio Socioeconómico Familiar */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2">
-                    <Home className="w-4 h-4 text-unipaz-orange" />
-                    <div>
-                      <span className="font-black text-xs text-unipaz-navy dark:text-white block">
-                        Estudio Socioeconómico y Entorno Familiar
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Información socioeconómica para evaluación del Comité de Becas.
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                        Ingreso Familiar Mensual:
-                      </label>
-                      <select
-                        value={ingresoMensualFamiliar}
-                        onChange={(e) => setIngresoMensualFamiliar(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
-                      >
-                        <option value="Menos de $10,000 MXN">Menos de $10,000 MXN</option>
-                        <option value="$10,000 - $18,000 MXN">$10,000 - $18,000 MXN</option>
-                        <option value="$18,000 - $30,000 MXN">$18,000 - $30,000 MXN</option>
-                        <option value="Más de $30,000 MXN">Más de $30,000 MXN</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                        Dependientes Económicos:
-                      </label>
-                      <select
-                        value={dependientesEconomicos}
-                        onChange={(e) => setDependientesEconomicos(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
-                      >
-                        <option value="1 a 2 personas">1 a 2 personas</option>
-                        <option value="3 a 4 personas">3 a 4 personas</option>
-                        <option value="5 o más personas">5 o más personas</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                        Tipo de Vivienda:
-                      </label>
-                      <select
-                        value={tipoVivienda}
-                        onChange={(e) => setTipoVivienda(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
-                      >
-                        <option value="Propia">Propia</option>
-                        <option value="Rentada">Rentada</option>
-                        <option value="Prestada / Familiar">Prestada / Familiar</option>
-                        <option value="Pagándose">Pagándose</option>
-                      </select>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-black text-xs text-unipaz-navy dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-unipaz-orange" />
+                      Integrantes del Núcleo Familiar en el Hogar
+                    </h4>
+                    <span className="text-[10px] text-slate-500">
+                      Registra a todas las personas que habitan y dependen de la misma economía.
+                    </span>
                   </div>
                 </div>
 
-                {/* Switch de Trabajo */}
+                {/* Tabla de Integrantes */}
+                <div className="overflow-x-auto border border-slate-200 dark:border-white/10 rounded-2xl">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] uppercase font-bold">
+                      <tr>
+                        <th className="p-2.5">Nombre</th>
+                        <th className="p-2.5">Parentesco</th>
+                        <th className="p-2.5">Edad</th>
+                        <th className="p-2.5">Ocupación</th>
+                        <th className="p-2.5 text-right">Ingreso Mensual</th>
+                        <th className="p-2.5 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                      {miembros.map((m) => (
+                        <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="p-2.5 font-bold">{m.nombre}</td>
+                          <td className="p-2.5 text-slate-500">{m.parentesco}</td>
+                          <td className="p-2.5 font-mono">{m.edad} años</td>
+                          <td className="p-2.5">{m.ocupacion}</td>
+                          <td className="p-2.5 text-right font-mono font-bold text-emerald-600">
+                            ${m.ingresoMensual.toLocaleString('es-MX')} MXN
+                          </td>
+                          <td className="p-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMiembro(m.id)}
+                              className="p-1 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Formulario para Agregar Familiar */}
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+                  <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                    + Agregar Familiar al Estudio
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nombre completo"
+                      value={nuevoNombre}
+                      onChange={(e) => setNuevoNombre(e.target.value)}
+                      className="sm:col-span-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                    />
+                    <select
+                      value={nuevoParentesco}
+                      onChange={(e) => setNuevoParentesco(e.target.value)}
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-semibold"
+                    >
+                      <option value="Padre">Padre</option>
+                      <option value="Madre">Madre</option>
+                      <option value="Hermano/a">Hermano/a</option>
+                      <option value="Hijo/a">Hijo/a</option>
+                      <option value="Cónyuge">Cónyuge</option>
+                      <option value="Abuelo/a">Abuelo/a</option>
+                      <option value="Tío/a">Tío/a</option>
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Ingreso $"
+                      value={nuevoIngreso || ''}
+                      onChange={(e) => setNuevoIngreso(Number(e.target.value))}
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddMiembro}
+                      className="py-2 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1 shadow-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-unipaz-orange" />
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Switch de Empleo del Alumno */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-black text-xs text-unipaz-navy dark:text-white block">
                         ¿Trabajas actualmente?
                       </span>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[10px] text-slate-500">
                         Indica si realizas alguna actividad económica remunerada.
                       </span>
                     </div>
@@ -612,138 +712,263 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     </button>
                   </div>
 
-                  {/* Acordeón de Datos Laborales si trabaja */}
                   {trabajaActualmente && (
-                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-3 animate-fadeIn">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                            Nombre de la Empresa o Negocio:
-                          </label>
-                          <input
-                            type="text"
-                            required={trabajaActualmente}
-                            value={empresa}
-                            onChange={(e) => setEmpresa(e.target.value)}
-                            placeholder="Ej. Comercializadora del Pacífico"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                            Puesto Desempeñado:
-                          </label>
-                          <input
-                            type="text"
-                            required={trabajaActualmente}
-                            value={puesto}
-                            onChange={(e) => setPuesto(e.target.value)}
-                            placeholder="Ej. Asistente administrativo"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                          />
-                        </div>
-                      </div>
-
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fadeIn">
                       <div>
-                        <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                          Tipo de Jornada:
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                          Empresa o Negocio:
                         </label>
-                        <div className="flex flex-wrap gap-2">
-                          {(['Medio Tiempo', 'Tiempo Completo', 'Por Honorarios'] as const).map((j) => (
-                            <button
-                              key={j}
-                              type="button"
-                              onClick={() => setTipoJornada(j)}
-                              className={`py-1.5 px-3 rounded-xl text-xs font-bold border transition-all ${
-                                tipoJornada === j
-                                  ? 'bg-unipaz-orange text-white border-unipaz-orange'
-                                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-400'
-                              }`}
-                            >
-                              {j}
-                            </button>
-                          ))}
-                        </div>
+                        <input
+                          type="text"
+                          value={empresa}
+                          onChange={(e) => setEmpresa(e.target.value)}
+                          placeholder="Nombre de la empresa"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        />
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                            Nombre del Superior Inmediato:
-                          </label>
-                          <input
-                            type="text"
-                            value={nombreSuperior}
-                            onChange={(e) => setNombreSuperior(e.target.value)}
-                            placeholder="Jefe directo"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase mb-1">
-                            Teléfono de la Empresa:
-                          </label>
-                          <input
-                            type="tel"
-                            value={telefonoEmpresa}
-                            onChange={(e) => setTelefonoEmpresa(e.target.value)}
-                            placeholder="(612) 000-0000"
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs font-mono"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                          Puesto y Horario:
+                        </label>
+                        <input
+                          type="text"
+                          value={puesto}
+                          onChange={(e) => setPuesto(e.target.value)}
+                          placeholder="Ej. Asistente / Turno Vespertino"
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl p-2 text-xs"
+                        />
                       </div>
                     </div>
                   )}
                 </div>
+              </div>
+            )}
 
-                {/* Motivos de Solicitud */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-xs">
-                      Motivos por los cuales solicita la beca:
-                    </label>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {motivosSolicitud.length} caracteres
+            {/* ========================================== */}
+            {/* PASO 3: BALANCE ECONÓMICO FAMILIAR */}
+            {/* ========================================== */}
+            {currentStep === 3 && (
+              <div className="space-y-4 animate-fadeIn">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Ingresos Mensuales */}
+                  <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-3">
+                    <h4 className="font-black text-xs text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4" />
+                      Ingresos Mensuales del Hogar
+                    </h4>
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Ingreso Padre / Tutor:</label>
+                        <input
+                          type="number"
+                          value={ingresoPadre}
+                          onChange={(e) => setIngresoPadre(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-2 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Ingreso Madre / Tutora:</label>
+                        <input
+                          type="number"
+                          value={ingresoMadre}
+                          onChange={(e) => setIngresoMadre(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-2 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Ingreso Solicitante:</label>
+                        <input
+                          type="number"
+                          value={ingresoAspirante}
+                          onChange={(e) => setIngresoAspirante(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-2 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Egresos Mensuales */}
+                  <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-3">
+                    <h4 className="font-black text-xs text-rose-800 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <DollarSign className="w-4 h-4" />
+                      Egresos Mensuales del Hogar
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Alimentación:</label>
+                        <input
+                          type="number"
+                          value={egresoAlimentacion}
+                          onChange={(e) => setEgresoAlimentacion(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-1.5 font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Renta / Casa:</label>
+                        <input
+                          type="number"
+                          value={egresoRenta}
+                          onChange={(e) => setEgresoRenta(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-1.5 font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Luz y Agua:</label>
+                        <input
+                          type="number"
+                          value={egresoLuzAgua}
+                          onChange={(e) => setEgresoLuzAgua(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-1.5 font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500">Transporte:</label>
+                        <input
+                          type="number"
+                          value={egresoTransporte}
+                          onChange={(e) => setEgresoTransporte(Number(e.target.value))}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-1.5 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Calculadora en Vivo */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-unipaz-navy to-slate-900 text-white space-y-2 shadow-md">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Total Ingresos Familiares:</span>
+                    <strong className="font-mono text-emerald-400">${totalIngresos.toLocaleString('es-MX')} MXN</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Total Gastos del Hogar:</span>
+                    <strong className="font-mono text-rose-400">${totalEgresos.toLocaleString('es-MX')} MXN</strong>
+                  </div>
+                  <div className="pt-2 border-t border-white/20 flex items-center justify-between font-black text-sm">
+                    <span>Balance Económico Neto:</span>
+                    <span className={`font-mono ${balanceNeto >= 0 ? 'text-amber-300' : 'text-rose-400'}`}>
+                      ${balanceNeto.toLocaleString('es-MX')} MXN
                     </span>
                   </div>
-                  <textarea
-                    rows={5}
-                    required
-                    value={motivosSolicitud}
-                    onChange={(e) => setMotivosSolicitud(e.target.value)}
-                    placeholder="Describe detalladamente tu situación académica, personal o económica, y tu compromiso con la comunidad UNIPAZ..."
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-unipaz-orange"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Consejo: Explica tu motivación vocacional y cómo el apoyo te permitirá culminar tus estudios con excelencia.
-                  </p>
                 </div>
               </div>
             )}
 
-            {/* PASO 3: TÉRMINOS, AVISO DE PRIVACIDAD Y FIRMA DIGITAL */}
-            {currentStep === 3 && (
+            {/* ========================================== */}
+            {/* PASO 4: VIVIENDA Y TRASLADO */}
+            {/* ========================================== */}
+            {currentStep === 4 && (
               <div className="space-y-4 animate-fadeIn">
-                {/* Resumen del Convenio */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2.5">
-                  <div className="flex items-center gap-2 text-unipaz-navy dark:text-white font-black text-xs uppercase">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    Términos y Condiciones del Reglamento de Becas
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                      Tipo de Vivienda:
+                    </label>
+                    <select
+                      value={tipoVivienda}
+                      onChange={(e) => setTipoVivienda(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
+                    >
+                      <option value="Propia (Pagada)">Propia (Pagada)</option>
+                      <option value="Propia (Pagándose / Hipoteca)">Propia (Pagándose / Hipoteca)</option>
+                      <option value="Rentada">Rentada</option>
+                      <option value="Prestada / Familiar">Prestada / Familiar</option>
+                    </select>
                   </div>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Al postular a una beca institucional de la Universidad Internacional de La Paz, el estudiante asume el compromiso de:
-                  </p>
-                  <ul className="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 list-disc pl-4">
-                    <li>Mantener el promedio académico reglamentario (mín. 9.0 para Excelencia / 8.0 para Regular).</li>
-                    <li>No reprobar ninguna asignatura ni presentar exámenes extraordinarios.</li>
-                    <li>Acumular <strong>mínimo 1,000 puntos formativos cuatrimestrales</strong> en actividades a nombre de UNIPAZ.</li>
-                    <li>Cubrir las cuotas de colegiatura complementarias en tiempo y forma.</li>
-                  </ul>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                      Medio de Transporte:
+                    </label>
+                    <select
+                      value={medioTransporte}
+                      onChange={(e) => setMedioTransporte(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-semibold"
+                    >
+                      <option value="Transporte Público (Camión / Calafia)">Transporte Público (Camión / Calafia)</option>
+                      <option value="Automóvil Propio / Familiar">Automóvil Propio / Familiar</option>
+                      <option value="A Pie / Bicicleta">A Pie / Bicicleta</option>
+                      <option value="Motocicleta">Motocicleta</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                      Tiempo Traslado a UNIPAZ:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={tiempoTrasladoMinutos}
+                        onChange={(e) => setTiempoTrasladoMinutos(Number(e.target.value))}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 font-mono text-xs"
+                      />
+                      <span className="text-xs text-slate-500 font-bold">min</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Checkboxes Obligatorios */}
-                <div className="space-y-2 p-3 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-950 dark:text-amber-200">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-300 mb-1">
+                    Referencias para Visita Domiciliaria (Trabajo Social):
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={referenciasUbicacion}
+                    onChange={(e) => setReferenciasUbicacion(e.target.value)}
+                    placeholder="Color de fachada, portón, entre qué calles o puntos de referencia..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-xl p-3 text-xs leading-relaxed"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ========================================== */}
+            {/* PASO 5: JUSTIFICACIÓN, DOCUMENTOS Y FIRMA */}
+            {/* ========================================== */}
+            {currentStep === 5 && (
+              <div className="space-y-4 animate-fadeIn">
+                <div>
+                  <label className="block text-xs font-black text-unipaz-navy dark:text-white uppercase mb-1">
+                    Motivos y Justificación Detallada de la Solicitud:
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={motivosSolicitud}
+                    onChange={(e) => setMotivosSolicitud(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-white/15 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-unipaz-orange"
+                  />
+                </div>
+
+                {/* Checklist Documental */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-2">
+                  <span className="font-bold text-xs text-unipaz-navy dark:text-white block uppercase tracking-wider">
+                    Expediente Digital de Documentos Soporte (Adjuntos para Revisión)
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                      <span>1. Identificación Oficial INE</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                      <span>2. Comprobante de Ingresos</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                      <span>3. Comprobante de Domicilio</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                      <span>4. Kárdex / Historial Académico</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Veracidad y Firma */}
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-amber-950 dark:text-amber-200">
                     <input
                       type="checkbox"
                       required
@@ -751,11 +976,11 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       onChange={(e) => setDeclaraVerdad(e.target.checked)}
                       className="mt-0.5 rounded text-unipaz-orange focus:ring-0"
                     />
-                    <span className="text-[11px] font-bold leading-snug">
-                      Declaro bajo protesta de decir verdad que toda la información proporcionada en este formato es verídica y autorizo a la institución a verificarla.
+                    <span className="text-[11px] leading-snug">
+                      Declaro bajo protesta de decir verdad que toda la información económica, familiar y laboral aquí consignada es fidedigna y autorizo al Comité de Becas y Trabajo Social de UNIPAZ a verificarla.
                     </span>
                   </label>
-                  <label className="flex items-start gap-2.5 cursor-pointer">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-amber-950 dark:text-amber-200">
                     <input
                       type="checkbox"
                       required
@@ -764,53 +989,27 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                       className="mt-0.5 rounded text-unipaz-orange focus:ring-0"
                     />
                     <span className="text-[11px] leading-snug">
-                      He leído y acepto el Aviso de Privacidad y el Reglamento de Becas y Estímulos de la Universidad Internacional de La Paz.
+                      He leído y acepto el Aviso de Privacidad Institucional para el resguardo y tratamiento de mis datos personales de becas.
                     </span>
                   </label>
                 </div>
 
-                {/* Pad de Firma Digital Electrónica */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-xs flex items-center gap-1.5">
-                      <PenTool className="w-3.5 h-3.5 text-unipaz-orange" />
-                      Firma Digital del Aspirante / Sustentante:
-                    </label>
-                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                      {hasSignature ? '✓ Trazada' : 'Firma Electrónica'}
-                    </span>
-                  </div>
-
-                  {/* Input de Nombre / Trazador de Firma */}
-                  <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-white/20 text-center space-y-2">
-                    <div className="font-serif italic text-base sm:text-lg text-unipaz-navy dark:text-amber-400 select-none py-2 border-b border-slate-200 dark:border-white/10">
+                {/* Firma Digital */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <PenTool className="w-3.5 h-3.5 text-unipaz-orange" />
+                    Firma Electrónica del Solicitante:
+                  </label>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-white/20 text-center">
+                    <span className="font-serif italic text-base text-unipaz-navy dark:text-amber-400">
                       {firmaDigitalNombre}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Firma Electrónica Certificada vinculada a Matrícula {student.matricula}</span>
-                      <span>Fecha: {new Date().toLocaleDateString('es-MX')}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                      Nombre completo para ratificar la firma:
-                    </label>
-                    <input
-                      type="text"
-                      value={firmaDigitalNombre}
-                      onChange={(e) => {
-                        setFirmaDigitalNombre(e.target.value);
-                        setHasSignature(true);
-                      }}
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/15 rounded-xl p-2.5 text-xs font-bold text-unipaz-navy dark:text-white"
-                    />
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* BOTONES DE NAVEGACIÓN INFERIOR (FOOTER) */}
+            {/* NAVEGACIÓN Y ACCIONES */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
               {currentStep > 1 ? (
                 <button
@@ -828,23 +1027,20 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    alert('Borrador guardado localmente en esta sesión.');
-                  }}
-                  className="py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs flex items-center gap-1.5 transition-all"
-                  title="Guardar borrador"
+                  onClick={() => alert('Borrador de solicitud y estudio socioeconómico guardado.')}
+                  className="py-2.5 px-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Guardar Borrador</span>
                 </button>
 
-                {currentStep < 3 ? (
+                {currentStep < 5 ? (
                   <button
                     type="button"
                     onClick={() => setCurrentStep((prev) => (prev + 1) as any)}
-                    className="py-2.5 px-5 rounded-2xl bg-gradient-to-r from-unipaz-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 transition-all hover:scale-105"
+                    className="py-2.5 px-5 rounded-2xl bg-unipaz-navy hover:bg-slate-800 text-white font-black text-xs shadow-md flex items-center gap-1.5 transition-all hover:scale-105"
                   >
-                    Siguiente
+                    Siguiente Paso
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 ) : (
@@ -858,7 +1054,7 @@ export const ScholarshipApplicationModal: React.FC<ScholarshipApplicationModalPr
                     }`}
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Enviar Solicitud al Comité
+                    Enviar Solicitud y Estudio Oficial
                   </button>
                 )}
               </div>
