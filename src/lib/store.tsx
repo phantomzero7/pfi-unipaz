@@ -585,13 +585,30 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const found = profiles.find((p) => p.id === userId);
     if (found) {
       setCurrentUserId(userId);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, userId);
+
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const isTargetStudent = found.role === 'estudiante';
+        const isTargetStaffOrAdmin = found.role === 'admin' || found.role === 'extension' || found.role === 'dedu' || found.role === 'staff';
+
+        if (isTargetStudent && (pathname.startsWith('/admin') || pathname === '/')) {
+          window.location.href = '/estudiante';
+        } else if (isTargetStaffOrAdmin && (pathname.startsWith('/estudiante') || pathname === '/')) {
+          window.location.href = '/admin';
+        } else if ((found.role === 'extension' || found.role === 'dedu') && pathname.startsWith('/admin/becas')) {
+          window.location.href = '/admin/eventos';
+        } else {
+          window.location.reload();
+        }
+      }
     }
   };
 
   const setUserRole = (role: UserRole) => {
     const target = profiles.find((p) => p.role === role);
     if (target) {
-      setCurrentUserId(target.id);
+      switchUser(target.id);
     }
   };
 
@@ -2629,6 +2646,10 @@ export const PFIProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
     localStorage.removeItem(STORAGE_KEYS.SCHOLARSHIP_LOGS);
     localStorage.removeItem(STORAGE_KEYS.STUDENT_AUDIT_LOGS);
+
+    if (typeof window !== 'undefined') {
+      window.location.href = '/estudiante';
+    }
   };
 
   return (
