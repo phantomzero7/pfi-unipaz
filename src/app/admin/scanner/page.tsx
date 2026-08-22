@@ -29,6 +29,7 @@ export default function AdminScannerPage() {
 
   // Estados de Cámara Smartphone
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isStartingCamera, setIsStartingCamera] = useState(false);
   const [cameraDevices, setCameraDevices] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -53,11 +54,20 @@ export default function AdminScannerPage() {
       student: profiles.find((p) => p.id === att.student_id),
     }));
 
-  // Detectar cámaras de smartphone
+  // Detectar cámaras de smartphone y auto-iniciar cámara trasera
   useEffect(() => {
+    let isMounted = true;
+
+    // Iniciar de forma automática tras el montaje del DOM
+    const autoStartTimer = setTimeout(() => {
+      if (isMounted) {
+        startCamera();
+      }
+    }, 250);
+
     Html5Qrcode.getCameras()
       .then((devices) => {
-        if (devices && devices.length > 0) {
+        if (isMounted && devices && devices.length > 0) {
           setCameraDevices(devices);
           const backCam = devices.find(
             (d) =>
@@ -66,15 +76,23 @@ export default function AdminScannerPage() {
               d.label.toLowerCase().includes('trasera') ||
               d.label.toLowerCase().includes('environment')
           );
-          setSelectedCameraId(backCam ? backCam.id : devices[0].id);
+          if (backCam) {
+            setSelectedCameraId(backCam.id);
+          } else {
+            setSelectedCameraId(devices[0].id);
+          }
         }
       })
       .catch((err) => console.warn('Could not enumerate cameras:', err));
 
     return () => {
+      isMounted = false;
+      clearTimeout(autoStartTimer);
       if (html5QrCodeRef.current) {
         try {
-          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current?.clear());
+          if (html5QrCodeRef.current.isScanning) {
+            html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current?.clear());
+          }
         } catch (e) {
           // ignore
         }
@@ -84,13 +102,23 @@ export default function AdminScannerPage() {
 
   const startCamera = async (cameraIdToUse?: string) => {
     setCameraError(null);
+    setIsStartingCamera(true);
     try {
       if (html5QrCodeRef.current) {
         try {
-          await html5QrCodeRef.current.stop();
+          if (html5QrCodeRef.current.isScanning) {
+            await html5QrCodeRef.current.stop();
+          }
+          html5QrCodeRef.current.clear();
         } catch (e) {
           // ignore
         }
+      }
+
+      const container = document.getElementById(scannerContainerId);
+      if (!container) {
+        setIsStartingCamera(false);
+        return;
       }
 
       const qrScanner = new Html5Qrcode(scannerContainerId);
@@ -103,8 +131,12 @@ export default function AdminScannerPage() {
       await qrScanner.start(
         cameraConfig,
         {
-          fps: 15,
-          qrbox: { width: 250, height: 250 },
+          fps: 20,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const edge = Math.floor(minEdge * 0.75);
+            return { width: Math.max(edge, 220), height: Math.max(edge, 220) };
+          },
           aspectRatio: 1.0,
         },
         (decodedText) => {
@@ -117,36 +149,58 @@ export default function AdminScannerPage() {
       );
 
       setIsCameraActive(true);
+      setIsStartingCamera(false);
     } catch (err: any) {
-      console.error('Error starting camera in smartphone:', err);
+      console.warn('Error starting camera, trying fallback:', err);
+      try {
+        if (html5QrCodeRef.current) {
+          await html5QrCodeRef.current.start(
+            { facingMode: 'user' },
+            { fps: 20, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+            (decodedText) => handleProcessCode(decodedText),
+            () => {}
+          );
+          setIsCameraActive(true);
+          setIsStartingCamera(false);
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error('All camera attempts failed:', fallbackErr);
+      }
+
       setCameraError(
-        'No se pudo acceder a la cámara. Por favor autoriza el permiso de cámara en tu smartphone o selecciona otra lente.'
+        'No se pudo acceder automáticamente a la cámara. Por favor autoriza los permisos de cámara en tu smartphone o pulsa "Alternar Lente".'
       );
       setIsCameraActive(false);
+      setIsStartingCamera(false);
     }
   };
 
   const stopCamera = async () => {
     if (html5QrCodeRef.current) {
       try {
-        await html5QrCodeRef.current.stop();
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
         html5QrCodeRef.current.clear();
       } catch (e) {
         console.warn('Error stopping camera:', e);
       }
     }
     setIsCameraActive(false);
+    setIsStartingCamera(false);
   };
 
-  const handleSwitchCamera = () => {
-    if (cameraDevices.length <= 1) return;
+  const handleSwitchCamera = async () => {
+    if (cameraDevices.length <= 1) {
+      await startCamera();
+      return;
+    }
     const currentIndex = cameraDevices.findIndex((d) => d.id === selectedCameraId);
     const nextIndex = (currentIndex + 1) % cameraDevices.length;
     const nextCamera = cameraDevices[nextIndex];
     setSelectedCameraId(nextCamera.id);
-    if (isCameraActive) {
-      startCamera(nextCamera.id);
-    }
+    await startCamera(nextCamera.id);
   };
 
   const handleProcessCode = (code: string) => {
@@ -300,12 +354,28 @@ export default function AdminScannerPage() {
 
           {/* Cámara Scanner Smartphone */}
           <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-white/10 space-y-3">
-            <div
-              id={scannerContainerId}
-              className={`w-full max-w-xs mx-auto rounded-2xl overflow-hidden shadow-inner ${
-                isCameraActive ? 'block min-h-[260px]' : 'hidden'
-              }`}
-            />
+            <div className="relative w-full max-w-xs mx-auto rounded-2xl overflow-hidden shadow-inner bg-slate-950 min-h-[260px] flex items-center justify-center">
+              <div
+                id={scannerContainerId}
+                className="w-full h-full min-h-[260px]"
+              />
+
+              {!isCameraActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center bg-slate-950 text-white">
+                  {isStartingCamera ? (
+                    <>
+                      <div className="w-8 h-8 rounded-full border-2 border-unipaz-orange border-t-transparent animate-spin" />
+                      <span className="text-xs font-bold text-slate-300">Conectando con la cámara...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-8 h-8 text-slate-600 animate-pulse" />
+                      <span className="text-xs text-slate-400 font-medium">Cámara en espera</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             {cameraError && (
               <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs">
@@ -317,10 +387,11 @@ export default function AdminScannerPage() {
               {!isCameraActive ? (
                 <button
                   onClick={() => startCamera(selectedCameraId)}
-                  className="w-full py-3.5 px-6 rounded-2xl bg-unipaz-navy dark:bg-unipaz-cobalt hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                  disabled={isStartingCamera}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-unipaz-navy dark:bg-unipaz-cobalt hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4" />
-                  Abrir Cámara en Smartphone
+                  {isStartingCamera ? 'Iniciando Cámara...' : 'Reintentar Encendido de Cámara'}
                 </button>
               ) : (
                 <>
@@ -331,15 +402,14 @@ export default function AdminScannerPage() {
                     Detener Cámara
                   </button>
 
-                  {cameraDevices.length > 1 && (
-                    <button
-                      onClick={handleSwitchCamera}
-                      className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                    >
-                      <FlipHorizontal className="w-4 h-4" />
-                      Alternar Lente
-                    </button>
-                  )}
+                  <button
+                    onClick={handleSwitchCamera}
+                    className="py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    title="Alternar entre cámara trasera y frontal"
+                  >
+                    <FlipHorizontal className="w-4 h-4" />
+                    Alternar Lente
+                  </button>
                 </>
               )}
             </div>
