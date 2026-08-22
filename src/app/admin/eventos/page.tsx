@@ -700,81 +700,149 @@ export default function AdminEventosManagerPage() {
               })}
             </div>
           ) : (
-            /* Vista en Lista (Tabla) */
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
-                    <th className="py-3 px-3">Título de la Actividad</th>
-                    <th className="py-3 px-3">Categoría</th>
-                    <th className="py-3 px-3">Modalidad / Sede</th>
-                    <th className="py-3 px-3">Fecha & Horario</th>
-                    <th className="py-3 px-3">Horas Formativas</th>
-                    <th className="py-3 px-3">Cupo</th>
-                    <th className="py-3 px-3 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {currentTabEvents.map((ev) => (
-                    <tr key={ev.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="py-3 px-3">
-                        <strong className="text-unipaz-navy dark:text-white block">{ev.titulo}</strong>
+            /* Vista en Lista (Tarjetas en móvil, Tabla en Desktop) */
+            <div className="space-y-4">
+              {/* VISTA MÓVIL Y TABLET (TARJETAS) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+                {currentTabEvents.map((ev) => (
+                  <div
+                    key={`mob-ev-${ev.id}`}
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <strong className="text-unipaz-navy dark:text-white text-xs font-black block">{ev.titulo}</strong>
                         {ev.instructor_titular && (
-                          <span className="text-[10px] text-slate-400">Instructor: {ev.instructor_titular}</span>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">Instructor: {ev.instructor_titular}</span>
                         )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange">
-                          {ev.categoria}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="uppercase font-bold text-[10px] text-slate-600 dark:text-slate-300 block">{ev.modalidad}</span>
-                        <span className="text-[10px] text-slate-400 truncate max-w-[140px] block">{ev.ubicacion}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="font-medium">{ev.fecha_evento}</div>
-                        <span className="text-[10px] text-slate-400">{ev.hora_inicio} - {ev.hora_fin}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="font-mono font-bold text-emerald-600">{ev.horas_presenciales?.toFixed(1)} hrs</span>
-                        <span className="text-[10px] text-slate-400 block">Staff: {ev.horas_staff?.toFixed(1) || '10.0'}h</span>
-                      </td>
-                      <td className="py-3 px-3 font-mono">
-                        {ev.cupo_maximo} lugares
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setSelectedKioskEvent(ev)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300"
-                            title="QR Kiosco"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => openEditModal(ev)}
-                            className="py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
-                          >
-                            <Edit2 className="w-3 h-3" /> Editar
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`¿Eliminar "${ev.titulo}"?`)) {
-                                deleteEvent(ev.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange flex-shrink-0">
+                        {ev.categoria}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-white/5 text-[10px]">
+                      <div className="p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Fecha & Hora</span>
+                        <strong className="text-slate-700 dark:text-slate-200 block text-[10px]">{ev.fecha_evento}</strong>
+                        <span className="text-[9px] text-slate-400">{ev.hora_inicio} - {ev.hora_fin}</span>
+                      </div>
+                      <div className="p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Horas Formativas</span>
+                        <strong className="font-mono text-emerald-600 text-xs">{ev.horas_presenciales?.toFixed(1)} hrs</strong>
+                        <span className="text-[9px] text-slate-400 block">Cupo: {ev.cupo_maximo} lug.</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/5">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">{ev.modalidad} · {ev.ubicacion}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedKioskEvent(ev)}
+                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300"
+                          title="QR Kiosco"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openEditModal(ev)}
+                          className="py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" /> Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`¿Eliminar "${ev.titulo}"?`)) {
+                              deleteEvent(ev.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* VISTA DESKTOP (TABLA) */}
+              <div className="hidden md:block p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                      <th className="py-3 px-3">Título de la Actividad</th>
+                      <th className="py-3 px-3">Categoría</th>
+                      <th className="py-3 px-3">Modalidad / Sede</th>
+                      <th className="py-3 px-3">Fecha & Horario</th>
+                      <th className="py-3 px-3">Horas Formativas</th>
+                      <th className="py-3 px-3">Cupo</th>
+                      <th className="py-3 px-3 text-right">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    {currentTabEvents.map((ev) => (
+                      <tr key={ev.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td className="py-3 px-3">
+                          <strong className="text-unipaz-navy dark:text-white block">{ev.titulo}</strong>
+                          {ev.instructor_titular && (
+                            <span className="text-[10px] text-slate-400">Instructor: {ev.instructor_titular}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-500/20 text-unipaz-orange">
+                            {ev.categoria}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="uppercase font-bold text-[10px] text-slate-600 dark:text-slate-300 block">{ev.modalidad}</span>
+                          <span className="text-[10px] text-slate-400 truncate max-w-[140px] block">{ev.ubicacion}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-medium">{ev.fecha_evento}</div>
+                          <span className="text-[10px] text-slate-400">{ev.hora_inicio} - {ev.hora_fin}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="font-mono font-bold text-emerald-600">{ev.horas_presenciales?.toFixed(1)} hrs</span>
+                          <span className="text-[10px] text-slate-400 block">Staff: {ev.horas_staff?.toFixed(1) || '10.0'}h</span>
+                        </td>
+                        <td className="py-3 px-3 font-mono">
+                          {ev.cupo_maximo} lugares
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setSelectedKioskEvent(ev)}
+                              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300"
+                              title="QR Kiosco"
+                            >
+                              <QrCode className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => openEditModal(ev)}
+                              className="py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1"
+                            >
+                              <Edit2 className="w-3 h-3" /> Editar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`¿Eliminar "${ev.titulo}"?`)) {
+                                  deleteEvent(ev.id);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>
@@ -794,68 +862,126 @@ export default function AdminEventosManagerPage() {
               ✓ No hay solicitudes pendientes de aprobación de rol en este momento.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
-                    <th className="py-3 px-3">Estudiante</th>
-                    <th className="py-3 px-3">Actividad / Taller</th>
-                    <th className="py-3 px-3">Rol Solicitado</th>
-                    <th className="py-3 px-3">Fecha Solicitud</th>
-                    <th className="py-3 px-3 text-right">Dictamen</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                  {allPendingRoleApplications.map(({ event: ev, app }) => {
-                    const std = profiles.find((p) => p.id === app.student_id);
+            <div className="space-y-4">
+              {/* VISTA MÓVIL Y TABLET (TARJETAS) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+                {allPendingRoleApplications.map(({ event: ev, app }) => {
+                  const std = profiles.find((p) => p.id === app.student_id);
 
-                    return (
-                      <tr key={`${ev.id}-${app.student_id}-${app.rol_solicitado}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                        <td className="py-3 px-3">
-                          <strong className="text-unipaz-navy dark:text-white block">{std?.nombre} {std?.apellidos}</strong>
-                          <span className="text-[10px] font-mono text-slate-400">{std?.matricula} · {std?.carrera}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <strong className="text-slate-800 dark:text-slate-200 block">{ev.titulo}</strong>
-                          <span className="text-[10px] text-slate-400">{ev.fecha_evento}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            app.rol_solicitado === 'staff_logistica' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {app.rol_solicitado === 'staff_logistica' ? '🛡️ Staff Logístico' : '🎤 Ponente / Expositor'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-slate-500 text-[11px]">
-                          {app.fecha_solicitud}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                reviewRoleApplication(ev.id, app.id, 'rechazada');
-                                setToastMessage(`Solicitud de ${std?.nombre} rechazada.`);
-                              }}
-                              className="py-1 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
-                            >
-                              Rechazar
-                            </button>
-                            <button
-                              onClick={() => {
-                                reviewRoleApplication(ev.id, app.id, 'aprobada');
-                                setToastMessage(`✓ Solicitud de ${std?.nombre} aprobada con éxito.`);
-                              }}
-                              className="py-1 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
-                            >
-                              Aprobar Rol
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  return (
+                    <div
+                      key={`mob-role-${ev.id}-${app.student_id}-${app.rol_solicitado}`}
+                      className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 shadow-xs space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <strong className="text-unipaz-navy dark:text-white text-xs font-black block">
+                            {std?.nombre} {std?.apellidos}
+                          </strong>
+                          <span className="text-[10px] font-mono text-slate-400 block">{std?.matricula} · {std?.carrera}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase flex-shrink-0 ${
+                          app.rol_solicitado === 'staff_logistica' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {app.rol_solicitado === 'staff_logistica' ? 'Staff' : 'Ponente'}
+                        </span>
+                      </div>
+
+                      <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-[10px]">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Actividad</span>
+                        <strong className="text-slate-800 dark:text-slate-200 block truncate">{ev.titulo}</strong>
+                        <span className="text-slate-400">{ev.fecha_evento}</span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-white/5">
+                        <button
+                          onClick={() => {
+                            reviewRoleApplication(ev.id, app.id, 'rechazada');
+                            setToastMessage(`Solicitud de ${std?.nombre} rechazada.`);
+                          }}
+                          className="py-1 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
+                        >
+                          Rechazar
+                        </button>
+                        <button
+                          onClick={() => {
+                            reviewRoleApplication(ev.id, app.id, 'aprobada');
+                            setToastMessage(`✓ Solicitud de ${std?.nombre} aprobada con éxito.`);
+                          }}
+                          className="py-1 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                        >
+                          Aprobar Rol
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* VISTA DESKTOP (TABLA) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                      <th className="py-3 px-3">Estudiante</th>
+                      <th className="py-3 px-3">Actividad / Taller</th>
+                      <th className="py-3 px-3">Rol Solicitado</th>
+                      <th className="py-3 px-3">Fecha Solicitud</th>
+                      <th className="py-3 px-3 text-right">Dictamen</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    {allPendingRoleApplications.map(({ event: ev, app }) => {
+                      const std = profiles.find((p) => p.id === app.student_id);
+
+                      return (
+                        <tr key={`${ev.id}-${app.student_id}-${app.rol_solicitado}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="py-3 px-3">
+                            <strong className="text-unipaz-navy dark:text-white block">{std?.nombre} {std?.apellidos}</strong>
+                            <span className="text-[10px] font-mono text-slate-400">{std?.matricula} · {std?.carrera}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <strong className="text-slate-800 dark:text-slate-200 block">{ev.titulo}</strong>
+                            <span className="text-[10px] text-slate-400">{ev.fecha_evento}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              app.rol_solicitado === 'staff_logistica' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {app.rol_solicitado === 'staff_logistica' ? '🛡️ Staff Logístico' : '🎤 Ponente / Expositor'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-slate-500 text-[11px]">
+                            {app.fecha_solicitud}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  reviewRoleApplication(ev.id, app.id, 'rechazada');
+                                  setToastMessage(`Solicitud de ${std?.nombre} rechazada.`);
+                                }}
+                                className="py-1 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs"
+                              >
+                                Rechazar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  reviewRoleApplication(ev.id, app.id, 'aprobada');
+                                  setToastMessage(`✓ Solicitud de ${std?.nombre} aprobada con éxito.`);
+                                }}
+                                className="py-1 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                              >
+                                Aprobar Rol
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

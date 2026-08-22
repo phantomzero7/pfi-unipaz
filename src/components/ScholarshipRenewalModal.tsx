@@ -458,40 +458,77 @@ export const ScholarshipRenewalModal: React.FC<ScholarshipRenewalModalProps> = (
                   </div>
                 </div>
 
-                {/* Tabla de Integrantes */}
-                <div className="overflow-x-auto border border-slate-200 dark:border-white/10 rounded-2xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] uppercase font-bold">
-                      <tr>
-                        <th className="p-2">Nombre</th>
-                        <th className="p-2">Parentesco</th>
-                        <th className="p-2">Ocupación</th>
-                        <th className="p-2 text-right">Ingreso Mensual</th>
-                        <th className="p-2 text-center">Eliminar</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 dark:divide-white/5">
-                      {miembros.map((m) => (
-                        <tr key={m.id}>
-                          <td className="p-2 font-bold">{m.nombre}</td>
-                          <td className="p-2 text-slate-500">{m.parentesco}</td>
-                          <td className="p-2">{m.ocupacion}</td>
-                          <td className="p-2 text-right font-mono font-bold text-emerald-600">
-                            ${m.ingresoMensual.toLocaleString('es-MX')} MXN
-                          </td>
-                          <td className="p-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMiembro(m.id)}
-                              className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
+                {/* Lista / Tabla de Integrantes Responsiva */}
+                <div className="space-y-2.5">
+                  {/* VISTA MÓVIL (TARJETAS COMPACTAS) */}
+                  <div className="space-y-2 sm:hidden">
+                    {miembros.map((m) => (
+                      <div
+                        key={`mob-ren-fam-${m.id}`}
+                        className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <strong className="text-unipaz-navy dark:text-white truncate">{m.nombre}</strong>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">
+                              {m.parentesco}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate">
+                            {m.ocupacion}
+                          </div>
+                          <div className="font-mono font-black text-emerald-600 text-xs">
+                            ${m.ingresoMensual.toLocaleString('es-MX')} MXN/mes
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMiembro(m.id)}
+                          className="p-2 rounded-xl text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/40 flex-shrink-0"
+                          title="Eliminar familiar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* VISTA DESKTOP (TABLA) */}
+                  <div className="hidden sm:block overflow-x-auto border border-slate-200 dark:border-white/10 rounded-2xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] uppercase font-bold">
+                        <tr>
+                          <th className="p-2">Nombre</th>
+                          <th className="p-2">Parentesco</th>
+                          <th className="p-2">Ocupación</th>
+                          <th className="p-2 text-right">Ingreso Mensual</th>
+                          <th className="p-2 text-center">Eliminar</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                        {miembros.map((m) => (
+                          <tr key={m.id}>
+                            <td className="p-2 font-bold">{m.nombre}</td>
+                            <td className="p-2 text-slate-500">{m.parentesco}</td>
+                            <td className="p-2">{m.ocupacion}</td>
+                            <td className="p-2 text-right font-mono font-bold text-emerald-600">
+                              ${m.ingresoMensual.toLocaleString('es-MX')} MXN
+                            </td>
+                            <td className="p-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveMiembro(m.id)}
+                                className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Agregar Familiar */}

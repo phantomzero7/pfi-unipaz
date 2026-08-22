@@ -414,72 +414,134 @@ export default function AdminInformesPage() {
             No hay registros que coincidan con los filtros seleccionados.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
-                  <th className="py-3 px-3">Estudiante</th>
-                  <th className="py-3 px-3">Sexo</th>
-                  <th className="py-3 px-3">Carrera</th>
-                  <th className="py-3 px-3">Grado</th>
-                  <th className="py-3 px-3">Horas PFI</th>
-                  <th className="py-3 px-3">Beca / Puntos</th>
-                  <th className="py-3 px-3">Nivel Formativo</th>
-                  <th className="py-3 px-3 text-right">Estatus Titulación</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {reportData.map((std) => {
-                  const prog = getStudentProgress(std.id);
-                  const sch = getStudentScholarshipProgress(std.id);
+          <div className="space-y-4">
+            {/* VISTA MÓVIL Y TABLET (CARDS COMPACTAS) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+              {reportData.map((std) => {
+                const prog = getStudentProgress(std.id);
+                const sch = getStudentScholarshipProgress(std.id);
 
-                  return (
-                    <tr key={std.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="py-3 px-3">
-                        <strong className="text-unipaz-navy dark:text-white">{std.nombre} {std.apellidos}</strong>
-                        <div className="text-[10px] font-mono text-slate-400">{std.matricula}</div>
-                      </td>
-                      <td className="py-3 px-3 text-slate-500 text-[11px]">{std.sexo || 'Hombre'}</td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-300 font-medium">{std.carrera}</td>
-                      <td className="py-3 px-3">{std.cuatrimestre || 1}° Cuatri</td>
-                      <td className="py-3 px-3 font-mono font-bold text-unipaz-orange">
-                        {prog.horasTotales.toFixed(1)} hrs
-                      </td>
-                      <td className="py-3 px-3">
-                        {std.tiene_beca ? (
-                          <div>
-                            <span className="font-bold text-blue-600">{std.porcentaje_beca}%</span>
-                            <div className="text-[10px] text-slate-400">{sch.puntosTotales} / 1,000 pts</div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">Sin Beca</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          prog.escala === 'Sobresaliente'
-                            ? 'bg-amber-100 text-amber-800'
-                            : prog.escala === 'Satisfactorio'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}>
-                          {prog.escala}
+                return (
+                  <div
+                    key={`mob-rep-${std.id}`}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <strong className="text-unipaz-navy dark:text-white text-xs font-black block">
+                          {std.nombre} {std.apellidos}
+                        </strong>
+                        <span className="text-[10px] font-mono text-slate-400 block">{std.matricula} · {std.sexo || 'Hombre'}</span>
+                        <span className="text-[11px] text-slate-600 dark:text-slate-300 block mt-0.5">
+                          {std.carrera} · {std.cuatrimestre || 1}° Cuatri
                         </span>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        {prog.isAcreditado ? (
-                          <span className="text-emerald-600 font-bold flex items-center justify-end gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Liberado (≥400h)
-                          </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ${
+                        prog.escala === 'Sobresaliente'
+                          ? 'bg-amber-100 text-amber-800'
+                          : prog.escala === 'Satisfactorio'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {prog.escala}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 dark:border-white/5 text-[10px] text-center">
+                      <div className="p-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Horas PFI</span>
+                        <strong className="font-mono text-unipaz-orange text-xs">{prog.horasTotales.toFixed(1)}h</strong>
+                      </div>
+                      <div className="p-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Beca</span>
+                        {std.tiene_beca ? (
+                          <strong className="font-mono text-blue-600 text-xs">{std.porcentaje_beca}%</strong>
                         ) : (
-                          <span className="text-slate-400">En Proceso</span>
+                          <span className="text-slate-400 text-[10px]">Sin Beca</span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <div className="p-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5">
+                        <span className="text-slate-400 block text-[9px] uppercase font-bold">Titulación</span>
+                        {prog.isAcreditado ? (
+                          <strong className="text-emerald-600 text-[10px]">✓ Liberado</strong>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">En Proceso</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* VISTA DESKTOP (TABLA) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold">
+                    <th className="py-3 px-3">Estudiante</th>
+                    <th className="py-3 px-3">Sexo</th>
+                    <th className="py-3 px-3">Carrera</th>
+                    <th className="py-3 px-3">Grado</th>
+                    <th className="py-3 px-3">Horas PFI</th>
+                    <th className="py-3 px-3">Beca / Puntos</th>
+                    <th className="py-3 px-3">Nivel Formativo</th>
+                    <th className="py-3 px-3 text-right">Estatus Titulación</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {reportData.map((std) => {
+                    const prog = getStudentProgress(std.id);
+                    const sch = getStudentScholarshipProgress(std.id);
+
+                    return (
+                      <tr key={std.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td className="py-3 px-3">
+                          <strong className="text-unipaz-navy dark:text-white">{std.nombre} {std.apellidos}</strong>
+                          <div className="text-[10px] font-mono text-slate-400">{std.matricula}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-500 text-[11px]">{std.sexo || 'Hombre'}</td>
+                        <td className="py-3 px-3 text-slate-600 dark:text-slate-300 font-medium">{std.carrera}</td>
+                        <td className="py-3 px-3">{std.cuatrimestre || 1}° Cuatri</td>
+                        <td className="py-3 px-3 font-mono font-bold text-unipaz-orange">
+                          {prog.horasTotales.toFixed(1)} hrs
+                        </td>
+                        <td className="py-3 px-3">
+                          {std.tiene_beca ? (
+                            <div>
+                              <span className="font-bold text-blue-600">{std.porcentaje_beca}%</span>
+                              <div className="text-[10px] text-slate-400">{sch.puntosTotales} / 1,000 pts</div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">Sin Beca</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            prog.escala === 'Sobresaliente'
+                              ? 'bg-amber-100 text-amber-800'
+                              : prog.escala === 'Satisfactorio'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {prog.escala}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {prog.isAcreditado ? (
+                            <span className="text-emerald-600 font-bold flex items-center justify-end gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Liberado (≥400h)
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">En Proceso</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

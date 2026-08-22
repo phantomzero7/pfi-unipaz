@@ -193,52 +193,97 @@ export default function ConstanciasEstudiantePage() {
             No tienes actividades acreditadas todavía.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
-                  <th className="py-3 px-3">Actividad / Taller</th>
-                  <th className="py-3 px-3">Categoría</th>
-                  <th className="py-3 px-3">Fecha</th>
-                  <th className="py-3 px-3 text-right">Horas</th>
-                  <th className="py-3 px-3 text-right">Constancia Individual</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {attendances.map((att) => {
-                  const ev = att.event || eventsMap.get(att.event_id);
-                  if (!ev) return null;
+          <div className="space-y-4">
+            {/* VISTA MÓVIL Y TABLET (TARJETAS) */}
+            <div className="space-y-3 sm:hidden">
+              {attendances.map((att) => {
+                const ev = att.event || eventsMap.get(att.event_id);
+                if (!ev) return null;
 
-                  return (
-                    <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3.5 px-3 font-black text-unipaz-navy dark:text-white">
-                        {ev.titulo}
-                      </td>
-                      <td className="py-3.5 px-3">
-                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
-                          {ev.categoria}
+                return (
+                  <div
+                    key={`mob-att-${att.id}`}
+                    className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <strong className="text-unipaz-navy dark:text-white text-xs font-black block">
+                          {ev.titulo}
+                        </strong>
+                        <span className="text-[11px] text-slate-400 block mt-0.5">
+                          {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : ev.fecha_evento}
                         </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 font-medium">
-                        {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : ev.fecha_evento}
-                      </td>
-                      <td className="py-3.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[10px] font-bold flex-shrink-0">
+                        {ev.categoria}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/5">
+                      <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-xs">
                         +{att.horas_acreditadas.toFixed(2)} hrs
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <button
-                          onClick={() => setSelectedWorkshopCert({ event: ev, attendance: att })}
-                          className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-unipaz-orange hover:text-white dark:hover:bg-unipaz-orange text-unipaz-navy dark:text-white text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-white/10 shadow-sm"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Descargar PDF
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                      <button
+                        onClick={() => setSelectedWorkshopCert({ event: ev, attendance: att })}
+                        className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-unipaz-orange hover:text-white text-unipaz-navy dark:text-white text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-white/10"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Constancia PDF
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* VISTA DESKTOP (TABLA) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold">
+                    <th className="py-3 px-3">Actividad / Taller</th>
+                    <th className="py-3 px-3">Categoría</th>
+                    <th className="py-3 px-3">Fecha</th>
+                    <th className="py-3 px-3 text-right">Horas</th>
+                    <th className="py-3 px-3 text-right">Constancia Individual</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {attendances.map((att) => {
+                    const ev = att.event || eventsMap.get(att.event_id);
+                    if (!ev) return null;
+
+                    return (
+                      <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3.5 px-3 font-black text-unipaz-navy dark:text-white">
+                          {ev.titulo}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[11px] font-bold">
+                            {ev.categoria}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 font-medium">
+                          {att.check_in_timestamp ? new Date(att.check_in_timestamp).toLocaleDateString() : ev.fecha_evento}
+                        </td>
+                        <td className="py-3.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
+                          +{att.horas_acreditadas.toFixed(2)} hrs
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          <button
+                            onClick={() => setSelectedWorkshopCert({ event: ev, attendance: att })}
+                            className="py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-unipaz-orange hover:text-white dark:hover:bg-unipaz-orange text-unipaz-navy dark:text-white text-[11px] font-bold inline-flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-white/10 shadow-sm"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Descargar PDF
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>

@@ -474,156 +474,231 @@ export default function AdminEstudiantesDirectoryPage() {
           <p>No se encontraron estudiantes que coincidan con la búsqueda o filtro seleccionado.</p>
         </div>
       ) : viewMode === 'table' ? (
-        /* VISTA TABLA INTERACTIVA CON ORDENAMIENTO EN ENCABEZADOS */
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold select-none">
-                  <th
-                    onClick={() => handleSort('nombre')}
-                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Estudiante / Matrícula</span>
-                      {sortField === 'nombre' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort('carrera')}
-                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Carrera / Grado</span>
-                      {sortField === 'carrera' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort('horasTotales')}
-                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Horas PFI</span>
-                      {sortField === 'horasTotales' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort('porcentaje_beca')}
-                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Beca & Puntos</span>
-                      {sortField === 'porcentaje_beca' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort('isAcreditado')}
-                    className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
-                  >
-                    <div className="flex items-center gap-1">
-                      <span>Estatus Titulación</span>
-                      {sortField === 'isAcreditado' ? (
-                        sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      )}
-                    </div>
-                  </th>
-                  <th className="py-3 px-3 text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {filteredStudents.map((s) => {
-                  const prog = getStudentProgress(s.id);
-                  const sch = getStudentScholarshipProgress(s.id);
+        /* VISTA TABLA / LISTA RESPONSIVA (TARJETAS EN MÓVIL, TABLA EN DESKTOP) */
+        <div className="space-y-4">
+          {/* VISTA MÓVIL Y TABLET (CARDS COMPACTAS SIN SCROLL HORIZONTAL) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
+            {filteredStudents.map((s) => {
+              const prog = getStudentProgress(s.id);
+              const sch = getStudentScholarshipProgress(s.id);
 
-                  return (
-                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <strong className="text-unipaz-navy dark:text-white">{s.nombre} {s.apellidos}</strong>
-                          {s.activo === false || s.estatus_inscripcion === 'baja_temporal' ? (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300">
-                              Baja Temp.
-                            </span>
-                          ) : s.estatus_inscripcion === 'baja_definitiva' ? (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300">
-                              Baja Def.
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="text-[10px] font-mono text-slate-400">{s.matricula}</div>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
-                        <div>{s.carrera}</div>
-                        <span className="text-[10px] text-slate-400">{s.cuatrimestre}° Cuatrimestre</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-800 dark:text-white">
-                            {prog.horasTotales.toFixed(1)}h
+              return (
+                <div
+                  key={`mob-${s.id}`}
+                  className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xs space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <strong className="text-unipaz-navy dark:text-white text-xs font-black">
+                          {s.nombre} {s.apellidos}
+                        </strong>
+                        {s.activo === false || s.estatus_inscripcion === 'baja_temporal' ? (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300">
+                            Baja Temp.
                           </span>
-                          <div className="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                            <div
-                              className="h-full bg-unipaz-orange rounded-full"
-                              style={{ width: `${Math.min(100, (prog.horasTotales / 400) * 100)}%` }}
-                            />
+                        ) : s.estatus_inscripcion === 'baja_definitiva' ? (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300">
+                            Baja Def.
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 block">{s.matricula}</span>
+                      <span className="text-[11px] text-slate-600 dark:text-slate-300 block mt-0.5">
+                        {s.carrera} · {s.cuatrimestre}° Cuatrimestre
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedStudent(s)}
+                      className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 flex-shrink-0 shadow-xs"
+                    >
+                      Expediente
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Resumen de Métricas */}
+                  <div className="grid grid-cols-3 gap-2 pt-2.5 border-t border-slate-100 dark:border-white/5 text-center text-[10px]">
+                    <div className="p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Horas PFI</span>
+                      <strong className="font-mono text-unipaz-orange text-xs">{prog.horasTotales.toFixed(1)}h</strong>
+                    </div>
+
+                    <div className="p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Beca</span>
+                      {s.tiene_beca ? (
+                        <strong className="font-mono text-blue-600 text-xs">{s.porcentaje_beca}%</strong>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">Sin Beca</span>
+                      )}
+                    </div>
+
+                    <div className="p-1.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Titulación</span>
+                      {prog.isAcreditado ? (
+                        <strong className="text-emerald-600 text-[10px]">✓ Liberado</strong>
+                      ) : (
+                        <span className="text-slate-500 text-[10px]">En Proceso</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* VISTA DESKTOP (TABLA INTERACTIVA CON ORDENAMIENTO EN ENCABEZADOS) */}
+          <div className="hidden md:block p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 font-bold select-none">
+                    <th
+                      onClick={() => handleSort('nombre')}
+                      className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Estudiante / Matrícula</span>
+                        {sortField === 'nombre' ? (
+                          sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('carrera')}
+                      className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Carrera / Grado</span>
+                        {sortField === 'carrera' ? (
+                          sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('horasTotales')}
+                      className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Horas PFI</span>
+                        {sortField === 'horasTotales' ? (
+                          sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('porcentaje_beca')}
+                      className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Beca & Puntos</span>
+                        {sortField === 'porcentaje_beca' ? (
+                          sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('isAcreditado')}
+                      className="py-3 px-3 cursor-pointer hover:text-unipaz-orange transition-colors"
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>Estatus Titulación</span>
+                        {sortField === 'isAcreditado' ? (
+                          sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-unipaz-orange" /> : <ArrowDown className="w-3.5 h-3.5 text-unipaz-orange" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                        )}
+                      </div>
+                    </th>
+                    <th className="py-3 px-3 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                  {filteredStudents.map((s) => {
+                    const prog = getStudentProgress(s.id);
+                    const sch = getStudentScholarshipProgress(s.id);
+
+                    return (
+                      <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1.5">
+                            <strong className="text-unipaz-navy dark:text-white">{s.nombre} {s.apellidos}</strong>
+                            {s.activo === false || s.estatus_inscripcion === 'baja_temporal' ? (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300">
+                                Baja Temp.
+                              </span>
+                            ) : s.estatus_inscripcion === 'baja_definitiva' ? (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300">
+                                Baja Def.
+                              </span>
+                            ) : null}
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        {s.tiene_beca ? (
-                          <div className="space-y-0.5">
-                            <span className="font-bold text-unipaz-orange">{s.porcentaje_beca}%</span>
-                            <div className="text-[10px] font-mono text-slate-500">
-                              {sch.puntosTotales} / 1,000 pts
+                          <div className="text-[10px] font-mono text-slate-400">{s.matricula}</div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 dark:text-slate-300">
+                          <div>{s.carrera}</div>
+                          <span className="text-[10px] text-slate-400">{s.cuatrimestre}° Cuatrimestre</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-slate-800 dark:text-white">
+                              {prog.horasTotales.toFixed(1)}h
+                            </span>
+                            <div className="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                              <div
+                                className="h-full bg-unipaz-orange rounded-full"
+                                style={{ width: `${Math.min(100, (prog.horasTotales / 400) * 100)}%` }}
+                              />
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-slate-400">Sin beca</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        {prog.isAcreditado ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            ✓ Listo para Titulación
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
-                            En Proceso
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={() => setSelectedStudent(s)}
-                          className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1 transition-all"
-                        >
-                          Ver Expediente
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-3 px-3">
+                          {s.tiene_beca ? (
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-unipaz-orange">{s.porcentaje_beca}%</span>
+                              <div className="text-[10px] font-mono text-slate-500">
+                                {sch.puntosTotales} / 1,000 pts
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">Sin beca</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          {prog.isAcreditado ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Listo para Titulación
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                              En Proceso
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <button
+                            onClick={() => setSelectedStudent(s)}
+                            className="py-1.5 px-3 rounded-xl bg-unipaz-navy hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1 transition-all"
+                          >
+                            Ver Expediente
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : (
