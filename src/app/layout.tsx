@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#F8FAFC] dark:bg-[#0A1526] text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300`}>
         <PFIProvider>
           <Navbar />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-28 md:pb-8">
             {children}
           </main>
           <footer className="border-t border-slate-200 dark:border-white/10 bg-white/90 dark:bg-slate-950/80 py-6 text-center text-xs text-slate-600 dark:text-slate-400 transition-colors duration-300">
