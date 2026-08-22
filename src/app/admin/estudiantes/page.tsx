@@ -337,27 +337,76 @@ export default function AdminEstudiantesDirectoryPage() {
         </div>
       </div>
 
-      {/* Barra de Búsqueda y Filtros */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-          <div className="relative lg:col-span-2">
-            <Search className="w-4 h-4 absolute left-4 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, matrícula, carrera..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-slate-900 dark:text-white shadow-sm"
-            />
+      {/* PANEL DE FILTRADO Y BÚSQUEDA AVANZADA (DISEÑO ESTÉTICO & RESPONSIVO) */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-4">
+        {/* Cabecera del Panel de Filtros */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-2xl bg-unipaz-orange/10 text-unipaz-orange dark:bg-unipaz-orange/20">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-unipaz-navy dark:text-white">
+                Filtros de Búsqueda & Segmentación
+              </h3>
+              <span className="text-[11px] text-slate-400">
+                Mostrando <strong className="text-unipaz-navy dark:text-white font-mono">{filteredStudents.length}</strong> de <span className="font-mono">{students.length}</span> estudiantes registrados
+              </span>
+            </div>
           </div>
 
-          <div>
+          {/* Botón Restablecer si hay filtros activos */}
+          {(searchTerm || carreraFilter !== 'todas' || cuatrimestreFilter !== 'todos' || sexoFilter !== 'todos' || estatusInscripcionFilter !== 'todos' || filterStatus !== 'todos') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setCarreraFilter('todas');
+                setCuatrimestreFilter('todos');
+                setSexoFilter('todos');
+                setEstatusInscripcionFilter('todos');
+                setFilterStatus('todos');
+              }}
+              className="py-1.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 text-slate-600 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Limpiar filtros</span>
+            </button>
+          )}
+        </div>
+
+        {/* Barra de Búsqueda y Selectores Principales */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+          {/* Input de Búsqueda */}
+          <div className="relative sm:col-span-2 lg:col-span-5">
+            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, matrícula o carrera..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 rounded-2xl pl-10 pr-9 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-unipaz-orange/30 focus:border-unipaz-orange transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Selector de Carrera */}
+          <div className="relative sm:col-span-1 lg:col-span-3">
+            <div className="absolute left-3.5 top-3 text-slate-400 pointer-events-none">
+              <GraduationCap className="w-4 h-4" />
+            </div>
             <select
               value={carreraFilter}
               onChange={(e) => setCarreraFilter(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-3 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 rounded-2xl pl-10 pr-8 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-unipaz-orange/30 focus:border-unipaz-orange transition-all appearance-none"
             >
-              <option value="todas">Todas las Carreras</option>
+              <option value="todas">🎓 Todas las Carreras</option>
               {CATALOGO_PROGRAMAS_ACADEMICOS.map((c) => (
                 <option key={c.clave} value={c.nombre}>
                   {c.nombre}
@@ -366,26 +415,36 @@ export default function AdminEstudiantesDirectoryPage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          {/* Selector de Cuatrimestre */}
+          <div className="relative sm:col-span-1 lg:col-span-2">
+            <div className="absolute left-3.5 top-3 text-slate-400 pointer-events-none">
+              <Layers className="w-4 h-4" />
+            </div>
             <select
               value={cuatrimestreFilter}
               onChange={(e) => setCuatrimestreFilter(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-2 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 rounded-2xl pl-10 pr-8 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-unipaz-orange/30 focus:border-unipaz-orange transition-all appearance-none"
             >
               <option value="todos">Todos los Grados</option>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                 <option key={num} value={num.toString()}>
-                  {num}° Cuatri/Sem
+                  {num}° Cuatri / Sem
                 </option>
               ))}
             </select>
+          </div>
 
+          {/* Selector de Sexo */}
+          <div className="relative sm:col-span-2 lg:col-span-2">
+            <div className="absolute left-3.5 top-3 text-slate-400 pointer-events-none">
+              <Users className="w-4 h-4" />
+            </div>
             <select
               value={sexoFilter}
               onChange={(e) => setSexoFilter(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl px-2 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 rounded-2xl pl-10 pr-8 py-2.5 text-xs text-slate-700 dark:text-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-unipaz-orange/30 focus:border-unipaz-orange transition-all appearance-none"
             >
-              <option value="todos">Todos Sexos</option>
+              <option value="todos">Todos los Sexos</option>
               {OPCIONES_SEXO.map((sx) => (
                 <option key={sx} value={sx}>
                   {sx}
@@ -395,75 +454,96 @@ export default function AdminEstudiantesDirectoryPage() {
           </div>
         </div>
 
-        {/* Barra de Filtro de Estatus de Inscripción */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-slate-200/60 dark:border-white/10">
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
-            <span className="px-2.5 text-[11px] font-bold text-slate-500 uppercase">Estatus:</span>
+        {/* Fila 2: Segmentación de Estatus Escolar (Tabs Estilizados) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-white/10 text-xs">
             <button
               onClick={() => setEstatusInscripcionFilter('todos')}
-              className={`py-1 px-3 rounded-xl font-bold text-xs transition-all ${
+              className={`py-1.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
                 estatusInscripcionFilter === 'todos'
-                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                  ? 'bg-white dark:bg-slate-900 text-unipaz-navy dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              Todos ({students.length})
+              <span>Todos los Alumnos</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                {students.length}
+              </span>
             </button>
+
             <button
               onClick={() => setEstatusInscripcionFilter('activos')}
-              className={`py-1 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+              className={`py-1.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
                 estatusInscripcionFilter === 'activos'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-emerald-600'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              Solo Activos ({students.filter((s) => s.activo !== false && s.estatus_inscripcion !== 'baja_temporal' && s.estatus_inscripcion !== 'baja_definitiva').length})
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Solo Activos</span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                estatusInscripcionFilter === 'activos' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+              }`}>
+                {students.filter((s) => s.activo !== false && s.estatus_inscripcion !== 'baja_temporal' && s.estatus_inscripcion !== 'baja_definitiva').length}
+              </span>
             </button>
+
             <button
               onClick={() => setEstatusInscripcionFilter('bajas')}
-              className={`py-1 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+              className={`py-1.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
                 estatusInscripcionFilter === 'bajas'
-                  ? 'bg-rose-600 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-rose-600'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-500 hover:text-rose-600 dark:hover:text-rose-400'
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-rose-400" />
-              Bajas / Inactivos ({students.filter((s) => s.activo === false || s.estatus_inscripcion === 'baja_temporal' || s.estatus_inscripcion === 'baja_definitiva').length})
+              <span>Bajas / Inactivos</span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                estatusInscripcionFilter === 'bajas' ? 'bg-rose-700 text-white' : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+              }`}>
+                {students.filter((s) => s.activo === false || s.estatus_inscripcion === 'baja_temporal' || s.estatus_inscripcion === 'baja_definitiva').length}
+              </span>
             </button>
           </div>
         </div>
 
-        {/* Píldoras de Filtro Modernas */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        {/* Fila 3: Píldoras Temáticas PFI & Becas */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
           {[
-            { id: 'todos', label: 'Todos los Requisitos', count: students.length },
-            { id: 'acreditados', label: 'Acreditados (≥400 hrs)', count: students.filter((s) => getStudentProgress(s.id).isAcreditado).length },
-            { id: 'riesgo', label: 'En Riesgo (<200 hrs en 6°+)', count: students.filter((s) => (s.cuatrimestre || 1) >= 6 && getStudentProgress(s.id).horasTotales < 200).length },
-            { id: 'becados_todos', label: 'Becarios Activos', count: students.filter((s) => s.tiene_beca).length },
-            { id: 'becados_departamentales', label: 'Servicio Becario', count: students.filter((s) => s.es_becario_departamental).length },
-            { id: 'becados_acreditados', label: 'Becarios con 1,000 pts', count: students.filter((s) => s.tiene_beca && getStudentScholarshipProgress(s.id).isAcreditadoBeca).length },
-            { id: 'no_becados', label: 'Sin Beca', count: students.filter((s) => !s.tiene_beca).length },
-          ].map((pill) => (
-            <button
-              key={pill.id}
-              onClick={() => setFilterStatus(pill.id as any)}
-              className={`py-1.5 px-3.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                filterStatus === pill.id
-                  ? 'bg-unipaz-navy dark:bg-white text-white dark:text-slate-950 shadow-sm scale-102'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange'
-              }`}
-            >
-              <span>{pill.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-black ${
-                filterStatus === pill.id
-                  ? 'bg-unipaz-orange text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-              }`}>
-                {pill.count}
-              </span>
-            </button>
-          ))}
+            { id: 'todos', label: 'Todos los Criterios', icon: '📋', count: students.length },
+            { id: 'acreditados', label: 'Acreditados (≥400 hrs)', icon: '⭐', count: students.filter((s) => getStudentProgress(s.id).isAcreditado).length },
+            { id: 'riesgo', label: 'En Riesgo (<200 hrs en 6°+)', icon: '⚠️', count: students.filter((s) => (s.cuatrimestre || 1) >= 6 && getStudentProgress(s.id).horasTotales < 200).length },
+            { id: 'becados_todos', label: 'Becarios Activos', icon: '🏅', count: students.filter((s) => s.tiene_beca).length },
+            { id: 'becados_departamentales', label: 'Servicio Becario', icon: '🏛️', count: students.filter((s) => s.es_becario_departamental).length },
+            { id: 'becados_acreditados', label: 'Becarios 1,000 pts', icon: '✨', count: students.filter((s) => s.tiene_beca && getStudentScholarshipProgress(s.id).isAcreditadoBeca).length },
+            { id: 'no_becados', label: 'Sin Beca', icon: '⚪', count: students.filter((s) => !s.tiene_beca).length },
+          ].map((pill) => {
+            const isSelected = filterStatus === pill.id;
+
+            return (
+              <button
+                key={pill.id}
+                onClick={() => setFilterStatus(pill.id as any)}
+                className={`py-1.5 px-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs ${
+                  isSelected
+                    ? 'bg-unipaz-navy dark:bg-white text-white dark:text-slate-950 scale-102 shadow-sm ring-2 ring-unipaz-orange/50'
+                    : 'bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-unipaz-orange/60 hover:bg-orange-50/30'
+                }`}
+              >
+                <span>{pill.icon}</span>
+                <span>{pill.label}</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-black ${
+                    isSelected
+                      ? 'bg-unipaz-orange text-white'
+                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
